@@ -1,0 +1,39 @@
+# 비밀 정보 (절대 커밋 금지)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# 대용량 색인·모델 (재생성 방법을 README에 기록)
+index/
+vectorstore/
+chroma_db/
+*.faiss
+*.pkl
+*.bin
+models/
+
+# 에디터·OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 임시 파일
+tmp/
+*.log
