@@ -3,21 +3,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def _require(key: str) -> str:
+    value = os.getenv(key)
+    if not value:
+        raise RuntimeError(f".env에 {key} 값이 없습니다. .env 양식을 확인하세요.")
+    return value
+
 class Settings:
-    # LLM 모델 설정
-    API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
-    LLM_PROVIDE: str = os.getenv("LLM_PROVIDER", "openai")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-5-mini")
-    REASONING_EFFORT: str = os.getenv("REASONING_EFFORT", "low")
-
-    # PostgreSQL (PGVector) 접속 정보
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql+psycopg://postgres:postgre@localhost:5432/rag_db",
-    )
-
-    # 도메인별 컬렉션 분리
-    CHATBOT_COLLECTION: str = os.getenv("CHATBOT_COLLECTION", "mcu_movies")
+    API_KEY: str = _require("OPENAI_API_KEY")
+    EMBEDDING_MODEL: str = _require("EMBEDDING_MODEL")
+    LLM_PROVIDER: str = _require("LLM_PROVIDER")
+    LLM_MODEL: str = _require("LLM_MODEL")
+    REASONING_EFFORT: str = _require("REASONING_EFFORT")
+    LLM_TIMEOUT: int = int(_require("LLM_TIMEOUT"))
+    DATABASE_URL: str = _require("DATABASE_URL")
+    MOVIE_COLLECTION: str = _require("MOVIE_COLLECTION")
 
 settings = Settings()
