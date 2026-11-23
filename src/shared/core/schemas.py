@@ -1,19 +1,20 @@
 from datetime import datetime, timezone
 from typing import TypeVar, Any, Generic
-from enum import Enum
+from enum import StrEnum
 from pydantic import BaseModel, Field
 
 T = TypeVar("T")
 
 
-class AnswerStatus(str, Enum):
+class AnswerStatus(StrEnum):
     """답변 처리 상태"""
     ANSWERED = "answered" # 근거를 찾아 답변함
     NO_EVIDENCE = "no_evidence" # 정상적인 근거 없음(문서에 없음)
-    ERROR = "error" # 호출 실패(근거 없음과 구분)
+    RETRIEVAL_ERROR = "retrieval_error" # 검색(DB·임베딩) 호출 실패
+    GENERATION_ERROR = "generation_error" # 답변 모델 호출 실패
 
 
-class Section(str, Enum):
+class Section(StrEnum):
     """Wikipedia 영화 문서의 절 구분"""
     PLOT = "plot" # 줄거리
     CAST = "cast" # 출연진
@@ -24,7 +25,7 @@ class Section(str, Enum):
     OTHER = "other" # 그 외
 
 
-class RetrievalModel(str, Enum):
+class RetrievalMode(StrEnum):
     """검색 구성 (평가 A/B/C와 같은 뜻)"""
     VECTOR = "vector" # A: Vector만
     HYBRID = "hybrid" # B : BM25 + Vector (RRF 결합)
@@ -33,7 +34,7 @@ class RetrievalModel(str, Enum):
 
 class APIResponse(BaseModel, Generic[T]):
     success: bool = Field(description="처리 성공/실패 여부")
-    code: str | None = Field(None, description="비즈니스 식별 코드 (성공 시 ok, 실패 시 에러 코드)")
+    code: str | None = Field(None, description="비즈니스 식별 코드 (성공 시 OK, 실패 시 에러 코드)")
     message: str | None = Field(None, description="성공 또는 실패 시 설명")
     errors: dict[str, list[str]] | list[str] | Any | None = Field(None, description="실패 시 세부 오류 내용")
     data: T | None = Field(None, description="성공 시 응답 데이터")
