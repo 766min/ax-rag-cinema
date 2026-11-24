@@ -1,0 +1,37 @@
+name: Gitleaks 비밀정보 검사
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0 # 과거 커밋까지 모두 검사하려면 전체 이력이 필요하다
+          persist-credentials: false
+      - name: gitleaks 내려받기와 해시 확인
+        working-directory: ${{ runner.temp }}
+        env:
+          VERSION: 8.30.1
+          # 공식 릴리스의 gitleaks_8.30.1_checksums.txt 와 같은 값
+          SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
+            --output gitleaks.tar.gz
+          echo "${SHA256}  gitleaks.tar.gz" | sha256sum --check -
+          tar -xzf gitleaks.tar.gz gitleaks
+      - name: 이력 검사
+        run: |
+          "$RUNNER_TEMP/gitleaks" git --config .gitleaks.toml --redact=100 \
+            --log-opts="--full-history --diff-merges=first-parent HEAD" .
