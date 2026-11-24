@@ -235,6 +235,7 @@ def test_chunk_doc_id_must_match_source(overrides: dict[str, object]) -> None:
         ("tt0371746-wikipedia", SourceId.WIKIPEDIA_EN, "tt0371746"),
         ("web-0123456789ab", SourceId.BRAVE, None),
         ("web-0123456789ab", SourceId.BRAVE, "tt0371746"),  # 작품과 이어진 웹 결과
+        ("wp-52234178", SourceId.WIKIPEDIA_EN, None),  # 작품이 없는 문서 (인물 · 세계관)
     ],
 )
 def test_document_doc_id_follows_source(
@@ -254,6 +255,11 @@ def test_document_doc_id_follows_source(
         ("tt0371746", SourceId.BRAVE, None),  # 웹인데 작품 ID
         ("tt0371746-wikipedia", SourceId.WIKIPEDIA_EN, "tt9999999"),  # 다른 작품
         ("Q192724", SourceId.WIKIPEDIA_EN, None),  # IMDb tconst 가 아님
+        # 작품 문서인데 wp- 를 씀 (작품 문서는 {work_id}-wikipedia 여야 한 ID 로 모인다)
+        ("wp-52234178", SourceId.WIKIPEDIA_EN, "tt0371746"),
+        ("wp-52234178", SourceId.FANDOM, None),  # wp- 는 Wikipedia 전용
+        ("wp-Tony_Stark", SourceId.WIKIPEDIA_EN, None),  # pageid 는 숫자
+        ("wp-", SourceId.WIKIPEDIA_EN, None),  # pageid 빠짐
     ],
 )
 def test_document_doc_id_mismatch_is_rejected(
@@ -262,6 +268,29 @@ def test_document_doc_id_mismatch_is_rejected(
     with pytest.raises(ValidationError):
         Document(
             doc_id=doc_id, work_id=work_id, source_id=source_id, source_url="u", doc_type="film"
+        )
+
+
+def test_chunk_from_page_without_work() -> None:
+    # 인물 문서(작품 없음)의 소개 문단도 청크가 될 수 있어야 한다 (평가셋 Q007 등의 근거)
+    chunk = make_chunk(
+        chunk_id="wp-28466133-intro-p01",
+        doc_id="wp-28466133",
+        work_id=None,
+        section=Section.INTRO,
+        total=3,
+    )
+    assert chunk.chunk_id == "wp-28466133-intro-p01"
+
+
+def test_chunk_from_page_without_work_rejects_work_id() -> None:
+    # wp- 문서에 work_id 를 붙이면 작품 문서({work_id}-wikipedia)와 같은 글이 두 ID 로 갈린다
+    with pytest.raises(ValidationError):
+        make_chunk(
+            chunk_id="wp-28466133-intro-p01",
+            doc_id="wp-28466133",
+            work_id="tt0371746",
+            section=Section.INTRO,
         )
 
 

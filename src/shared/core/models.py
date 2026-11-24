@@ -44,10 +44,14 @@ class EvidenceSource(StrEnum):
 _WORK_ID = r"tt\d+(?:-S\d+)?"
 _WORK_ID_RULE = re.compile(_WORK_ID)
 
+# 작품이 없는 Wikipedia 문서(인물 · 세계관 · 목록): Wikipedia pageid
+_PAGE_ID_PREFIX = "wp-"
+
 # 출처마다 doc_id 가 따라야 할 모양 (§3 ID 규칙)
 _DOC_ID_RULES: dict[SourceId, re.Pattern[str]] = {
     SourceId.FANDOM: re.compile(_WORK_ID),  # tt0371746 · tt9140554-S1
-    SourceId.WIKIPEDIA_EN: re.compile(rf"{_WORK_ID}-wikipedia"),  # tt0371746-wikipedia
+    # tt0371746-wikipedia (작품 문서) · wp-52234178 (작품이 없는 문서)
+    SourceId.WIKIPEDIA_EN: re.compile(rf"{_WORK_ID}-wikipedia|{_PAGE_ID_PREFIX}\d+"),
     SourceId.BRAVE: re.compile(r"web-[0-9a-f]{12}"),  # web-{URL 해시 12자}
 }
 
@@ -57,12 +61,21 @@ def check_doc_id(doc_id: str, source_id: SourceId, work_id: str | None) -> None:
 
     출처가 다른 문서의 ID 가 겹치지 않게 하려는 검사다. Chunk · Document 가 함께 쓴다.
     웹 결과는 작품과 이어져 있어도 doc_id 가 URL 해시라서 work_id 와 견주지 않는다.
+    Wikipedia 인물 · 세계관 문서처럼 작품이 없는 문서는 wp-{pageid} 를 쓰고 work_id 를 비운다.
     """
     if not _DOC_ID_RULES[source_id].fullmatch(doc_id):
         raise ValueError(
             f"doc_id 가 출처({source_id}) 규칙과 다릅니다: {doc_id} "
             f"(규칙 {_DOC_ID_RULES[source_id].pattern})"
         )
+    if doc_id.startswith(_PAGE_ID_PREFIX):
+        if work_id is not None:
+            # 작품 문서까지 wp- 로 만들면 같은 글이 두 ID 로 갈려 정답 키가 어긋난다
+            raise ValueError(
+                f"작품이 있는 문서는 {work_id}-wikipedia 를 씁니다 (wp- 는 작품이 없는 문서용): "
+                f"{doc_id}"
+            )
+        return
     if work_id is None or source_id == SourceId.BRAVE:
         return
     expected = work_id if source_id == SourceId.FANDOM else f"{work_id}-wikipedia"
@@ -91,7 +104,10 @@ class Document(BaseModel):
     """수집한 문서 한 개 (팬덤 위키 · Wikipedia · 웹 검색 결과)"""
 
     doc_id: str = Field(
-        description="팬덤 위키 {work_id} · Wikipedia {work_id}-wikipedia · 웹 web-{URL 해시 12자}"
+        description=(
+            "팬덤 위키 {work_id} · Wikipedia {work_id}-wikipedia (작품이 없는 인물 · 세계관 문서는 "
+            "wp-{pageid}) · 웹 web-{URL 해시 12자}"
+        )
     )
     work_id: str | None = Field(None, description="연결된 작품 (웹 결과는 없을 수 있음)")
     source_id: SourceId = Field(description="출처")
