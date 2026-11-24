@@ -1,4 +1,5 @@
 # 데이터 모양 (architecture.md §3 · §4.2 · §8 · §9). API 응답 형식은 schemas.py 에 둔다
+import re
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
@@ -39,6 +40,36 @@ class EvidenceSource(StrEnum):
     NONE = "none"  # 근거 없음
 
 
+# 작품 ID: IMDb tconst, 시즌별 작품은 뒤에 -S{번호} (§3)
+_WORK_ID = r"tt\d+(?:-S\d+)?"
+_WORK_ID_RULE = re.compile(_WORK_ID)
+
+# 출처마다 doc_id 가 따라야 할 모양 (§3 ID 규칙)
+_DOC_ID_RULES: dict[SourceId, re.Pattern[str]] = {
+    SourceId.FANDOM: re.compile(_WORK_ID),  # tt0371746 · tt9140554-S1
+    SourceId.WIKIPEDIA_EN: re.compile(rf"{_WORK_ID}-wikipedia"),  # tt0371746-wikipedia
+    SourceId.BRAVE: re.compile(r"web-[0-9a-f]{12}"),  # web-{URL 해시 12자}
+}
+
+
+def check_doc_id(doc_id: str, source_id: SourceId, work_id: str | None) -> None:
+    """doc_id 가 출처 규칙(§3)과 맞는지 본다. 어긋나면 ValueError.
+
+    출처가 다른 문서의 ID 가 겹치지 않게 하려는 검사다. Chunk · Document 가 함께 쓴다.
+    웹 결과는 작품과 이어져 있어도 doc_id 가 URL 해시라서 work_id 와 견주지 않는다.
+    """
+    if not _DOC_ID_RULES[source_id].fullmatch(doc_id):
+        raise ValueError(
+            f"doc_id 가 출처({source_id}) 규칙과 다릅니다: {doc_id} "
+            f"(규칙 {_DOC_ID_RULES[source_id].pattern})"
+        )
+    if work_id is None or source_id == SourceId.BRAVE:
+        return
+    expected = work_id if source_id == SourceId.FANDOM else f"{work_id}-wikipedia"
+    if doc_id != expected:
+        raise ValueError(f"doc_id 가 work_id 와 맞지 않습니다: {doc_id} (기대값 {expected})")
+
+
 class Work(BaseModel):
     """작품 또는 시즌 한 개"""
 
@@ -73,6 +104,12 @@ class Document(BaseModel):
     doc_type: str = Field(
         description="문서 종류만 (film, season, character, web 등). 출처는 source_id 가 맡는다"
     )
+
+    @model_validator(mode="after")
+    def _check_doc_id(self) -> "Document":
+        """doc_id 가 출처 규칙과 어긋나면 만들 때 바로 막는다 (출처 사이 ID 겹침 방지)"""
+        check_doc_id(self.doc_id, self.source_id, self.work_id)
+        return self
 
 
 class Chunk(BaseModel):
@@ -109,7 +146,21 @@ class Chunk(BaseModel):
     @model_validator(mode="after")
     def _check_ids(self) -> "Chunk":
         """chunk_id 가 규칙(§3)과 어긋나면 만들 때 바로 막는다. 평가 정답 키가 조용히 틀어지는 것을 막기 위해서다"""
-        if self.section in (Section.CARD, Section.CONNECTION):
+        is_card = self.section in (Section.CARD, Section.CONNECTION)
+        if is_card:
+            # 카드는 위키 문서가 아니라 작품 정보로 만든다. 출처는 묻지 않고 doc_id = work_id 만 본다
+            if not _WORK_ID_RULE.fullmatch(self.doc_id) or (
+                self.work_id is not None and self.doc_id != self.work_id
+            ):
+                raise ValueError(f"카드의 doc_id 는 작품 ID(work_id)여야 합니다: {self.doc_id}")
+        else:
+            check_doc_id(self.doc_id, self.source_id, self.work_id)
+        if (self.section == Section.WEB) != (self.source_id == SourceId.BRAVE):
+            raise ValueError(
+                f"web 청크는 brave 출처에만 있습니다: section={self.section}, "
+                f"source_id={self.source_id}"
+            )
+        if is_card:
             expected = f"{self.doc_id}-{self.section}"
         else:
             expected = f"{self.doc_id}-{self.section}-p{self.position:02d}"

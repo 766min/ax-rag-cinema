@@ -129,9 +129,12 @@ def make_record(**overrides: object) -> RunRecord:
 def test_chunk_id_follows_rule(
     chunk_id: str, doc_id: str, source_id: SourceId, section: Section, position: int, total: int
 ) -> None:
+    # 웹 결과는 작품과 이어지지 않을 수 있다. 나머지는 doc_id 에서 출처 꼬리를 뗀 것이 work_id 다
+    work_id = None if source_id == SourceId.BRAVE else doc_id.removesuffix("-wikipedia")
     chunk = make_chunk(
         chunk_id=chunk_id,
         doc_id=doc_id,
+        work_id=work_id,
         source_id=source_id,
         section=section,
         position=position,
@@ -172,6 +175,94 @@ def test_fandom_and_wikipedia_ids_do_not_collide() -> None:
         for n in range(1, 6)
     }
     assert fandom.isdisjoint(wikipedia)
+
+
+# ---------- 출처별 doc_id 규칙 (§3, PR #11 리뷰) ----------
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        # Wikipedia 출처인데 팬덤 위키 모양 ID (팬덤 위키 청크와 ID 가 겹친다)
+        {"chunk_id": "tt0371746-plot-p01", "doc_id": "tt0371746"},
+        # 팬덤 위키 출처인데 Wikipedia 모양 ID
+        {"source_id": SourceId.FANDOM},
+        # Brave 출처인데 작품 ID
+        {
+            "chunk_id": "tt0371746-web-p01",
+            "doc_id": "tt0371746",
+            "source_id": SourceId.BRAVE,
+            "section": Section.WEB,
+        },
+        # Brave 해시가 12자 16진수가 아님
+        {
+            "chunk_id": "web-0123ABC-web-p01",
+            "doc_id": "web-0123ABC",
+            "source_id": SourceId.BRAVE,
+            "section": Section.WEB,
+        },
+        # doc_id 와 work_id 가 다른 작품
+        {"work_id": "tt9999999"},
+        # web 청크인데 Brave 출처가 아님
+        {"chunk_id": "tt0371746-wikipedia-web-p01", "section": Section.WEB},
+        # Brave 출처인데 web 청크가 아님
+        {
+            "chunk_id": "web-0123456789ab-plot-p01",
+            "doc_id": "web-0123456789ab",
+            "source_id": SourceId.BRAVE,
+        },
+        # 카드인데 doc_id 가 작품 ID 가 아님
+        {"chunk_id": "tt0371746-wikipedia-card", "section": Section.CARD, "total": 1},
+        # 카드인데 doc_id 가 다른 작품
+        {
+            "chunk_id": "tt9999999-card",
+            "doc_id": "tt9999999",
+            "section": Section.CARD,
+            "total": 1,
+        },
+    ],
+)
+def test_chunk_doc_id_must_match_source(overrides: dict[str, object]) -> None:
+    with pytest.raises(ValidationError):
+        make_chunk(**overrides)
+
+
+@pytest.mark.parametrize(
+    ("doc_id", "source_id", "work_id"),
+    [
+        ("tt0371746", SourceId.FANDOM, "tt0371746"),
+        ("tt9140554-S1", SourceId.FANDOM, "tt9140554-S1"),
+        ("tt0371746-wikipedia", SourceId.WIKIPEDIA_EN, "tt0371746"),
+        ("web-0123456789ab", SourceId.BRAVE, None),
+        ("web-0123456789ab", SourceId.BRAVE, "tt0371746"),  # 작품과 이어진 웹 결과
+    ],
+)
+def test_document_doc_id_follows_source(
+    doc_id: str, source_id: SourceId, work_id: str | None
+) -> None:
+    document = Document(
+        doc_id=doc_id, work_id=work_id, source_id=source_id, source_url="u", doc_type="film"
+    )
+    assert document.doc_id == doc_id
+
+
+@pytest.mark.parametrize(
+    ("doc_id", "source_id", "work_id"),
+    [
+        ("tt0371746", SourceId.WIKIPEDIA_EN, "tt0371746"),  # 꼬리 빠짐
+        ("tt0371746-wikipedia", SourceId.FANDOM, "tt0371746"),  # 출처 바뀜
+        ("tt0371746", SourceId.BRAVE, None),  # 웹인데 작품 ID
+        ("tt0371746-wikipedia", SourceId.WIKIPEDIA_EN, "tt9999999"),  # 다른 작품
+        ("Q192724", SourceId.WIKIPEDIA_EN, None),  # IMDb tconst 가 아님
+    ],
+)
+def test_document_doc_id_mismatch_is_rejected(
+    doc_id: str, source_id: SourceId, work_id: str | None
+) -> None:
+    with pytest.raises(ValidationError):
+        Document(
+            doc_id=doc_id, work_id=work_id, source_id=source_id, source_url="u", doc_type="film"
+        )
 
 
 # ---------- 닫힌 값 목록 ----------
