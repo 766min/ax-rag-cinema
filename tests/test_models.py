@@ -454,6 +454,82 @@ def test_hit_at_rejects_no_evidence_item() -> None:
         item.hit_at(make_record())
 
 
+# ---------- 원본 ID (handoff 의 cnt_ · doc_ 번호를 남겨 평가셋 근거와 잇는다) ----------
+
+
+def make_work(**overrides: object) -> Work:
+    fields: dict[str, object] = {
+        "work_id": "tt0371746",
+        "title_ko": "아이언맨",
+        "title_original": "Iron Man",
+        "format": "movie",
+    }
+    fields.update(overrides)
+    return Work.model_validate(fields)
+
+
+def make_document(**overrides: object) -> Document:
+    fields: dict[str, object] = {
+        "doc_id": "wp-66902704",
+        "source_id": SourceId.WIKIPEDIA_EN,
+        "source_url": "https://en.wikipedia.org/w/index.php?oldid=1386856486",
+        "doc_type": "universe",
+    }
+    fields.update(overrides)
+    return Document.model_validate(fields)
+
+
+def test_source_ids_default_empty() -> None:
+    # 원본 ID 가 없는 데이터(팬덤 위키 · 웹)도 그대로 만들 수 있어야 한다
+    assert make_work().source_ids == {}
+    assert make_document().source_ids == {}
+    assert make_chunk().source_ids == {}
+
+
+def test_source_ids_kept_on_each_model() -> None:
+    # handoff works.jsonl 의 source_ids 를 그대로 받는다 (tt 가 없는 작품은 imdb_tconst 가 None)
+    work_ids = {
+        "imdb_tconst": "tt0371746",
+        "team_content_id": "cnt_8b4a3e3c1b2d4f5a",
+        "wikipedia_document_id": None,
+    }
+    doc_ids = {"team_document_id": "doc_2bf22c03fce35efd", "wikidata_qid": "Q131448287"}
+    chunk_ids = {"team_chunk_id": "doc_0119b33dcbf45f7b-plot-p01"}
+    assert make_work(source_ids=work_ids).source_ids == work_ids
+    assert make_document(source_ids=doc_ids).source_ids == doc_ids
+    assert make_chunk(source_ids=chunk_ids).source_ids == chunk_ids
+
+
+@pytest.mark.parametrize("value", [78918930, ["doc_1"], {"x": "y"}])
+def test_source_ids_values_must_be_text(value: object) -> None:
+    # pageid 같은 숫자도 문자열로 바꿔 넣는다. 섞이면 원본 ID 로 다시 찾을 때 "1" 과 1 이 엇갈린다
+    with pytest.raises(ValidationError):
+        make_document(source_ids={"pageid": value})
+
+
+def test_source_ids_do_not_affect_id_rules() -> None:
+    # 원본 ID 를 남겨도 우리 ID 규칙 검사는 그대로 돈다 (원본 doc_ 번호를 doc_id 로 쓰면 막힘)
+    with pytest.raises(ValidationError):
+        make_document(doc_id="doc_2bf22c03fce35efd", source_ids={"team_document_id": "x"})
+
+
+def test_find_document_by_original_id() -> None:
+    # 평가셋 근거는 doc_… 로 적혀 있다. 원본 ID 로 새 doc_id 를 찾을 수 있어야 정답 키를 만든다
+    documents = [
+        make_document(
+            doc_id="wp-66902704", source_ids={"team_document_id": "doc_2bf22c03fce35efd"}
+        ),
+        make_document(
+            doc_id="tt0371746-wikipedia",
+            work_id="tt0371746",
+            doc_type="film",
+            source_ids={"team_document_id": "doc_aaaaaaaaaaaaaaaa"},
+        ),
+    ]
+    by_original = {d.source_ids["team_document_id"]: d.doc_id for d in documents}
+    assert by_original["doc_2bf22c03fce35efd"] == "wp-66902704"
+
+
 # ---------- JSONL 로 저장하고 다시 읽어도 같은가 ----------
 
 
@@ -466,6 +542,7 @@ def test_models_survive_json_round_trip() -> None:
         year=2021,
         season=1,
         parent_work_id="tt9140554",
+        source_ids={"team_content_id": "cnt_0119b33dcbf45f7b", "imdb_tconst": None},
     )
     document = Document(
         doc_id="tt0371746-wikipedia",
@@ -475,9 +552,22 @@ def test_models_survive_json_round_trip() -> None:
         license="CC BY-SA 4.0 / GFDL",
         revid=1386653533,
         doc_type="film",
+        source_ids={"team_document_id": "doc_aaaaaaaaaaaaaaaa"},
     )
-    for model in (work, document, make_chunk(), make_record()):
+    chunk = make_chunk(source_ids={"team_chunk_id": "doc_aaaaaaaaaaaaaaaa-plot-p01"})
+    for model in (work, document, chunk, make_record()):
         assert type(model).model_validate_json(model.model_dump_json()) == model
+    # 원본 ID 는 저장했다 읽어도 값 그대로 남아야 한다 (None 도 None 으로)
+    assert Work.model_validate_json(work.model_dump_json()).source_ids == {
+        "team_content_id": "cnt_0119b33dcbf45f7b",
+        "imdb_tconst": None,
+    }
+    assert Document.model_validate_json(document.model_dump_json()).source_ids == {
+        "team_document_id": "doc_aaaaaaaaaaaaaaaa"
+    }
+    assert Chunk.model_validate_json(chunk.model_dump_json()).source_ids == {
+        "team_chunk_id": "doc_aaaaaaaaaaaaaaaa-plot-p01"
+    }
 
 
 # ---------- 저장소의 평가셋이 스키마로 읽히는가 ----------

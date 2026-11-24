@@ -98,6 +98,13 @@ class Work(BaseModel):
     phase: str | None = Field(None, description="MCU Phase (값이 생기면 채움)")
     timeline_order: int | None = Field(None, description="시간순 순서 (값이 생기면 채움)")
     is_canon: bool | None = Field(None, description="MCU 정식 여부 (값이 생기면 채움)")
+    source_ids: dict[str, str | None] = Field(
+        default_factory=dict,
+        description=(
+            "원본 데이터의 ID (추적용, 값은 문자열). handoff works.jsonl 의 source_ids 를 그대로 "
+            "담는다 (예: imdb_tconst · team_content_id(cnt_…) · wikipedia_document_id(doc_…))"
+        ),
+    )
 
 
 class Document(BaseModel):
@@ -119,6 +126,13 @@ class Document(BaseModel):
     fetched_at: datetime | None = Field(None, description="수집 시각")
     doc_type: str = Field(
         description="문서 종류만 (film, season, character, web 등). 출처는 source_id 가 맡는다"
+    )
+    source_ids: dict[str, str | None] = Field(
+        default_factory=dict,
+        description=(
+            "원본 데이터의 ID (추적용, 값은 문자열). 평가셋 근거가 원본 doc_… 로 적혀 있어서 "
+            "이 값으로 새 doc_id 를 찾는다 (예: team_document_id(doc_…) · wikidata_qid)"
+        ),
     )
 
     @model_validator(mode="after")
@@ -157,6 +171,13 @@ class Chunk(BaseModel):
     content_hash: str = Field(
         "",
         description="chunk_id · header · text 를 이은 SHA-256. 같으면 다시 임베딩하지 않는다 (§4.2)",
+    )
+    source_ids: dict[str, str | None] = Field(
+        default_factory=dict,
+        description=(
+            "원본 데이터의 ID (추적용, 값은 문자열, content_hash 재료 아님). 정제본의 "
+            "source_chunk_ids 를 원문 청크에 잇는다 (예: team_chunk_id(doc_…-plot-p01))"
+        ),
     )
 
     @model_validator(mode="after")
