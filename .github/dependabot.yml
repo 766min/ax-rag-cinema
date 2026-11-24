@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # Python 패키지 (pyproject.toml, uv.lock)
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+  # GitHub Actions 부품 버전
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

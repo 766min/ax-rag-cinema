@@ -1,8 +1,10 @@
 # .env를 읽어서 settings 객체로 제공하는 역할
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 def _require(key: str) -> str:
     """반드시 있어야 하는 값을 읽는다. 없으면 앱을 시작하지 않는다."""
@@ -11,10 +13,12 @@ def _require(key: str) -> str:
         raise RuntimeError(f".env에 {key} 값이 없습니다. .env 양식을 확인하세요.")
     return value
 
+
 def _optional(key: str, default: str) -> str:
     """없어도 되는 값을 읽는다. 없으면 기본값을 쓴다."""
     value = os.getenv(key)
     return value if value else default
+
 
 def _flag(key: str, default: bool = False) -> bool:
     """켜고 끄는 값(true/false)을 읽는다."""
@@ -22,6 +26,7 @@ def _flag(key: str, default: bool = False) -> bool:
     if not value:
         return default
     return value.strip().lower() in {"true", "1", "yes", "on"}
+
 
 class Settings:
     # 필수: 없으면 앱이 뜨지 않는다
@@ -41,5 +46,6 @@ class Settings:
     BRAVE_API_KEY: str = _optional("BRAVE_API_KEY", "")
     WEB_COLLECTION: str = _optional("WEB_COLLECTION", "mcu_web")
     WEB_STORE: bool = _flag("WEB_STORE", default=False)  # Brave 약관상 저장 권한 확인 전에는 false
+
 
 settings = Settings()

@@ -20,9 +20,34 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "mypy>=2.4.1",
     "pytest>=9.2.0",
+    "ruff>=0.17.6",
 ]
 
 [tool.pytest.ini_options]
 # src 를 import 루트로 써서 테스트에서도 from shared.core ... 로 가져온다
 pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src"]
+
+[tool.ruff.lint]
+# E/F: 기본 오류, I: import 정렬, UP: 최신 문법 권장
+select = ["E", "F", "I", "UP"]
+ignore = [
+    "E501",   # 줄 길이는 ruff format 이 맞춘다 (한글 주석이 길어 오탐이 많다)
+    "UP046",  # Generic[T] -> class Foo[T] 문법 변경은 강제하지 않는다
+    "UP047",
+]
+
+[tool.mypy]
+python_version = "3.13"
+# src 를 import 루트로 인식시킨다 (pytest 의 pythonpath 와 같은 의미)
+mypy_path = "src"
+explicit_package_bases = true
+# langchain 등 타입 정보가 느슨한 라이브러리 때문에 처음에는 완화해서 시작한다
+ignore_missing_imports = true
+warn_unused_ignores = true
