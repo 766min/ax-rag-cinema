@@ -385,6 +385,75 @@ def test_top_chunk_ids_follow_final_rank() -> None:
     assert len(record.top_chunk_ids()) == 3  # 후보가 5개보다 적으면 있는 만큼
 
 
+# ---------- 정답 키와 색인 버전 (#11 리뷰: 청킹이 바뀌면 문단 번호가 밀린다) ----------
+
+
+def make_item(**overrides: object) -> EvalItem:
+    """make_record() 의 색인(test-index) 기준으로 정답 키를 적은 문항"""
+    fields: dict[str, object] = {
+        "question_id": "Q001",
+        "question": "토니 스타크는 엔드게임에서 죽어?",
+        "answerable": True,
+        "gold_chunk_ids": ["tt4154796-wikipedia-plot-p06"],
+        "gold_index_version": "test-index",
+    }
+    fields.update(overrides)
+    return EvalItem.model_validate(fields)
+
+
+@pytest.mark.parametrize(
+    ("gold", "k", "hit"),
+    [
+        (["tt4154796-wikipedia-plot-p06"], 5, True),  # 2위
+        (["tt4154796-wikipedia-plot-p06"], 1, False),  # 1위 안에는 없음
+        (["tt9999999-wikipedia-plot-p01"], 5, False),  # 후보에 없음
+        # 두 출처 중 하나만 찾아와도 맞음 (§8)
+        (["tt4154796-plot-p03", "tt4154796-wikipedia-plot-p07"], 1, True),
+    ],
+)
+def test_hit_at_k(gold: list[str], k: int, hit: bool) -> None:
+    assert make_item(gold_chunk_ids=gold).hit_at(make_record(), k) is hit
+
+
+def test_hit_at_rejects_other_index_version() -> None:
+    # 다른 색인(예: 청크 크기를 바꿔 다시 만든 색인)에서 잰 기록은 정답 키와 번호가 안 맞을 수 있다
+    record = make_record(trace=make_trace(index_version="other-index"))
+    with pytest.raises(ValueError, match="색인"):
+        make_item().hit_at(record)
+
+
+def test_hit_at_without_gold_index_version_skips_version_check() -> None:
+    # 기준 버전을 아직 안 적은 문항은 버전 검사 없이 잰다
+    record = make_record(trace=make_trace(index_version="other-index"))
+    assert make_item(gold_index_version=None).hit_at(record) is True
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"question_id": "Q002"},  # 다른 문항의 기록
+        {"gold_chunk_ids": []},  # 정답 키를 아직 안 적음
+    ],
+)
+def test_hit_at_rejects_unusable_item(overrides: dict[str, object]) -> None:
+    with pytest.raises(ValueError):
+        make_item(**overrides).hit_at(make_record())
+
+
+def test_no_evidence_item_cannot_have_gold() -> None:
+    # 근거 없음 문항에 정답 키가 있으면 문항이 잘못 적힌 것이다
+    with pytest.raises(ValidationError):
+        make_item(answerable=False)
+
+
+def test_hit_at_rejects_no_evidence_item() -> None:
+    # 근거 없음 문항은 Hit@k 대상이 아니다 (올바른 거절로 채점한다)
+    item = make_item(answerable=False, gold_chunk_ids=[], gold_index_version=None)
+    # "정답 키가 비었다" 가 아니라 "근거 없음 문항이라 재지 않는다" 로 알려야 고칠 곳을 안다
+    with pytest.raises(ValueError, match="근거 없음"):
+        item.hit_at(make_record())
+
+
 # ---------- JSONL 로 저장하고 다시 읽어도 같은가 ----------
 
 

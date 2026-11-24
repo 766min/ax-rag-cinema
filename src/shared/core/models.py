@@ -212,6 +212,43 @@ class EvalItem(BaseModel):
         default_factory=list,
         description="허용 근거 청크 ID. 두 출처에 같은 사실이 있으면 둘 다 적는다 (§8)",
     )
+    gold_index_version: str | None = Field(
+        None,
+        description=(
+            "gold_chunk_ids 를 적을 때 기준으로 삼은 색인 버전 (§4.2 index_version). "
+            "청킹을 바꾸면 문단 번호가 밀리므로, 이 값과 다른 색인에서 잰 Hit@k 는 내지 않는다"
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _check_gold(self) -> "EvalItem":
+        """근거 없음 문항에 정답 키가 있으면 문항이 잘못 적힌 것이다"""
+        if not self.answerable and self.gold_chunk_ids:
+            raise ValueError(f"근거 없음 문항인데 gold_chunk_ids 가 있습니다: {self.question_id}")
+        return self
+
+    def hit_at(self, record: "RunRecord", k: int = 5) -> bool:
+        """record 의 최종 순위 상위 k개에 허용 근거가 하나라도 있으면 True (Hit@k, §8).
+
+        다른 문항의 기록, 정답 키가 없는 문항, 근거 없음 문항, 정답 키와 다른 색인에서 잰 기록은
+        점수를 내지 않고 ValueError 를 던진다. 조용히 0 이 섞이면 구성 비교가 틀어지기 때문이다.
+        """
+        if record.question_id != self.question_id:
+            raise ValueError(
+                f"다른 문항의 기록입니다: {record.question_id} (문항 {self.question_id})"
+            )
+        if not self.answerable:
+            raise ValueError(f"근거 없음 문항은 Hit@k 를 재지 않습니다: {self.question_id}")
+        if not self.gold_chunk_ids:
+            raise ValueError(f"gold_chunk_ids 가 비어 있습니다: {self.question_id}")
+        used = record.trace.index_version
+        if self.gold_index_version is not None and used != self.gold_index_version:
+            raise ValueError(
+                f"정답 키는 색인 {self.gold_index_version} 기준인데 기록은 색인 {used} 입니다. "
+                "청킹이 바뀌었으면 gold_chunk_ids 를 다시 확인해야 합니다"
+            )
+        gold = set(self.gold_chunk_ids)
+        return any(chunk_id in gold for chunk_id in record.top_chunk_ids(k))
 
 
 class Trace(BaseModel):
