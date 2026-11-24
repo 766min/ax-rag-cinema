@@ -44,20 +44,65 @@ def index_text(chunk: Chunk) -> str:
     return f"{chunk.header}\n{chunk.text}" if chunk.header else chunk.text
 
 
-def to_document(chunk: Chunk, index_version: str) -> Document:
+def to_document(
+    chunk: Chunk, index_version: str, index_meta: dict[str, str] | None = None
+) -> Document:
+    """index_meta: 임베딩 모델 · 입력 구성 등 색인 설정 (청크마다 같이 저장해 섞임을 막는다)."""
     metadata: dict[str, Any] = chunk.model_dump(mode="json", exclude={"text"})
     metadata["index_version"] = index_version
+    metadata.update(index_meta or {})
     return Document(page_content=index_text(chunk), metadata=metadata)
 
 
+def count_tokens(texts: list[str], model: str) -> tuple[str, list[int]]:
+    """임베딩 입력 토큰 수 추정 (tiktoken). API 가 보고한 값이 아니라 같은 토크나이저로 센 값이다.
+
+    모델 이름으로 토크나이저를 못 찾으면 cl100k_base 로 센다. 반환: (쓴 인코딩 이름, 글마다 토큰 수).
+    """
+    import tiktoken
+
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+    except KeyError:
+        encoding = tiktoken.get_encoding("cl100k_base")
+    return encoding.name, [len(encoding.encode(text)) for text in texts]
+
+
+def _tables_exist(cur: Any) -> bool:
+    """PGVector 테이블이 있는가. 처음 적재하기 전의 새 DB 에는 아직 없다 (PGVector 가 첫 적재 때 만든다)."""
+    cur.execute("SELECT to_regclass('langchain_pg_embedding') IS NOT NULL")
+    row = cur.fetchone()
+    return bool(row and row[0])
+
+
 def fetch_existing(conn: DBConnection, collection: str) -> dict[str, tuple[str, str]]:
-    """컬렉션에 이미 있는 chunk_id → (content_hash, index_version). 컬렉션이 없으면 빈 dict.
+    """컬렉션에 이미 있는 chunk_id → (content_hash, index_version). 테이블 · 컬렉션이 없으면 빈 dict.
 
     튜터님 예제와 달리 오류를 삼키지 않는다: 조회가 실패하면 전부 다시 임베딩하게 되기 때문이다.
+    테이블이 없는 경우만 미리 확인해서 '기존 행 0개'로 본다.
     """
     cur = conn.cursor()
+    if not _tables_exist(cur):
+        return {}
     cur.execute(_EXISTING_SQL, (collection,))
     return {row[0]: (row[1], row[2]) for row in cur.fetchall()}
+
+
+def meta_values(conn: DBConnection, collection: str, key: str) -> set[str | None]:
+    """컬렉션 행들의 메타데이터 key 값 종류 (예: embedding_model). 다른 설정이 섞였는지 볼 때 쓴다."""
+    cur = conn.cursor()
+    if not _tables_exist(cur):
+        return set()
+    cur.execute(
+        """
+        SELECT DISTINCT e.cmetadata->>%s
+        FROM langchain_pg_embedding e
+        JOIN langchain_pg_collection c ON e.collection_id = c.uuid
+        WHERE c.name = %s
+        """,
+        (key, collection),
+    )
+    return {row[0] for row in cur.fetchall()}
 
 
 def plan(
@@ -77,6 +122,7 @@ def index_chunks(
     collection: str,
     index_version: str,
     batch_size: int = 200,
+    index_meta: dict[str, str] | None = None,
 ) -> dict[str, int]:
     """증분 적재. 반환값: 전체 · 추가 · 건너뜀 · 삭제 개수."""
     existing = fetch_existing(conn, collection)
@@ -88,7 +134,7 @@ def index_chunks(
     for start in range(0, len(to_add), batch_size):
         batch = to_add[start : start + batch_size]
         store.add_documents(
-            [to_document(c, index_version) for c in batch],
+            [to_document(c, index_version, index_meta) for c in batch],
             ids=[row_id(collection, c.chunk_id) for c in batch],
         )
         logger.info("적재 %d / %d", start + len(batch), len(to_add))
@@ -106,6 +152,8 @@ def index_chunks(
 def load_corpus(conn: DBConnection, collection: str) -> dict[str, tuple[str, dict[str, Any]]]:
     """컬렉션의 청크 전체 chunk_id → (색인 글, 메타데이터). BM25 색인과 답변 문맥에 쓴다."""
     cur = conn.cursor()
+    if not _tables_exist(cur):
+        return {}
     cur.execute(
         """
         SELECT e.cmetadata->>'chunk_id', e.document, e.cmetadata

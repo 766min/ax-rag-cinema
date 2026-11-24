@@ -301,6 +301,54 @@ def build(
     return works, documents, chunks
 
 
+def normalize_ws(text: str) -> str:
+    """공백 · 줄바꿈을 한 칸으로 (원문과 청크를 위치로 대조할 때 쓰는 기준 글)."""
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def chunk_spans(section_text: str, texts: list[str]) -> list[tuple[int, int] | None]:
+    """각 청크가 덮는 원문 절의 구간 [시작, 끝) (normalize_ws 기준). 절 안에서 못 찾으면 None.
+
+    청크는 절 안에서 순서대로 나오므로 앞 청크 위치 뒤부터 찾는다 (같은 문장이 반복돼도 엉뚱한 곳에
+    붙지 않게). overlap 때문에 앞쪽에서 시작할 수 있어 못 찾으면 처음부터 다시 찾는다.
+    """
+    source = normalize_ws(section_text)
+    spans: list[tuple[int, int] | None] = []
+    start = 0
+    for text in texts:
+        piece = normalize_ws(text)
+        pos = source.find(piece, start)
+        if pos == -1:
+            pos = source.find(piece)
+        if pos == -1:
+            spans.append(None)
+            continue
+        spans.append((pos, pos + len(piece)))
+        start = pos + 1
+    return spans
+
+
+def section_texts(docs_raw: list[dict[str, Any]]) -> dict[tuple[str, str], str]:
+    """(원본 doc_…, 절 번호 문자열) → 절 원문. 정답 근거 위치를 찾을 때 쓴다."""
+    return {
+        (d["doc_id"], str(s["section_index"])): s["text"] for d in docs_raw for s in d["sections"]
+    }
+
+
+def source_sections(
+    works_raw: list[dict[str, Any]], docs_raw: list[dict[str, Any]]
+) -> Iterator[tuple[dict[str, Any], dict[str, Any]]]:
+    """청킹 대상인 원문 (문서, 절) 쌍. 레시피와 무관하게 같은 범위다 (청킹 검수용)."""
+    owners = owner_works(works_raw)
+    for raw_doc in docs_raw:
+        kind = _doc_kind(raw_doc, owners)
+        if kind is None:
+            continue
+        for section in raw_doc["sections"]:
+            if section["section_kind"] in SECTION_RULES[kind]:
+                yield raw_doc, section
+
+
 def load_handoff(
     handoff_dir: Path = HANDOFF_DIR, recipe: ChunkRecipe = DEFAULT_RECIPE
 ) -> tuple[list[Work], list[Document], list[Chunk]]:

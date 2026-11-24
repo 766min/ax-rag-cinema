@@ -1,6 +1,6 @@
 import pytest
 
-from evals.items import check_ready, gold_chunk_ids, to_eval_item
+from evals.items import check_ready, excerpt_core, gold_chunk_ids, map_citations, to_eval_item
 from shared.core.models import Chunk, EvalItem, SourceId
 from shared.core.schemas import Section
 
@@ -15,7 +15,7 @@ def _chunk(position: int, text: str, section_index: str = "1") -> Chunk:
         source_id=SourceId.WIKIPEDIA_EN,
         section=Section.PLOT,
         position=position,
-        total=2,
+        total=3,
         text=text,
         source_url="https://en.wikipedia.org/wiki/Avengers:_Infinity_War",
         source_ids={"team_document_id": "doc_c19334b35dac57b1", "section_index": section_index},
@@ -23,6 +23,15 @@ def _chunk(position: int, text: str, section_index: str = "1") -> Chunk:
 
 
 CHUNKS = [_chunk(1, "Opening scene on the Asgardian ship."), _chunk(2, EXCERPT_TEXT)]
+DOC = "doc_c19334b35dac57b1"
+
+
+def _sections(*texts: str) -> dict[tuple[str, str], str]:
+    """원문 절 = 청크들을 이어 붙인 글 (청크가 원문에서 잘려 나온 상황)."""
+    return {(DOC, "1"): "\n".join(texts)}
+
+
+SECTIONS = _sections(*(c.text for c in CHUNKS))
 
 
 def _raw(excerpt: str) -> dict[str, object]:
@@ -39,18 +48,55 @@ def _raw(excerpt: str) -> dict[str, object]:
 
 
 def test_발췌가_든_청크만_정답_키로_고른다() -> None:
-    assert gold_chunk_ids(_raw(EXCERPT_TEXT[:60] + "…"), CHUNKS) == ["tt4154756-wikipedia-plot-p02"]
+    raw = _raw(EXCERPT_TEXT[:60] + "…")
+    assert gold_chunk_ids(raw, CHUNKS, SECTIONS) == ["tt4154756-wikipedia-plot-p02"]
+    assert map_citations(raw, CHUNKS, SECTIONS)[0]["status"] == "contained"
 
 
-def test_발췌를_못_찾으면_절_전체를_정답_키로() -> None:
-    assert gold_chunk_ids(_raw("text that is not in any chunk at all, really."), CHUNKS) == [
-        "tt4154756-wikipedia-plot-p01",
-        "tt4154756-wikipedia-plot-p02",
-    ]
+def test_발췌를_못_찾으면_절_전체로_대신하지_않고_missing() -> None:
+    raw = _raw("xx text that is not in any chunk at all, really yy")
+    assert gold_chunk_ids(raw, CHUNKS, SECTIONS) == []
+    result = map_citations(raw, CHUNKS, SECTIONS)[0]
+    assert (result["status"], result["reason"]) == ("missing", "발췌가 원문 절에 없음")
+
+
+def test_발췌가_청크_경계에_걸치면_split_으로_겹치는_청크_모두() -> None:
+    part1 = "Thanos and his Black Order attack the Asgardian refugee ship near Earth"
+    part2 = "Loki offers the Tesseract to save Thor but is killed by Thanos soon after"
+    chunks = [_chunk(1, f"Intro. {part1}"), _chunk(2, f"{part2}. End.")]
+    sections = _sections(*(c.text for c in chunks))
+    result = map_citations(_raw(f"ab {part1} {part2} cd…"), chunks, sections)[0]
+
+    assert result["status"] == "split"
+    assert result["chunk_ids"] == [c.chunk_id for c in chunks]
+
+
+def test_경계_문장이_어느_청크에도_통째로_없어도_위치로_찾는다() -> None:
+    # 앞 60자 · 뒤 60자 방식으로는 못 찾던 경우 (경계가 두 조각 모두를 가로지름)
+    text = "A" * 50 + " " + "B" * 50 + " " + "C" * 50
+    chunks = [_chunk(1, text[:70]), _chunk(2, text[70:])]
+    sections = _sections(text)
+    sections[(DOC, "1")] = text
+    result = map_citations(_raw(f"x {text} y"), chunks, sections)[0]
+    assert result["status"] == "split"
+
+
+def test_발췌_일부가_어느_청크에도_없으면_partial() -> None:
+    kept = "Thanos and his Black Order attack the Asgardian refugee ship near Earth"
+    dropped = "and this sentence was dropped from every chunk"
+    chunks = [_chunk(1, kept)]
+    sections = {(DOC, "1"): f"{kept} {dropped}"}
+    result = map_citations(_raw(f"ab {kept} {dropped} cd"), chunks, sections)[0]
+    assert (result["status"], result["chunk_ids"]) == ("partial", [chunks[0].chunk_id])
+    assert result["uncovered_chars"] > 0
+
+
+def test_발췌의_잘린_첫_단어와_마지막_단어는_뺀다() -> None:
+    assert excerpt_core(".I.E.L.D. to power weapons, and the s…") == "to power weapons, and the"
 
 
 def test_문항_변환() -> None:
-    item = to_eval_item(_raw(EXCERPT_TEXT), CHUNKS, "v2")
+    item = to_eval_item(_raw(EXCERPT_TEXT), CHUNKS, SECTIONS, "v2")
     assert (item.question_id, item.key_facts, item.gold_index_version) == (
         "Q003",
         ["생명 절반", "인피니티 스톤"],
@@ -59,7 +105,7 @@ def test_문항_변환() -> None:
 
 
 def test_근거_없음_문항은_정답_키가_없다() -> None:
-    item = to_eval_item({**_raw(EXCERPT_TEXT), "answerable": False}, CHUNKS, "v2")
+    item = to_eval_item({**_raw(EXCERPT_TEXT), "answerable": False}, CHUNKS, SECTIONS, "v2")
     assert (item.gold_chunk_ids, item.gold_index_version) == ([], None)
 
 

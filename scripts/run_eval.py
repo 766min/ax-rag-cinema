@@ -20,6 +20,8 @@ from build.handoff import (  # noqa: E402
     dataset_fingerprint,
     index_version,
     load_handoff,
+    read_jsonl,
+    section_texts,
 )
 from evals.items import check_ready, load_eval_items  # noqa: E402
 from evals.recorder import Recorder  # noqa: E402
@@ -57,6 +59,11 @@ def main() -> None:
     finally:
         conn.close()
     versions = {meta.get("index_version") for _, meta in corpus.values()}
+    models = {meta.get("embedding_model") for _, meta in corpus.values()}
+    if models != {settings.EMBEDDING_MODEL}:
+        raise SystemExit(
+            f"컬렉션 {collection} 의 임베딩 모델 {models} 이 지금 설정({settings.EMBEDDING_MODEL})과 다릅니다."
+        )
     if versions != {version}:
         raise SystemExit(
             f"컬렉션 {collection} 의 색인 버전 {versions} 이 코드({version})와 다릅니다. "
@@ -64,7 +71,8 @@ def main() -> None:
         )
 
     _, _, chunks = load_handoff(recipe=recipe)
-    items = load_eval_items(chunks, version)
+    sections = section_texts(read_jsonl(HANDOFF_DIR / "documents.jsonl"))
+    items = load_eval_items(chunks, sections, version)
     if args.items:
         wanted = args.items.split(",")
         unknown = set(wanted) - {i.question_id for i in items}

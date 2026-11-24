@@ -2,7 +2,16 @@ from typing import Any
 
 from shared.core.models import Chunk, SourceId
 from shared.core.schemas import Section
-from store.indexer import fetch_existing, index_chunks, plan, row_id, to_document
+from store.indexer import (
+    count_tokens,
+    fetch_existing,
+    index_chunks,
+    load_corpus,
+    meta_values,
+    plan,
+    row_id,
+    to_document,
+)
 
 
 def _chunk(position: int, text: str = "body") -> Chunk:
@@ -50,20 +59,26 @@ def test_색인_버전이_바뀌면_다시_넣는다() -> None:
 
 
 class _Cursor:
-    def __init__(self, rows: list[tuple[Any, ...]]) -> None:
+    def __init__(self, rows: list[tuple[Any, ...]], tables: bool = True) -> None:
         self.rows = rows
+        self.tables = tables
         self.params: Any = None
+        self.queries = 0
 
-    def execute(self, sql: str, params: Any) -> None:
+    def execute(self, sql: str, params: Any = None) -> None:
         self.params = params
+        self.queries += 1
+
+    def fetchone(self) -> tuple[bool]:
+        return (self.tables,)
 
     def fetchall(self) -> list[tuple[Any, ...]]:
         return self.rows
 
 
 class _Conn:
-    def __init__(self, rows: list[tuple[Any, ...]]) -> None:
-        self.cur = _Cursor(rows)
+    def __init__(self, rows: list[tuple[Any, ...]], tables: bool = True) -> None:
+        self.cur = _Cursor(rows, tables)
 
     def cursor(self) -> _Cursor:
         return self.cur
@@ -129,3 +144,26 @@ def test_다시_돌리면_아무것도_하지_않는다() -> None:
 
 def test_행_ID는_컬렉션마다_다르다() -> None:
     assert row_id("movies_ck02", "a") != row_id("movies_ck03", "a")
+
+
+def test_색인_설정_메타데이터를_청크마다_남긴다() -> None:
+    doc = to_document(
+        _chunk(1), "v2", {"embedding_model": "emb-x", "embedding_input": "header+text"}
+    )
+    assert (doc.metadata["embedding_model"], doc.metadata["embedding_input"]) == (
+        "emb-x",
+        "header+text",
+    )
+
+
+def test_토큰_수는_tiktoken으로_센다() -> None:
+    encoding, counts = count_tokens(["hello world", ""], "text-embedding-3-small")
+    assert encoding == "cl100k_base"
+    assert counts[0] > 0 and counts[1] == 0
+
+
+def test_새_DB에_PGVector_테이블이_없으면_기존_행_0개로_본다() -> None:
+    conn = _Conn([("should-not-be-read", "h", "v")], tables=False)
+    assert fetch_existing(conn, "c") == {}
+    assert meta_values(conn, "c", "embedding_model") == set()
+    assert load_corpus(conn, "c") == {}
