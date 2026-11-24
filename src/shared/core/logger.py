@@ -19,7 +19,7 @@ _FILE_HANDLER_MARK = "_cineverse_file_handler"
 # src/shared/core/logger.py 기준 3단계 위 = 프로젝트 루트
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _LOG_MAX_BYTES = 5 * 1024 * 1024  # 5MB가 넘으면 새 파일로
-_LOG_BACKUP_COUNT = 3             # app.log.1 ~ .3 까지만 보관
+_LOG_BACKUP_COUNT = 3  # app.log.1 ~ .3 까지만 보관
 
 
 def _resolve_level(level: str | int | None) -> int:
