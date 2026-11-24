@@ -295,9 +295,19 @@ class RunRecord(BaseModel):
         None, description="실패 이유 (retrieval_error · generation_error 일 때만)"
     )
     latency_ms: dict[str, int] = Field(
-        default_factory=dict, description="단계별 시간 (rewrite, retrieve, rerank, generate, total)"
+        default_factory=dict,
+        description=(
+            "단계별 시간 (rewrite, retrieve, rerank, generate). total 은 전체를 따로 잰 값이라 "
+            "단계 이름으로 쓰지 않는다"
+        ),
     )
-    tokens: dict[str, int] = Field(default_factory=dict, description="토큰 수 (input, output)")
+    tokens: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "토큰 수. 합계 input · output 과 단계별 {단계}_input · {단계}_output "
+            "(evals.recorder 가 채움, LLM 호출이 없으면 빈 dict)"
+        ),
+    )
     embedding_model: str = Field(description="임베딩 모델 이름")
     llm_model: str = Field(description="답변 생성 모델 이름")
     prompt_version: str = Field(description="답변 프롬프트 버전 (예: p1)")
