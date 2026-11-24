@@ -1,13 +1,13 @@
 import asyncio
-import json
 from pathlib import Path
-from typing import Any
 
 import pytest
 from langchain_core.language_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage
 
-from evals.recorder import Recorder
+from evals.recorder import Recorder, measure
+from shared.core.models import EvidenceSource, RunRecord, Trace
+from shared.core.schemas import AnswerStatus, RetrievalMode
 from shared.core.timing import measure_time
 
 
@@ -23,115 +23,130 @@ def _fake_llm(*usages: tuple[int, int]) -> GenericFakeChatModel:
     return GenericFakeChatModel(messages=iter(messages))
 
 
-def _lines(rec: Recorder) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in rec.records_path.read_text(encoding="utf-8").splitlines()]
+def _record(run_id: str, **overrides: object) -> RunRecord:
+    fields: dict[str, object] = {
+        "run_id": run_id,
+        "question_id": "Q001",
+        "status": AnswerStatus.NO_EVIDENCE,
+        "embedding_model": "emb",
+        "llm_model": "llm",
+        "prompt_version": "p1",
+        "trace": Trace(
+            query_ko="질문",
+            query_normalized="질문",
+            retrieval_mode=RetrievalMode.VECTOR,
+            evidence_source=EvidenceSource.NONE,
+            index_version="i1",
+        ),
+    }
+    fields.update(overrides)
+    return RunRecord.model_validate(fields)
 
 
-def test_manifest_생성(tmp_path: Path) -> None:
-    rec = Recorder(
-        "exp1",
-        manifest={"variant_list": ["vector"], "dataset_version": "v1.1"},
-        results_dir=tmp_path,
-    )
-
-    manifest = json.loads((rec.run_dir / "manifest.json").read_text(encoding="utf-8"))
-    assert rec.run_dir.parent == tmp_path / "exp1"
-    assert manifest["experiment_id"] == "exp1"
-    assert manifest["run_id"] == rec.run_id
-    assert manifest["dataset_version"] == "v1.1"
+# --- measure(): 시간과 토큰 -----------------------------------------------------
 
 
-def test_run_id는_매번_달라서_덮어쓰지_않는다(tmp_path: Path) -> None:
-    a = Recorder("exp1", results_dir=tmp_path)
-    b = Recorder("exp1", results_dir=tmp_path)
-    assert a.run_dir != b.run_dir
-
-
-def test_단계별_시간과_토큰을_한줄로_기록(tmp_path: Path) -> None:
+def test_단계별_시간과_토큰을_모은다() -> None:
     llm = _fake_llm((100, 10), (800, 150))
 
-    @measure_time(label="query_rewrite")
+    @measure_time(label="rewrite")
     def rewrite(q: str) -> str:
         return str(llm.invoke(q).content)
 
-    @measure_time(label="vector_search")
-    def search(q: str) -> list[str]:
+    @measure_time(label="retrieve")
+    def retrieve(q: str) -> list[str]:
         return ["chunk-1"]
 
-    @measure_time(label="generation")
+    @measure_time(label="generate")
     def generate(q: str) -> str:
         return str(llm.invoke(q).content)
 
-    rec = Recorder("exp1", results_dir=tmp_path)
-    with rec.track("q07", "hybrid_rerank_rewrite") as result:
+    with measure() as m:
         q = rewrite("질문")
-        result["retrieved"] = search(q)
-        result["answer"] = generate(q)
+        retrieve(q)
+        generate(q)
 
-    [line] = _lines(rec)
-    assert (line["query_id"], line["variant"], line["status"]) == (
-        "q07",
-        "hybrid_rerank_rewrite",
-        "success",
-    )
-    assert [t["label"] for t in line["timings"]] == ["query_rewrite", "vector_search", "generation"]
-    assert line["end_to_end_ms"] >= 0
-    assert line["tokens"]["query_rewrite"]["input_tokens"] == 100
-    assert line["tokens"]["generation"]["output_tokens"] == 150
-    assert line["tokens"]["total"] == {
-        "input_tokens": 900,
-        "output_tokens": 160,
-        "total_tokens": 1060,
+    assert set(m.latency_ms) == {"rewrite", "retrieve", "generate", "total"}
+    assert m.tokens == {
+        "input": 900,
+        "output": 160,
+        "rewrite_input": 100,
+        "rewrite_output": 10,
+        "generate_input": 800,
+        "generate_output": 150,
     }
-    assert "vector_search" not in line["tokens"]  # LLM 을 안 부른 단계는 토큰 없음
-    assert line["result"] == {"retrieved": ["chunk-1"], "answer": "답"}
 
 
-def test_LLM_호출이_없으면_tokens는_None(tmp_path: Path) -> None:
-    rec = Recorder("exp1", results_dir=tmp_path)
-    with rec.track("q01", "vector"):
+def test_같은_단계를_여러번_실행하면_시간을_더한다() -> None:
+    @measure_time(label="generate")
+    def generate() -> None:
         pass
-    assert _lines(rec)[0]["tokens"] is None  # 0 이 아니라 '미측정'
+
+    with measure() as m:
+        generate()
+        generate()
+    assert list(m.latency_ms) == ["generate", "total"]
 
 
-def test_실패해도_기록하고_예외는_다시_던진다(tmp_path: Path) -> None:
-    rec = Recorder("exp1", results_dir=tmp_path)
-    with pytest.raises(TimeoutError), rec.track("q02", "vector"):
+def test_LLM_호출이_없으면_tokens는_비어있다() -> None:
+    with measure() as m:
+        pass
+    assert m.tokens == {}
+    assert "total" in m.latency_ms
+
+
+def test_예외가_나도_그때까지의_값은_채운다() -> None:
+    @measure_time(label="retrieve")
+    def retrieve() -> None:
         raise TimeoutError
 
-    [line] = _lines(rec)
-    assert (line["status"], line["error_type"]) == ("error", "TimeoutError")
+    with pytest.raises(TimeoutError), measure() as m:
+        retrieve()
+    assert "retrieve" in m.latency_ms
+    assert "total" in m.latency_ms
 
 
-def test_비동기_동시_실행에서도_질문별로_섞이지_않는다(tmp_path: Path) -> None:
-    rec = Recorder("exp1", results_dir=tmp_path)
-
-    @measure_time(label="generation")
+def test_비동기_동시_실행에서도_질문별로_섞이지_않는다() -> None:
+    @measure_time(label="generate")
     async def generate(q: str) -> str:
         await asyncio.sleep(0.01)
         return str((await _fake_llm((len(q), 1)).ainvoke(q)).content)
 
-    async def one(query_id: str, question: str) -> None:
-        with rec.track(query_id, "vector"):
-            await generate(question)
+    async def one(q: str) -> dict[str, int]:
+        with measure() as m:
+            await generate(q)
+        return m.tokens
 
-    async def main() -> None:
-        await asyncio.gather(one("short", "ab"), one("long", "abcdefgh"))
+    async def main() -> list[dict[str, int]]:
+        return await asyncio.gather(one("ab"), one("abcdefgh"))
 
-    asyncio.run(main())
-    by_id = {line["query_id"]: line for line in _lines(rec)}
-    assert by_id["short"]["tokens"]["total"]["input_tokens"] == 2
-    assert by_id["long"]["tokens"]["total"]["input_tokens"] == 8
-    assert len(by_id["short"]["timings"]) == len(by_id["long"]["timings"]) == 1
+    short, long = asyncio.run(main())
+    assert short["input"] == 2
+    assert long["input"] == 8
 
 
-def test_track_밖의_measure_time은_기록되지_않는다(tmp_path: Path) -> None:
-    @measure_time(label="outside")
-    def work() -> None:
+# --- Recorder: RunRecord 저장 --------------------------------------------------
+
+
+def test_RunRecord를_한줄씩_저장한다(tmp_path: Path) -> None:
+    rec = Recorder("2026-11-25-test-A", results_dir=tmp_path)
+    with measure() as m:
         pass
+    rec.write(_record(rec.run_id, latency_ms=m.latency_ms, tokens=m.tokens))
+    rec.write(_record(rec.run_id, question_id="Q002"))
 
-    rec = Recorder("exp1", results_dir=tmp_path)
-    work()
-    with rec.track("q03", "vector"):
-        pass
-    assert _lines(rec)[0]["timings"] == []
+    lines = rec.path.read_text(encoding="utf-8").splitlines()
+    assert rec.path == tmp_path / "2026-11-25-test-A.jsonl"
+    assert [RunRecord.model_validate_json(line).question_id for line in lines] == ["Q001", "Q002"]
+
+
+def test_같은_run_id는_덮어쓰지_않는다(tmp_path: Path) -> None:
+    Recorder("dup", results_dir=tmp_path)
+    with pytest.raises(FileExistsError):
+        Recorder("dup", results_dir=tmp_path)
+
+
+def test_다른_run_id_기록은_거부한다(tmp_path: Path) -> None:
+    rec = Recorder("mine", results_dir=tmp_path)
+    with pytest.raises(ValueError, match="run_id"):
+        rec.write(_record("other"))
