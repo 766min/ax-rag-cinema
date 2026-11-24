@@ -28,6 +28,9 @@ dev = [
 [tool.pytest.ini_options]
 # src 를 import 루트로 써서 테스트에서도 from shared.core ... 로 가져온다
 pythonpath = ["src"]
+# 테스트는 tests/ 에서만 찾는다. CI 의 실행 조건(ci.yml 의 hashFiles('tests/**'))과 범위를 맞추고,
+# data/ 같은 git 밖 폴더의 test_*.py 를 로컬 pytest 가 줍지 않게 한다 (#9 리뷰)
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
