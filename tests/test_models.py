@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from shared.core.models import (
+    Candidate,
     Chunk,
     Document,
     EvalItem,
@@ -48,6 +49,60 @@ def make_trace(**overrides: object) -> Trace:
     }
     fields.update(overrides)
     return Trace(**fields)
+
+
+def make_candidates() -> list[Candidate]:
+    """C 구성의 후보 3개 (재정렬로 2위가 1위로 올라옴)"""
+    return [
+        Candidate(
+            chunk_id="tt4154796-wikipedia-plot-p07",
+            rank=1,
+            rank_before_rerank=2,
+            vector_score=0.81,
+            bm25_score=12.4,
+            rrf_score=0.032,
+            rerank_score=0.97,
+        ),
+        Candidate(
+            chunk_id="tt4154796-wikipedia-plot-p06",
+            rank=2,
+            rank_before_rerank=1,
+            vector_score=0.84,
+            bm25_score=13.1,
+            rrf_score=0.033,
+            rerank_score=0.42,
+        ),
+        Candidate(
+            chunk_id="tt0371746-wikipedia-plot-p01",
+            rank=3,
+            rank_before_rerank=3,
+            vector_score=0.62,
+            bm25_score=4.0,
+            rrf_score=0.016,
+            rerank_score=0.05,
+        ),
+    ]
+
+
+def make_record(**overrides: object) -> RunRecord:
+    """정상 답변 기록 하나 (1위 청크를 인용)"""
+    fields: dict[str, object] = {
+        "run_id": "2026-11-25-test-C",
+        "question_id": "Q001",
+        "status": "answered",
+        "candidates": make_candidates(),
+        "cited_chunk_ids": ["tt4154796-wikipedia-plot-p07"],
+        "answer": "네, 토니 스타크는 엔드게임에서 스냅 뒤 숨집니다 [tt4154796-wikipedia-plot-p07].",
+        "latency_ms": {"retrieve": 410, "rerank": 820, "generate": 2780, "total": 4010},
+        "tokens": {"input": 1520, "output": 210},
+        "embedding_model": "text-embedding-3-large",
+        "llm_model": "gpt-6-luna",
+        "prompt_version": "p1",
+        "params": {"min_chars": 150, "top_k": 20},
+        "trace": make_trace(),
+    }
+    fields.update(overrides)
+    return RunRecord(**fields)
 
 
 # ---------- 청크 ID 규칙 (architecture.md §3) ----------
@@ -142,16 +197,72 @@ def test_trace_rejects_unknown_values(overrides: dict[str, object]) -> None:
         make_trace(**overrides)
 
 
-def test_run_record_requires_trace() -> None:
-    # 구성 · 색인 버전은 trace 에만 있으므로 trace 가 빠진 기록은 비교표에 쓸 수 없다
+# ---------- 평가 기록 (architecture.md §7 · §8) ----------
+
+
+@pytest.mark.parametrize("missing", ["trace", "prompt_version", "embedding_model", "llm_model"])
+def test_run_record_requires_versions(missing: str) -> None:
+    # 구성 · 버전이 빠진 기록은 내일 비교표에서 어느 실행인지 가릴 수 없다
+    fields = make_record().model_dump()
+    del fields[missing]
     with pytest.raises(ValidationError):
-        RunRecord(
-            run_id="r",
-            question_id="Q001",
-            status="answered",
-            embedding_model="text-embedding-3-large",
-            llm_model="gpt-6-luna",
-        )
+        RunRecord(**fields)
+
+
+@pytest.mark.parametrize(
+    ("status", "cited", "error"),
+    [
+        ("answered", ["tt4154796-wikipedia-plot-p07"], None),
+        ("no_evidence", [], None),
+        ("retrieval_error", [], "DB 연결 시간 초과"),
+        ("generation_error", [], "LLM 429"),
+    ],
+)
+def test_run_record_accepts_each_status(status: str, cited: list[str], error: str | None) -> None:
+    record = make_record(status=status, cited_chunk_ids=cited, error=error)
+    assert record.status == status
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"cited_chunk_ids": ["tt9999999-wikipedia-plot-p01"]},  # 후보에 없는 청크 인용 (§7)
+        {"cited_chunk_ids": []},  # answered 인데 인용 없음 → no_evidence 여야 함
+        {"status": "no_evidence"},  # no_evidence 인데 인용 있음
+        {"status": "generation_error", "cited_chunk_ids": []},  # 실패인데 이유 없음
+        {"error": "이유"},  # 성공인데 실패 이유가 있음
+    ],
+)
+def test_run_record_rejects_status_mismatch(overrides: dict[str, object]) -> None:
+    with pytest.raises(ValidationError):
+        make_record(**overrides)
+
+
+@pytest.mark.parametrize("ranks", [[1, 3], [1, 1], [0, 1], [2, 3]])
+def test_run_record_rejects_broken_ranks(ranks: list[int]) -> None:
+    candidates = [
+        {"chunk_id": f"tt0371746-wikipedia-plot-p{n:02d}", "rank": r}
+        for n, r in enumerate(ranks, start=1)
+    ]
+    with pytest.raises(ValidationError):
+        make_record(candidates=candidates, cited_chunk_ids=[candidates[0]["chunk_id"]])
+
+
+def test_run_record_rejects_duplicate_candidates() -> None:
+    same = "tt0371746-wikipedia-plot-p01"
+    candidates = [{"chunk_id": same, "rank": 1}, {"chunk_id": same, "rank": 2}]
+    with pytest.raises(ValidationError):
+        make_record(candidates=candidates, cited_chunk_ids=[same])
+
+
+def test_top_chunk_ids_follow_final_rank() -> None:
+    # 후보가 어떤 순서로 저장돼도 Hit@k 는 최종 순위로 잰다
+    record = make_record(candidates=list(reversed(make_candidates())))
+    assert record.top_chunk_ids(2) == [
+        "tt4154796-wikipedia-plot-p07",
+        "tt4154796-wikipedia-plot-p06",
+    ]
+    assert len(record.top_chunk_ids()) == 3  # 후보가 5개보다 적으면 있는 만큼
 
 
 # ---------- JSONL 로 저장하고 다시 읽어도 같은가 ----------
@@ -176,19 +287,7 @@ def test_models_survive_json_round_trip() -> None:
         revid=1386653533,
         doc_type="film",
     )
-    record = RunRecord(
-        run_id="2026-11-25-test",
-        question_id="Q001",
-        status="answered",
-        retrieved_chunk_ids=["tt0371746-wikipedia-plot-p01"],
-        latency_ms={"retrieve": 410, "total": 4010},
-        tokens={"input": 1520, "output": 210},
-        embedding_model="text-embedding-3-large",
-        llm_model="gpt-6-luna",
-        params={"min_chars": 150},
-        trace=make_trace(),
-    )
-    for model in (work, document, make_chunk(), record):
+    for model in (work, document, make_chunk(), make_record()):
         assert type(model).model_validate_json(model.model_dump_json()) == model
 
 

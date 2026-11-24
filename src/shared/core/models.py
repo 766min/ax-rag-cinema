@@ -162,22 +162,42 @@ class Trace(BaseModel):
     index_version: str = Field(description="답할 때의 색인 버전 (§4.2)")
 
 
+class Candidate(BaseModel):
+    """검색 후보 한 개와 점수 (§8 후보와 점수 · 재정렬 전후 순위). 구성에 없는 점수는 비운다"""
+
+    chunk_id: str = Field(description="후보 청크 ID")
+    rank: int = Field(ge=1, description="최종 순위 (1부터). 재정렬을 하면 재정렬 뒤 순위")
+    rank_before_rerank: int | None = Field(None, ge=1, description="재정렬 전 순위 (C 구성)")
+    vector_score: float | None = Field(None, description="벡터 유사도 점수")
+    bm25_score: float | None = Field(None, description="BM25 점수 (B · C 구성)")
+    rrf_score: float | None = Field(None, description="RRF 결합 점수 (B · C 구성)")
+    rerank_score: float | None = Field(None, description="Cross-Encoder 점수 (C 구성)")
+
+
 class RunRecord(BaseModel):
-    """평가 문항 하나를 돌린 기록 (results/ 의 JSONL 한 줄). 구성 · 색인 버전은 trace 에 있다"""
+    """평가 문항 하나를 돌린 기록 (results/ 의 JSONL 한 줄, §8). 구성 · 색인 버전은 trace 에 있다"""
 
     run_id: str = Field(description="실행 묶음 ID (예: 2026-11-25-minji-C)")
     question_id: str = Field(description="평가 문항 ID")
     status: AnswerStatus = Field(description="처리 상태")
-    retrieved_chunk_ids: list[str] = Field(
-        default_factory=list, description="답변에 쓰인 청크 ID (순위 순)"
+    candidates: list[Candidate] = Field(
+        default_factory=list, description="검색 후보와 점수. Hit@5 는 rank 1~5 를 본다"
     )
-    answer: str | None = Field(None, description="생성된 답변")
+    cited_chunk_ids: list[str] = Field(
+        default_factory=list, description="답변이 인용한 청크 ID (후보에 없는 인용을 버린 뒤, §7)"
+    )
+    answer: str | None = Field(None, description="생성된 답변 원문")
+    error: str | None = Field(
+        None, description="실패 이유 (retrieval_error · generation_error 일 때만)"
+    )
     latency_ms: dict[str, int] = Field(
         default_factory=dict, description="단계별 시간 (rewrite, retrieve, rerank, generate, total)"
     )
     tokens: dict[str, int] = Field(default_factory=dict, description="토큰 수 (input, output)")
     embedding_model: str = Field(description="임베딩 모델 이름")
     llm_model: str = Field(description="답변 생성 모델 이름")
+    prompt_version: str = Field(description="답변 프롬프트 버전 (예: p1)")
+    alias_version: str | None = Field(None, description="이름 사전 버전 (사전을 안 쓰면 비움)")
     params: dict[str, Any] = Field(
         default_factory=dict, description="각자 바꿔 본 설정 (예: {'min_chars': 300, 'top_k': 10})"
     )
@@ -186,3 +206,28 @@ class RunRecord(BaseModel):
         default_factory=lambda: datetime.now(UTC),
         description="기록 시각 (UTC)",
     )
+
+    def top_chunk_ids(self, k: int = 5) -> list[str]:
+        """최종 순위 상위 k개 청크 ID. Hit@k 를 잴 때 쓴다"""
+        return [c.chunk_id for c in sorted(self.candidates, key=lambda c: c.rank)[:k]]
+
+    @model_validator(mode="after")
+    def _check_record(self) -> "RunRecord":
+        """§7 규칙과 어긋난 기록을 남길 때 바로 막는다. 내일 각자 결과를 한 표로 합치기 위해서다"""
+        ranks = sorted(c.rank for c in self.candidates)
+        if ranks != list(range(1, len(ranks) + 1)):
+            raise ValueError(f"candidates 의 rank 는 1부터 빠짐없이 한 번씩이어야 합니다: {ranks}")
+        candidate_ids = [c.chunk_id for c in self.candidates]
+        if len(set(candidate_ids)) != len(candidate_ids):
+            raise ValueError("candidates 에 같은 청크가 두 번 들어 있습니다")
+        unknown = [cid for cid in self.cited_chunk_ids if cid not in set(candidate_ids)]
+        if unknown:
+            raise ValueError(f"후보에 없는 청크를 인용했습니다 (§7): {unknown}")
+        if self.status == AnswerStatus.ANSWERED and not self.cited_chunk_ids:
+            raise ValueError("answered 인데 인용이 없습니다. 인용이 없으면 no_evidence 입니다 (§7)")
+        if self.status == AnswerStatus.NO_EVIDENCE and self.cited_chunk_ids:
+            raise ValueError("no_evidence 인데 인용이 있습니다")
+        failed = self.status in (AnswerStatus.RETRIEVAL_ERROR, AnswerStatus.GENERATION_ERROR)
+        if failed != (self.error is not None):
+            raise ValueError("error 는 retrieval_error · generation_error 일 때만, 반드시 적습니다")
+        return self
