@@ -37,6 +37,7 @@ Thumbs.db
 # 임시 파일
 tmp/
 *.log
+logs/
 
 # 팀 데이터 공간
 data/
