@@ -85,6 +85,8 @@ def setup_logging(level: str | int | None = None, log_file: str | None = None) -
         root.addHandler(handler)
 
     file_path = log_file or os.getenv("LOG_FILE")
+    # shortcut: 파일 핸들러는 프로세스당 1개, 이미 있으면 다른 경로를 줘도 무시한다.
+    # 실행별 로그 파일이 필요해지면 교체하도록 바꾼다.
     has_file = any(getattr(h, _FILE_HANDLER_MARK, False) for h in root.handlers)
     if file_path and not has_file:
         path = Path(file_path)
@@ -113,5 +115,3 @@ def get_logger(name: str | None = None) -> logging.Logger:
 # 학습 중에는 import만 해도 INFO가 보이도록 기본 설정을 한 번 해 둔다.
 # 다시 불러도 핸들러는 늘지 않고, 시작점에서 setup_logging("debug")처럼 레벨만 바꿀 수 있다.
 setup_logging()
-
-logger = get_logger()  # 기존 코드 호환용

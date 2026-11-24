@@ -42,10 +42,6 @@ def clean_root(monkeypatch: pytest.MonkeyPatch) -> Iterator[logging.Logger]:
     root.setLevel(saved_level)
 
 
-def _our_handlers(root: logging.Logger) -> list[logging.Handler]:
-    return [h for h in root.handlers if _is_ours(h)]
-
-
 # --- 핸들러 중복 방지 ---------------------------------------------------------
 
 
@@ -56,7 +52,7 @@ def test_여러번_호출해도_로그는_한번만(
     log_mod.setup_logging()
     log_mod.get_logger("t").info("한번")
 
-    assert len(_our_handlers(clean_root)) == 1
+    assert len([h for h in clean_root.handlers if _is_ours(h)]) == 1
     assert capsys.readouterr().err.count("한번") == 1
 
 
