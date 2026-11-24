@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -10,7 +11,7 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # 우리 코드를 DEBUG로 켜도 시끄럽지 않게 WARNING으로 고정할 외부 라이브러리
 # (httpx는 API 호출 횟수를 INFO로 보여 줘서 학습용으로 남겨 둔다)
-_NOISY_LOGGERS = ("httpcore", "urllib3", "openai", "langfuse")
+_NOISY_LOGGERS = ("httpcore", "urllib3", "openai")
 
 # 우리가 붙인 핸들러에 다는 표시 (중복 등록 방지용)
 _HANDLER_MARK = "_cineverse_handler"
@@ -20,6 +21,40 @@ _FILE_HANDLER_MARK = "_cineverse_file_handler"
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _LOG_MAX_BYTES = 5 * 1024 * 1024  # 5MB가 넘으면 새 파일로
 _LOG_BACKUP_COUNT = 3  # app.log.1 ~ .3 까지만 보관
+
+# 로그에서 가릴 비밀값 패턴: (정규식, 바꿀 문자열)
+_SECRET_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"\b(sk-)[A-Za-z0-9_\-]{8,}"), r"\1***"),  # OpenAI 키
+    (re.compile(r"(?i)\b(bearer\s+)[A-Za-z0-9._~+/=\-]+"), r"\1***"),  # 인증 헤더
+    (re.compile(r"(://[^:/\s@]+:)[^\s/]+@"), r"\1***@"),  # URL 속 비밀번호
+]
+# 이름이 이렇게 끝나는 환경변수의 값은 그대로 찾아서 가린다 (접두어 없는 키 대비)
+_SECRET_ENV_SUFFIXES = ("_KEY", "_SECRET", "_TOKEN", "_PASSWORD")
+
+
+class _MaskingFormatter(logging.Formatter):
+    """완성된 로그 한 줄(traceback 포함)에서 비밀값을 *** 로 가린다."""
+
+    def __init__(self, fmt: str, datefmt: str, secrets: list[str]) -> None:
+        super().__init__(fmt, datefmt)
+        self._secrets = secrets
+
+    def format(self, record: logging.LogRecord) -> str:
+        text = super().format(record)
+        for value in self._secrets:
+            text = text.replace(value, "***")
+        for pattern, replacement in _SECRET_PATTERNS:
+            text = pattern.sub(replacement, text)
+        return text
+
+
+def _collect_env_secrets() -> list[str]:
+    """비밀값으로 보이는 환경변수의 값을 모은다. 8자 미만은 오탐이 많아 제외한다."""
+    return [
+        value
+        for key, value in os.environ.items()
+        if key.upper().endswith(_SECRET_ENV_SUFFIXES) and len(value) >= 8
+    ]
 
 
 def _resolve_level(level: str | int | None) -> int:
@@ -40,7 +75,7 @@ def setup_logging(level: str | int | None = None, log_file: str | None = None) -
     load_dotenv()  # 이미 있는 환경변수는 덮어쓰지 않는다
 
     root = logging.getLogger()
-    formatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
+    formatter = _MaskingFormatter(LOG_FORMAT, DATE_FORMAT, _collect_env_secrets())
 
     already = any(getattr(h, _HANDLER_MARK, False) for h in root.handlers)
     if not already:
