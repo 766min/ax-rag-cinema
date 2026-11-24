@@ -41,3 +41,6 @@ logs/
 
 # 팀 데이터 공간
 data/
+
+# 시험 실행 기록 (run_id 끝에 -try 를 붙인 파일, 최종 run 만 커밋)
+results/*-try*.jsonl
