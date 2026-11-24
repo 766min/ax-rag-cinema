@@ -2,3 +2,7 @@ title = "ax-rag-cinema 비밀정보 검사"
 
 [extend]
 useDefault = true
+
+[[allowlists]] # 작성자: bsi
+description = "로거 마스킹 테스트의 가짜 비밀값 (실제 키 아님)"
+paths = ['''^tests/shared/test_logger\.py$''']
