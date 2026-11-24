@@ -8,28 +8,30 @@ T = TypeVar("T")
 
 class AnswerStatus(StrEnum):
     """답변 처리 상태"""
-    ANSWERED = "answered" # 근거를 찾아 답변함
+    ANSWERED = "answered" # 문서 근거를 찾아 답변함
     NO_EVIDENCE = "no_evidence" # 정상적인 근거 없음(문서에 없음)
     RETRIEVAL_ERROR = "retrieval_error" # 검색(DB·임베딩) 호출 실패
     GENERATION_ERROR = "generation_error" # 답변 모델 호출 실패
+    WEB_UNVERIFIED = "web_unverified" # 웹 검색 결과로 답함(미검증, 평가에는 나오지 않음)
 
 
 class Section(StrEnum):
-    """Wikipedia 영화 문서의 절 구분"""
-    PLOT = "plot" # 줄거리
-    CAST = "cast" # 출연진
-    PRODUCTION = "production" # 제작
-    RELEASE = "release" # 개봉, 흥행
-    RECEPTION = "reception" # 평가
-    INFOBOX = "infobox" # 정보상자(감독, 개봉일 등)
-    OTHER = "other" # 그 외
+    """청크 종류 (architecture.md §3)"""
+    SYNOPSIS = "synopsis" # 스포일러 없는 짧은 소개
+    PLOT = "plot" # 줄거리 문단
+    INTRO = "intro" # 인물 소개 문단 (두 편 이상 나온 인물)
+    CONNECTION = "connection" # 연결 카드 (앞뒤 작품, 선행작 후보)
+    CARD = "card" # 작품 카드 한 줄 (모든 작품)
+    WEB = "web" # 웹 검색 결과 스니펫 (웹 컬렉션 전용)
 
 
 class RetrievalMode(StrEnum):
-    """검색 구성 (평가 A/B/C와 같은 뜻)"""
+    """검색 구성 (problem.md §9.2)"""
     VECTOR = "vector" # A: Vector만
-    HYBRID = "hybrid" # B : BM25 + Vector (RRF 결합)
-    HYBRID_RERANK = "hybrid_rerank" # C: hybrid + Re-ranking
+    HYBRID = "hybrid" # B: BM25 + Vector (RRF 결합)
+    HYBRID_RERANK = "hybrid_rerank" # C: Hybrid + Re-ranking
+    HYBRID_RERANK_REWRITE = "hybrid_rerank_rewrite" # C+리라이트: C + 쿼리 리라이트
+    HYBRID_RERANK_ENRICHED = "hybrid_rerank_enriched" # D: C + LLM 가공 색인
 
 
 class APIResponse(BaseModel, Generic[T]):
