@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+# 같은 PR 에 연달아 push 하면 이전 실행은 취소한다 (main/dev push 는 취소하지 않는다)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    name: lint (ruff)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      # uv 가 .python-version 을 읽어 같은 Python 을 설치한다
+      - uses: astral-sh/setup-uv@v10.4.0
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: ruff check
+        run: uv run --locked ruff check .
+      - name: ruff format
+        run: uv run --locked ruff format --check .
+
+  typecheck:
+    name: typecheck (mypy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.4.0
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: mypy
+        run: uv run --locked mypy src
+
+  test:
+    name: test (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.4.0
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      # 테스트가 0개이면 pytest 가 실패(종료 코드 5)하므로, 테스트 파일이 있을 때만 돌린다.
+      # job 전체가 아니라 step 만 건너뛰어서 이 job 은 항상 실행되고 결과가 남는다.
+      - name: pytest
+        if: hashFiles('tests/**/test_*.py', 'tests/**/*_test.py') != ''
+        run: uv run --locked pytest
+      - name: 테스트가 아직 없음
+        if: hashFiles('tests/**/test_*.py', 'tests/**/*_test.py') == ''
+        run: echo '테스트 파일이 없어 pytest 를 실행하지 않았습니다.' >> "$GITHUB_STEP_SUMMARY"
