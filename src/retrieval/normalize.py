@@ -9,7 +9,8 @@ from pathlib import Path
 
 from shared.core.models import Alias
 
-ALIAS_VERSION = "handoff-aliases-v1"
+# 팀 데이터셋 aliases.jsonl 의 SHA-256 앞 8자 (V0 handoff 판과 내용이 같다)
+ALIAS_VERSION = "dataset-aliases@830ed44f"
 
 
 def load_aliases(path: Path) -> list[Alias]:
