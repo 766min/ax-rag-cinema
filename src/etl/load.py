@@ -45,13 +45,19 @@ def index_text(chunk: Chunk) -> str:
 
 
 def to_document(
-    chunk: Chunk, index_version: str, index_meta: dict[str, str] | None = None
+    chunk: Chunk,
+    index_version: str,
+    index_meta: dict[str, str] | None = None,
+    page_content: str | None = None,
 ) -> Document:
-    """index_meta: 임베딩 모델 · 입력 구성 등 색인 설정 (청크마다 같이 저장해 섞임을 막는다)."""
+    """index_meta: 임베딩 모델 · 입력 구성 등 색인 설정 (청크마다 같이 저장해 섞임을 막는다).
+
+    page_content: 색인 글을 바꿀 때만 (D 가공 색인). 없으면 머리말 + 본문.
+    """
     metadata: dict[str, Any] = chunk.model_dump(mode="json", exclude={"text"})
     metadata["index_version"] = index_version
     metadata.update(index_meta or {})
-    return Document(page_content=index_text(chunk), metadata=metadata)
+    return Document(page_content=page_content or index_text(chunk), metadata=metadata)
 
 
 def count_tokens(texts: list[str], model: str) -> tuple[str, list[int]]:
@@ -123,6 +129,7 @@ def index_chunks(
     index_version: str,
     batch_size: int = 200,
     index_meta: dict[str, str] | None = None,
+    page_texts: dict[str, str] | None = None,
 ) -> dict[str, int]:
     """증분 적재. 반환값: 전체 · 추가 · 건너뜀 · 삭제 개수."""
     existing = fetch_existing(conn, collection)
@@ -134,7 +141,10 @@ def index_chunks(
     for start in range(0, len(to_add), batch_size):
         batch = to_add[start : start + batch_size]
         store.add_documents(
-            [to_document(c, index_version, index_meta) for c in batch],
+            [
+                to_document(c, index_version, index_meta, (page_texts or {}).get(c.chunk_id))
+                for c in batch
+            ],
             ids=[row_id(collection, c.chunk_id) for c in batch],
         )
         logger.info("적재 %d / %d", start + len(batch), len(to_add))

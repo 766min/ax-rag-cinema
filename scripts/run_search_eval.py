@@ -95,6 +95,7 @@ def main() -> None:
     parser.add_argument("--items", default=DEV_ITEMS)
     parser.add_argument("--run-id", help="생략하면 {날짜-시각}")
     parser.add_argument("--modes", default="vector", help=f"쉼표 구분: {','.join(STAGE_MODES)}")
+    parser.add_argument("--enriched", action="store_true", help="D 가공 색인 컬렉션을 검색한다")
     args = parser.parse_args()
     modes = args.modes.split(",")
     if set(modes) - set(STAGE_MODES):
@@ -164,10 +165,15 @@ def main() -> None:
             for recipe in recipes:
                 version = index_version(recipe, fingerprint)
                 collection = collection_for(settings.MOVIE_COLLECTION, recipe, fingerprint)
+                chunks = build_chunks(data, recipe)
+                if args.enriched:
+                    from etl.enrich import enriched_index_version
+
+                    version = enriched_index_version(version)
+                    collection = collection_for(settings.ENRICHED_COLLECTION, recipe, fingerprint)
                 stored = meta_values(conn, collection, "index_version")
                 if stored != {version}:
                     raise SystemExit(f"{collection} 의 색인 버전 {stored} ≠ {version}")
-                chunks = build_chunks(data, recipe)
                 items = {
                     i.question_id: i
                     for i in load_eval_items(chunks, data.sections, version)
@@ -256,6 +262,7 @@ def main() -> None:
                 "exp": args.exp,
                 "run_id": run_id,
                 "modes": modes,
+                "index": "D (LLM 가공 색인)" if args.enriched else "원문",
                 "rrf_k": 60,
                 "reranker": reranker_meta or None,
                 "pool": POOL,

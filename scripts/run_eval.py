@@ -23,7 +23,7 @@ from etl.dataset import (  # noqa: E402
     index_version,
     load_dataset,
 )
-from etl.load import load_corpus  # noqa: E402
+from etl.load import index_text, load_corpus  # noqa: E402
 from evals.grading import grading_rows, write_csv  # noqa: E402
 from evals.items import check_ready, load_eval_items, map_citations, read_question_set  # noqa: E402
 from evals.provenance import results_dir, run_info  # noqa: E402
@@ -44,6 +44,7 @@ MODES = {
     "hybrid": RetrievalMode.HYBRID,
     "hybrid_rerank": RetrievalMode.HYBRID_RERANK,  # Cross-Encoder: sentence-transformers 겹쳐 설치
     "hybrid_rerank_rewrite": RetrievalMode.HYBRID_RERANK_REWRITE,  # + --query rewrite
+    "hybrid_rerank_enriched": RetrievalMode.HYBRID_RERANK_ENRICHED,  # D: 가공 색인 컬렉션
 }
 
 
@@ -72,6 +73,12 @@ def main() -> None:
     version = index_version(recipe, fingerprint)
 
     collection = collection_for(settings.MOVIE_COLLECTION, recipe, fingerprint)
+    enriched = mode == RetrievalMode.HYBRID_RERANK_ENRICHED
+    if enriched:
+        from etl.enrich import enriched_index_version
+
+        version = enriched_index_version(version)
+        collection = collection_for(settings.ENRICHED_COLLECTION, recipe, fingerprint)
     conn = get_raw_db_connection()
     try:
         corpus = load_corpus(conn, collection)
@@ -91,6 +98,7 @@ def main() -> None:
 
     data = load_dataset()
     chunks = build_chunks(data, recipe)
+    original = {c.chunk_id: index_text(c) for c in chunks}
     sections = data.sections
     items = load_eval_items(chunks, sections, version)
     if args.items:
@@ -109,7 +117,11 @@ def main() -> None:
     if mode == RetrievalMode.HYBRID_RERANK_REWRITE and args.query != "rewrite":
         raise SystemExit("hybrid_rerank_rewrite 는 --query rewrite 와 함께 씁니다")
     reranker = None
-    if mode in (RetrievalMode.HYBRID_RERANK, RetrievalMode.HYBRID_RERANK_REWRITE):
+    if mode in (
+        RetrievalMode.HYBRID_RERANK,
+        RetrievalMode.HYBRID_RERANK_REWRITE,
+        RetrievalMode.HYBRID_RERANK_ENRICHED,
+    ):
         from retrieval.refine import CrossEncoderReranker
 
         reranker = CrossEncoderReranker()
@@ -134,7 +146,10 @@ def main() -> None:
         mode=mode,
         recorder=Recorder(run_id, results_dir=str(root)),
         retriever=Retriever(
-            get_vector_store(collection), {cid: text for cid, (text, _) in corpus.items()}
+            get_vector_store(collection),
+            {cid: text for cid, (text, _) in corpus.items()},
+            # D 는 답변 문맥에 원문(머리말 + 본문)만 넣는다. 가공 정보는 검색 · 재정렬에만
+            context=original if enriched else None,
         ),
         normalizer=AliasNormalizer(aliases),
         llm=get_llm(),
@@ -155,6 +170,7 @@ def main() -> None:
                 "code_sha256": info["code_sha256"],
                 "eval_item_ids": [i.question_id for i in items],
                 "query_variant": args.query or "alias (V1 기본)",
+                "index": "D (LLM 가공 색인)" if enriched else "원문",
                 "reranker_device": getattr(reranker, "device", None),
             },
         ),
@@ -187,7 +203,7 @@ def main() -> None:
             ensure_ascii=False,
             indent=2,
         )
-    texts = {cid: text for cid, (text, _) in corpus.items()}
+    texts = original if enriched else {cid: text for cid, (text, _) in corpus.items()}
     write_csv(
         out / "grading.csv",
         grading_rows(recipe.recipe_id, items, records, raw_by_id, texts, args.top_k),

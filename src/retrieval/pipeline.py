@@ -23,8 +23,13 @@ SUPPORTED_MODES = (
     RetrievalMode.HYBRID,
     RetrievalMode.HYBRID_RERANK,
     RetrievalMode.HYBRID_RERANK_REWRITE,
+    RetrievalMode.HYBRID_RERANK_ENRICHED,  # D: 검색 방식은 C 와 같고 색인(컬렉션)만 다르다
 )
-RERANK_MODES = (RetrievalMode.HYBRID_RERANK, RetrievalMode.HYBRID_RERANK_REWRITE)
+RERANK_MODES = (
+    RetrievalMode.HYBRID_RERANK,
+    RetrievalMode.HYBRID_RERANK_REWRITE,
+    RetrievalMode.HYBRID_RERANK_ENRICHED,
+)
 
 
 @dataclass
@@ -47,10 +52,17 @@ class PipelineResult:
 class Retriever:
     """한 컬렉션을 검색한다. BM25 색인과 본문은 처음에 한 번만 만든다."""
 
-    def __init__(self, store: VectorStore, corpus: dict[str, str]) -> None:
+    def __init__(
+        self,
+        store: VectorStore,
+        corpus: dict[str, str],
+        context: dict[str, str] | None = None,
+    ) -> None:
         self.store = store
-        self.texts = corpus  # chunk_id → 색인 글 (머리말 + 본문)
+        self.texts = corpus  # chunk_id → 색인 글 (BM25 · 재정렬 입력)
         self.bm25 = BM25Index(corpus.items())
+        # 답변 문맥 글. D(가공 색인)는 색인 글에 LLM 가공 정보가 붙어 있어 원문만 따로 준다
+        self.context = context or corpus
 
     def _vector(self, query: str, k: int) -> list[Hit]:
         return vector_search(self.store, query, k)
@@ -107,7 +119,7 @@ def run_question(
         failed = AnswerResult(AnswerStatus.RETRIEVAL_ERROR, "")
         return PipelineResult(query, [], failed, error=f"{type(exc).__name__}: {exc}")
 
-    contexts = [(c.chunk_id, retriever.texts[c.chunk_id]) for c in candidates[: config.top_k]]
+    contexts = [(c.chunk_id, retriever.context[c.chunk_id]) for c in candidates[: config.top_k]]
     try:
         answer = _generate(question, contexts, llm)
     except Exception as exc:

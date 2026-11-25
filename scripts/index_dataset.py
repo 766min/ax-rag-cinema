@@ -44,6 +44,11 @@ def main() -> None:
     parser.add_argument("--recipe", choices=RECIPES, required=True)
     parser.add_argument("--dry-run", action="store_true", help="적재하지 않고 범위 · 토큰만 본다")
     parser.add_argument("--results-version", required=True, help="결과 버전 (예: v1)")
+    parser.add_argument(
+        "--enriched",
+        action="store_true",
+        help="D: 팀 가공본을 색인 글에 덧붙여 ENRICHED_COLLECTION 기반 컬렉션에 적재 (원문 컬렉션은 그대로)",
+    )
     args = parser.parse_args()
     recipe = RECIPES[args.recipe]
     out = results_dir(args.results_version) / "index"
@@ -62,6 +67,20 @@ def main() -> None:
     data = load_dataset()
     documents = scope_documents(data)
     chunks = build_chunks(data, recipe)
+    page_texts: dict[str, str] | None = None
+    enrich_stats: dict[str, object] | None = None
+    if args.enriched:
+        from etl.enrich import build_enriched_index
+
+        target = build_enriched_index(
+            data,
+            chunks,
+            collection_for(settings.ENRICHED_COLLECTION, recipe, fingerprint),
+            version,
+        )
+        collection, version, page_texts = target.collection, target.version, target.page_texts
+        enrich_stats = target.stats
+        index_meta["embedding_input"] = "header+text+team_enrichment (plot 만)"
 
     conn = get_raw_db_connection()
     try:
@@ -81,7 +100,10 @@ def main() -> None:
                 "레시피 ID 를 새로 정하세요."
             )
         to_add, to_delete = plan(chunks, existing, version)
-        encoding, tokens = count_tokens([index_text(c) for c in to_add], settings.EMBEDDING_MODEL)
+        encoding, tokens = count_tokens(
+            [(page_texts or {}).get(c.chunk_id) or index_text(c) for c in to_add],
+            settings.EMBEDDING_MODEL,
+        )
         scope = {
             "recipe": recipe.recipe_id,
             "index_version": version,
@@ -94,6 +116,7 @@ def main() -> None:
             "embedding_model": settings.EMBEDDING_MODEL,
             "embedding_tokens_estimate": sum(tokens),
             "tokenizer": encoding,
+            "enrichment": enrich_stats,
         }
         print(json.dumps(scope, ensure_ascii=False, indent=2))
         if args.dry_run:
@@ -107,13 +130,15 @@ def main() -> None:
             collection,
             version,
             index_meta=index_meta,
+            page_texts=page_texts,
         )
         seconds = round(time.perf_counter() - started, 2)
     finally:
         conn.close()
 
     out.mkdir(parents=True, exist_ok=True)
-    path = out / f"{datetime.now():%Y%m%d-%H%M%S}-{recipe.recipe_id}.json"
+    tag = f"{recipe.recipe_id}-D" if args.enriched else recipe.recipe_id
+    path = out / f"{datetime.now():%Y%m%d-%H%M%S}-{tag}.json"
     record = {
         **scope,
         **stats,
