@@ -69,6 +69,62 @@ def test_lookup_key_is_stable_for_spacing_case_and_trailing_punctuation() -> Non
     assert lookup_key("  Iron Man 감독은?  ") == "iron man 감독은"
 
 
+def test_lookup_key_ignores_question_mark_before_appended_english_name() -> None:
+    # 리뷰 #18-1: normalize_query 가 영문명을 뒤에 붙여도 "?" 유무로 키가 갈리면 안 된다
+    from tools.translation import normalize_query
+
+    with_mark, _ = normalize_query("썬더볼츠 흥행 수익은?", ALIASES)
+    without_mark, _ = normalize_query("썬더볼츠 흥행 수익은", ALIASES)
+    assert with_mark != without_mark
+    assert lookup_key(with_mark) == lookup_key(without_mark) == "썬더볼츠 흥행 수익은 thunderbolts*"
+
+
+def test_bad_url_row_is_skipped_not_raised() -> None:
+    rows = [
+        {"title": "Bad", "url": "http://[bad", "description": "broken url"},
+        BRAVE_PAYLOAD["web"]["results"][0],
+    ]
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"web": {"results": rows}})
+
+    outcome = _run_search(handler)
+    assert outcome.web_failed is False
+    assert [r.chunk.source_url for r in outcome.results] == ["https://example.com/thunderbolts"]
+
+
+def test_non_dict_body_is_empty_not_raised() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=[])
+
+    outcome = _run_search(handler)
+    assert outcome.web_called is True and outcome.web_failed is False
+    assert outcome.results == []
+
+
+def test_unexpected_conversion_error_becomes_web_failed(monkeypatch: Any) -> None:
+    import websearch
+
+    def boom(*_args: Any, **_kwargs: Any) -> Any:
+        raise AttributeError("unexpected")
+
+    monkeypatch.setattr(websearch, "to_team_format", boom)
+    outcome = _run_search(lambda _r: httpx.Response(200, json=BRAVE_PAYLOAD))
+    assert outcome.web_failed is True and outcome.error == "AttributeError"
+    assert outcome.results == []
+
+
+def test_missing_alias_file_falls_back_to_empty_table(monkeypatch: Any) -> None:
+    import websearch
+
+    def missing() -> Any:
+        raise FileNotFoundError("no aliases")
+
+    monkeypatch.setattr(websearch, "_SERVICE_ALIASES", None)
+    monkeypatch.setattr(websearch, "load_aliases", missing)
+    assert websearch.service_aliases() == []
+
+
 def test_doc_id_is_url_hash_and_snippet_keeps_original_words() -> None:
     assert web_doc_id("https://example.com/a") == web_doc_id("https://example.com/a")
     assert web_doc_id("https://example.com/a") != web_doc_id("https://example.com/b")

@@ -15,6 +15,7 @@ import html
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
@@ -37,7 +38,8 @@ MAX_COUNT = 20  # Brave web search 의 count 상한
 TIMEOUT_SECONDS = 8.0
 
 _TAG = re.compile(r"<[^>]+>")
-_TRAILING_PUNCT = re.compile(r"[\s?!.。,~…]+$")
+# 단어 끝 구두점. normalize_query 가 질문 뒤에 영문명을 붙이므로 문장 끝만 보면 "?" 가 안 걸린다
+_WORD_END_PUNCT = re.compile(r"[?!.。,~…]+(?=\s|$)")
 
 
 @dataclass(frozen=True)
@@ -65,9 +67,9 @@ def lookup_key(query_normalized: str) -> str:
     """이름 사전 치환까지만 한 질문으로 만든 정확 일치 키 (§6 "웹 보강분을 찾는 키").
 
     LLM 영어 변환은 부를 때마다 글자가 달라질 수 있어 키 재료로 쓰지 않는다.
+    "수익은? thunderbolts*" 와 "수익은 thunderbolts*" 가 같은 키가 되도록 단어 끝 구두점을 지운다.
     """
-    collapsed = " ".join(query_normalized.lower().split())
-    return _TRAILING_PUNCT.sub("", collapsed)
+    return " ".join(_WORD_END_PUNCT.sub("", query_normalized.lower()).split())
 
 
 def web_doc_id(url: str) -> str:
@@ -104,13 +106,19 @@ def to_team_format(
     converted: list[WebResult] = []
     seen: set[str] = set()
     for rank, row in enumerate(raw_results, start=1):
+        if not isinstance(row, dict):
+            continue
         url = str(row.get("url") or "").strip()
         text = clean_snippet(str(row.get("description") or ""))
         if not url or not text or url in seen:
             continue
+        try:
+            domain = urlparse(url).netloc  # "http://[bad" 같은 URL 은 ValueError
+        except ValueError:
+            logger.warning("[websearch] 잘못된 URL 건너뜀 (rank=%d)", rank)
+            continue
         seen.add(url)
         title = clean_snippet(str(row.get("title") or "")) or url
-        domain = urlparse(url).netloc
         doc_id = web_doc_id(url)
         chunk_id = f"{doc_id}-{Section.WEB}-p01"
         header = f"[Web · {title} · {domain} · fetched {fetched.date().isoformat()}]"
@@ -198,7 +206,11 @@ async def search_brave(
     else:
         response = await _get(client)
     response.raise_for_status()
-    results = (response.json().get("web") or {}).get("results") or []
+    payload = response.json()
+    web = payload.get("web") if isinstance(payload, dict) else None
+    results = web.get("results") if isinstance(web, dict) else None
+    if not isinstance(results, list):
+        return []
     return [row for row in results if isinstance(row, dict)]
 
 
@@ -226,21 +238,22 @@ async def web_search(
     outcome.web_called = True
     try:
         raw = await search_brave(search_query, count, api_key=api_key, client=client)
-    except (httpx.HTTPError, RuntimeError, ValueError) as exc:
-        # 실패는 오류로 바꾸지 않는다. 호출하는 쪽이 정보 부족 안내를 그대로 돌려준다
+        outcome.results = to_team_format(
+            raw,
+            query_ko=query_ko,
+            query_normalized=query_normalized,
+            query_en=search_query,
+            work_id=work_id,
+            entities=entities,
+        )
+    except Exception as exc:  # noqa: BLE001 — §6: 어떤 실패도 예외 대신 web_failed 로 돌려준다
+        # 호출하는 쪽은 정보 부족 안내를 그대로 돌려준다
         status = exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
-        logger.warning("[websearch] Brave 호출 실패 (status=%s): %s", status, type(exc).__name__)
+        logger.warning("[websearch] 웹 검색 실패 (status=%s): %s", status, type(exc).__name__)
+        outcome.results = []
         outcome.web_failed = True
         outcome.error = f"Brave Search HTTP {status}" if status else type(exc).__name__
         return outcome
-    outcome.results = to_team_format(
-        raw,
-        query_ko=query_ko,
-        query_normalized=query_normalized,
-        query_en=search_query,
-        work_id=work_id,
-        entities=entities,
-    )
     logger.info(
         "[websearch] key=%s, raw=%d, converted=%d",
         outcome.lookup_key,
@@ -248,6 +261,28 @@ async def web_search(
         len(outcome.results),
     )
     return outcome
+
+
+_SERVICE_ALIASES: list[Alias] | None = None
+
+
+def preload_aliases(path: Path | None = None) -> list[Alias]:
+    """서비스 시작 시 한 번 불러 별칭 사전을 올려 둔다. 파일이 없으면 여기서 바로 오류가 난다"""
+    global _SERVICE_ALIASES
+    _SERVICE_ALIASES = load_aliases(path)
+    return _SERVICE_ALIASES
+
+
+def service_aliases() -> list[Alias]:
+    """올려 둔 별칭 사전. 시작 때 못 올렸으면 빈 사전으로 검색만 한다 (이름 고정 없이)"""
+    global _SERVICE_ALIASES
+    if _SERVICE_ALIASES is None:
+        try:
+            _SERVICE_ALIASES = load_aliases()
+        except (OSError, ValueError) as exc:
+            logger.warning("[websearch] 별칭 사전 없이 검색: %s", type(exc).__name__)
+            _SERVICE_ALIASES = []
+    return _SERVICE_ALIASES
 
 
 def single_work_id(matched_aliases: list[dict[str, str]], aliases: list[Alias]) -> str | None:
@@ -274,7 +309,7 @@ async def search_web_for_question(
 
     돌려주는 rewrite 결과(query_normalized · query_en · rewrite_failed)는 호출 기록(Trace)에 쓴다.
     """
-    alias_table = aliases if aliases is not None else load_aliases()
+    alias_table = aliases if aliases is not None else service_aliases()
     rewrite = await (
         rewrite_movie_query(query_ko, alias_table, translator)
         if translator is not None
