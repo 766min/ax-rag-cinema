@@ -29,7 +29,7 @@ from pydantic import BaseModel, Field
 from shared.core.logger import get_logger
 from shared.core.models import Alias, AliasKind, Chunk, Document, SourceId
 from shared.core.schemas import Section
-from tools.translation import Rewrite, load_aliases, rewrite_movie_query
+from tools.translation import Rewrite, load_aliases, normalize_query, rewrite_movie_query
 
 logger = get_logger(__name__)
 
@@ -67,10 +67,18 @@ class WebSearchOutcome:
     error: str | None = None
 
 
+@dataclass(frozen=True)
+class CachedSearch:
+    """전에 한 웹 검색: 그때 결과(0건일 수 있음)와 그때 쓴 영어 검색어"""
+
+    results: list[WebResult]
+    query_en: str
+
+
 class WebCache(Protocol):
     """웹 보강분 저장소 (webstore.WebStore). 테스트에서는 가짜를 넣는다"""
 
-    def lookup(self, key: str) -> list[WebResult] | None: ...
+    def lookup(self, key: str) -> CachedSearch | None: ...
     def save(self, outcome: WebSearchOutcome, *, query_ko: str, work_id: str | None) -> Any: ...
 
 
@@ -320,20 +328,18 @@ async def search_web_for_question(
 ) -> tuple[dict[str, Any], WebSearchOutcome]:
     """한국어 질문 하나로 §6 의 1·2·4·5·6단계를 돈다.
 
-    영어 질의 변환 → (store 가 있으면) 검색 기록 조회 → Brave → 팀 양식 → 적재.
+    사전 치환(LLM 없음)으로 lookup_key → (store 가 있으면) 검색 기록 조회 →
+    없을 때만 LLM 영어 변환 → Brave → 팀 양식 → 적재.
+    재사용할 때는 LLM 을 부르지 않고, 그때 저장한 영어 검색어를 돌려준다 (rewrite_skipped=True).
     store 를 안 주면 WEB_STORE 설정을 따른다 (true 면 webstore.default_store()).
     적재 · 조회가 실패해도 검색 결과는 그대로 돌려주고 web_store_failed 만 켠다.
     돌려주는 rewrite 결과(query_normalized · query_en · rewrite_failed)는 호출 기록(Trace)에 쓴다.
     """
     alias_table = aliases if aliases is not None else service_aliases()
-    rewrite = await (
-        rewrite_movie_query(query_ko, alias_table, translator)
-        if translator is not None
-        else rewrite_movie_query(query_ko, alias_table)
-    )
-    matched = rewrite["matched_aliases"]
+    # 키 재료는 규칙(사전 치환)뿐이라 LLM 변환 전에 만들 수 있다
+    normalized, matched = normalize_query(query_ko, alias_table)
     work_id = single_work_id(matched, alias_table)
-    key = lookup_key(rewrite["query_normalized"])
+    key = lookup_key(normalized)
 
     # 저장소는 동기 DB 호출(psycopg · PGVector)이라 스레드에서 돌린다 → 이벤트 루프를 막지 않는다
     store_failed = False
@@ -351,17 +357,31 @@ async def search_web_for_question(
             cached, store_failed = None, True
         if cached is not None:
             hit = WebSearchOutcome(
-                query_en=rewrite["query_en"] or rewrite["query_normalized"],
+                query_en=cached.query_en,
                 lookup_key=key,
-                results=cached,
+                results=cached.results,
                 web_cache_hit=True,
             )
-            logger.info("[websearch] 보강분 재사용 key=%s, results=%d", key, len(cached))
-            return rewrite, hit
+            logger.info("[websearch] 보강분 재사용 key=%s, results=%d", key, len(cached.results))
+            reused = {
+                "query_ko": query_ko,
+                "query_normalized": normalized,
+                "query_en": cached.query_en,
+                "rewrite_failed": False,
+                "rewrite_skipped": True,  # LLM 을 부르지 않고 전에 쓴 검색어를 썼다
+                "matched_aliases": matched,
+            }
+            return reused, hit
 
+    rewrite = await (
+        rewrite_movie_query(query_ko, alias_table, translator)
+        if translator is not None
+        else rewrite_movie_query(query_ko, alias_table)
+    )
+    rewrite["rewrite_skipped"] = False
     outcome = await web_search(
         query_ko=query_ko,
-        query_normalized=rewrite["query_normalized"],
+        query_normalized=normalized,
         query_en=rewrite["query_en"],
         work_id=work_id,
         entities=[item["canonical_en"] for item in matched],
@@ -407,6 +427,7 @@ async def brave_web_search(query: str, count: int = DEFAULT_COUNT) -> dict[str, 
     return {
         "query_en": outcome.query_en,
         "rewrite_failed": rewrite["rewrite_failed"],
+        "rewrite_skipped": rewrite.get("rewrite_skipped", False),
         "lookup_key": outcome.lookup_key,
         "web_called": outcome.web_called,
         "web_failed": outcome.web_failed,

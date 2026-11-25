@@ -216,3 +216,62 @@ def test_record_whose_chunks_were_all_deleted_searches_again() -> None:
     outcome, calls = _ask(store)
     assert len(calls) == 1 and outcome.web_cache_hit is False
     assert len(collection.rows) == len(outcome.results)
+
+
+def test_reuse_skips_llm_rewrite_and_returns_saved_query() -> None:
+    """저장분이 있으면 LLM 영어 변환을 부르지 않는다 (키는 사전 치환만으로 만든다)"""
+    store = _store()
+    first, _ = _ask(store)
+    calls: list[str] = []
+
+    async def counting_translator(_system: str, text: str) -> str:
+        calls.append(text)
+        return "should not be used"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("Brave 를 부르면 안 된다")
+
+    async def run() -> Any:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await search_web_for_question(
+                "썬더볼츠 흥행 수익은",
+                aliases=ALIASES,
+                translator=counting_translator,
+                api_key="test-key",
+                client=client,
+                store=store,
+            )
+
+    rewrite, outcome = asyncio.run(run())
+    assert calls == []
+    assert rewrite["rewrite_skipped"] is True
+    assert rewrite["query_en"] == first.query_en == outcome.query_en
+    assert outcome.web_cache_hit is True
+
+
+def test_miss_still_runs_llm_rewrite() -> None:
+    store = _store()
+    calls: list[str] = []
+
+    async def counting_translator(_system: str, text: str) -> str:
+        calls.append(text)
+        return text.replace("흥행 수익은?", "box office gross")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=PAYLOAD)
+
+    async def run() -> Any:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await search_web_for_question(
+                "썬더볼츠 흥행 수익은?",
+                aliases=ALIASES,
+                translator=counting_translator,
+                api_key="test-key",
+                client=client,
+                store=store,
+            )
+
+    rewrite, outcome = asyncio.run(run())
+    assert len(calls) == 1
+    assert rewrite["rewrite_skipped"] is False
+    assert outcome.web_called is True

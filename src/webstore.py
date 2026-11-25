@@ -22,7 +22,13 @@ from langchain_core.documents import Document as LangChainDocument
 
 from shared.core.logger import get_logger
 from shared.core.models import Chunk, Document, SourceId
-from websearch import BRAVE_LICENSE, WebResult, WebSearchOutcome, to_vector_document
+from websearch import (
+    BRAVE_LICENSE,
+    CachedSearch,
+    WebResult,
+    WebSearchOutcome,
+    to_vector_document,
+)
 
 logger = get_logger(__name__)
 
@@ -197,8 +203,8 @@ class WebStore:
         self.ttl = timedelta(days=ttl_days)
         self._now = now or (lambda: datetime.now(UTC))
 
-    def lookup(self, key: str) -> list[WebResult] | None:
-        """검색한 적이 있으면 그때 결과(0건일 수 있음), 없거나 기한이 지났으면 None"""
+    def lookup(self, key: str) -> CachedSearch | None:
+        """검색한 적이 있으면 그때 결과(0건일 수 있음)와 검색어, 없거나 기한이 지났으면 None"""
         record = self.log.get(key)
         if record is None:
             return None
@@ -209,7 +215,7 @@ class WebStore:
             logger.info("[webstore] 기한 지남 → 다시 검색 (key=%s)", key)
             return None
         if not record.chunk_ids:
-            return []
+            return CachedSearch(results=[], query_en=record.query_en)
         found = {
             d.metadata.get("chunk_id"): d for d in self.collection.get_by_ids(record.chunk_ids)
         }
@@ -218,7 +224,8 @@ class WebStore:
             logger.info("[webstore] 기록의 청크가 없음 → 다시 검색 (key=%s)", key)
             return None
         # 기록 순서(= Brave 순위) 그대로. 일부만 지워졌으면 남은 것만
-        return [from_vector_document(found[cid]) for cid in record.chunk_ids if cid in found]
+        results = [from_vector_document(found[cid]) for cid in record.chunk_ids if cid in found]
+        return CachedSearch(results=results, query_en=record.query_en)
 
     def save(self, outcome: WebSearchOutcome, *, query_ko: str, work_id: str | None) -> SaveReport:
         """청크를 웹 컬렉션에 넣고(내용이 같으면 다시 임베딩하지 않음) 검색 기록을 남긴다"""

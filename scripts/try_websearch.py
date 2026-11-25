@@ -49,6 +49,8 @@ async def main() -> None:
     else:
         rewrite, outcome = await search_web_for_question(args.question, count=args.count)
         normalized, rewrite_failed = rewrite["query_normalized"], rewrite["rewrite_failed"]
+        if rewrite.get("rewrite_skipped"):
+            rewrite_failed = "건너뜀 (저장분 재사용, 전에 쓴 검색어)"
     elapsed = time.perf_counter() - started
 
     print(f"질문          : {args.question}")
