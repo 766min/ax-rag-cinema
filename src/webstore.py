@@ -213,7 +213,11 @@ class WebStore:
         found = {
             d.metadata.get("chunk_id"): d for d in self.collection.get_by_ids(record.chunk_ids)
         }
-        # 기록 순서(= Brave 순위) 그대로. 지워진 청크는 건너뛴다
+        if not found:
+            # 기록은 있는데 청크가 모두 지워졌다 (컬렉션을 비운 경우 등) → 다시 검색한다
+            logger.info("[webstore] 기록의 청크가 없음 → 다시 검색 (key=%s)", key)
+            return None
+        # 기록 순서(= Brave 순위) 그대로. 일부만 지워졌으면 남은 것만
         return [from_vector_document(found[cid]) for cid in record.chunk_ids if cid in found]
 
     def save(self, outcome: WebSearchOutcome, *, query_ko: str, work_id: str | None) -> SaveReport:

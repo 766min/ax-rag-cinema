@@ -205,3 +205,14 @@ def test_zero_ttl_always_searches(ttl: int) -> None:
     later = WebStore(store.collection, store.log, ttl_days=ttl, now=lambda: NOW + timedelta(1))
     _, calls = _ask(later)
     assert len(calls) == 1
+
+
+def test_record_whose_chunks_were_all_deleted_searches_again() -> None:
+    store = _store()
+    _ask(store)
+    collection = store.collection
+    assert isinstance(collection, MemoryCollection)
+    collection.rows.clear()  # 웹 컬렉션을 비움
+    outcome, calls = _ask(store)
+    assert len(calls) == 1 and outcome.web_cache_hit is False
+    assert len(collection.rows) == len(outcome.results)
