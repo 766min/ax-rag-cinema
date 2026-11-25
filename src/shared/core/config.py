@@ -45,7 +45,8 @@ class Settings:
     # 선택: 웹 검색 (서비스 경로 전용, 평가에서는 끔)
     BRAVE_API_KEY: str = _optional("BRAVE_API_KEY", "")
     WEB_COLLECTION: str = _optional("WEB_COLLECTION", "mcu_web")
-    WEB_STORE: bool = _flag("WEB_STORE", default=False)  # Brave 약관상 저장 권한 확인 전에는 false
+    WEB_STORE: bool = _flag("WEB_STORE", default=False)  # 저장 권한 있는 Brave 요금제에서만 true
+    WEB_STORE_TTL_DAYS: int = int(_optional("WEB_STORE_TTL_DAYS", "30"))  # 지나면 다시 검색
 
 
 settings = Settings()

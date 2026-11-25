@@ -312,7 +312,23 @@ Brave Search API 약관 3(b) 사용 제한은 다음을 금지한다.
 
 같은 조항의 (xiii)은 검색 결과를 모델의 평가 · 벤치마크에 쓰는 것도 금지한다. 즉 **PGVector 에 넣어 두고 다시 쓰는 6번 단계는 기본 약관에서는 허용되지 않는다.** 저장 권한이 붙은 계약(요금제 · 주문서)인지 팀이 확인해야 한다.
 
-그래서 적재는 설정으로 여닫게 둔다. `WEB_STORE=true` 면 6번을 하고, `false` 면 5번의 양식 변환까지만 해서 그 요청의 답변에 쓰고 버린다. 흐름과 반환 양식은 두 경우에 같다. 저장 권한을 확인하기 전에는 `false` 로 개발한다.
+그래서 적재는 설정으로 여닫게 둔다. `WEB_STORE=true` 면 6번을 하고, `false` 면 5번의 양식 변환까지만 해서 그 요청의 답변에 쓰고 버린다. 흐름과 반환 양식은 두 경우에 같다.
+
+**2026-11-25 갱신** — 팀이 저장 권한이 포함된 Brave 요금제로 바꾸기로 합의했다. 그래서 `WEB_STORE=true` 로 6번 적재를 켤 수 있다. 평가 · 벤치마크 사용 금지(xiii)는 별개 조항이므로 평가에서는 계속 끈다.
+
+**적재 구현** (`src/webstore.py`)
+
+| 저장소 | 내용 | 키 |
+|---|---|---|
+| 웹 컬렉션 `WEB_COLLECTION` (PGVector) | 웹 청크. 위 "Brave 결과 → 팀 데이터 양식" 그대로, 메타데이터에 `fetched_at` 추가 | `chunk_id` — 같은 URL 은 덮어쓰고, `content_hash` 가 같으면 다시 임베딩하지 않는다 |
+| 검색 기록 표 `web_search_log` (Postgres, 처음 쓸 때 만든다) | `lookup_key` · `query_ko` · `query_en` · `work_id` · `chunk_ids`(Brave 순위 순) · `searched_at` | `lookup_key` |
+
+- 2번 단계의 "검색한 적이 있는가" 는 검색 기록 표로 본다. 결과가 0건인 검색도 기록해서 Brave 를 다시 부르지 않는다.
+- 같은 URL 이 다른 질문에서 다시 나오면 청크 메타데이터의 `lookup_key` 는 마지막 질문 것으로 덮인다. 그래서 질문 → 청크 목록은 기록 표가 들고, 청크는 `chunk_ids` 로 꺼낸다 (메타데이터 필터 `lookup_key` 만으로 찾지 않는다).
+- 기록이 `WEB_STORE_TTL_DAYS`(기본 30일)보다 오래되면 다시 검색한다.
+- Brave 호출이 실패한 검색은 기록하지 않는다 → 다음 질문에서 다시 시도한다.
+- 저장소 조회 · 적재가 실패해도 답변은 막지 않는다. 검색 결과로 그대로 답하고 `web_store_failed` 를 기록한다.
+- 재사용한 경우 `web_called = false`, `web_cache_hit = true`.
 
 **확인 시나리오와 다섯 구성 평가의 순서** (2026-11-24 추가)
 
@@ -341,7 +357,8 @@ Brave Search API 약관 3(b) 사용 제한은 다음을 금지한다.
 
 | 단계 | 모듈 | 상태 |
 |---|---|---|
-| Brave 호출 · 양식 변환 | `src/websearch.py` | ⬜ |
+| Brave 호출 · 양식 변환 | `src/websearch.py` | ✅ |
+| 웹 컬렉션 적재 · 검색 기록 재조회 | `src/webstore.py` | ✅ (로컬 pgvector 실측 전) |
 | 판정 · 적재 · 답변 연결 | `src/retrieve/pipeline.py` · `src/answer.py` | ⬜ |
 
 ## 7. 답변과 상태

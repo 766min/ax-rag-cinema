@@ -5,7 +5,8 @@
 튜터 실습(「웹검색 도구 + Retriever 연동 실습」)의 brave_web_search 를 바탕으로 하되 §6 에 따라
 - 스니펫을 LLM 으로 요약하지 않고 원문 그대로(강조 태그만 걷어서) 둔다.
 - 결과마다 Document + Chunk(section=web, flags=unverified)로 바꾸고 URL 을 출처로 남긴다.
-- 적재는 하지 않는다. 적재 여부(WEB_STORE)와 웹 컬렉션 적재는 호출하는 쪽(pipeline)이 정한다.
+- 적재는 webstore.WebStore 가 맡는다. WEB_STORE=true 면 search_web_for_question 이
+  검색 기록을 먼저 보고(있으면 Brave 를 부르지 않음), 새로 받은 결과는 웹 컬렉션에 넣는다.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 from urllib.parse import urlparse
 
 import httpx
@@ -60,7 +61,16 @@ class WebSearchOutcome:
     results: list[WebResult] = field(default_factory=list)
     web_called: bool = False
     web_failed: bool = False
+    web_cache_hit: bool = False  # 전에 넣어 둔 웹 보강분을 썼다 (Brave 를 부르지 않음)
+    web_store_failed: bool = False  # 적재 · 재조회 실패. 답변은 그대로 진행한다
     error: str | None = None
+
+
+class WebCache(Protocol):
+    """웹 보강분 저장소 (webstore.WebStore). 테스트에서는 가짜를 넣는다"""
+
+    def lookup(self, key: str) -> list[WebResult] | None: ...
+    def save(self, outcome: WebSearchOutcome, *, query_ko: str, work_id: str | None) -> Any: ...
 
 
 def lookup_key(query_normalized: str) -> str:
@@ -162,6 +172,7 @@ def to_team_format(
             "page_age": row.get("page_age"),
             "language": row.get("language"),
             "content_hash": content_hash,
+            "fetched_at": fetched.isoformat(),
         }
         converted.append(WebResult(document=document, chunk=chunk, metadata=metadata))
     return converted
@@ -304,9 +315,13 @@ async def search_web_for_question(
     translator: Rewrite | None = None,
     api_key: str | None = None,
     client: httpx.AsyncClient | None = None,
+    store: WebCache | None = None,
 ) -> tuple[dict[str, Any], WebSearchOutcome]:
-    """한국어 질문 하나로 §6 의 1·4·5단계를 돈다: 영어 질의 변환 → Brave → 팀 양식.
+    """한국어 질문 하나로 §6 의 1·2·4·5·6단계를 돈다.
 
+    영어 질의 변환 → (store 가 있으면) 검색 기록 조회 → Brave → 팀 양식 → 적재.
+    store 를 안 주면 WEB_STORE 설정을 따른다 (true 면 webstore.default_store()).
+    적재 · 조회가 실패해도 검색 결과는 그대로 돌려주고 web_store_failed 만 켠다.
     돌려주는 rewrite 결과(query_normalized · query_en · rewrite_failed)는 호출 기록(Trace)에 쓴다.
     """
     alias_table = aliases if aliases is not None else service_aliases()
@@ -316,17 +331,57 @@ async def search_web_for_question(
         else rewrite_movie_query(query_ko, alias_table)
     )
     matched = rewrite["matched_aliases"]
+    work_id = single_work_id(matched, alias_table)
+    cache = store if store is not None else _store_from_settings()
+    key = lookup_key(rewrite["query_normalized"])
+
+    store_failed = False
+    if cache is not None:
+        try:
+            cached = cache.lookup(key)
+        except Exception as exc:  # noqa: BLE001 — 저장소 장애로 답변을 막지 않는다
+            logger.warning("[websearch] 웹 보강분 조회 실패: %s", type(exc).__name__)
+            cached, store_failed = None, True
+        if cached is not None:
+            hit = WebSearchOutcome(
+                query_en=rewrite["query_en"] or rewrite["query_normalized"],
+                lookup_key=key,
+                results=cached,
+                web_cache_hit=True,
+            )
+            logger.info("[websearch] 보강분 재사용 key=%s, results=%d", key, len(cached))
+            return rewrite, hit
+
     outcome = await web_search(
         query_ko=query_ko,
         query_normalized=rewrite["query_normalized"],
         query_en=rewrite["query_en"],
-        work_id=single_work_id(matched, alias_table),
+        work_id=work_id,
         entities=[item["canonical_en"] for item in matched],
         count=count,
         api_key=api_key,
         client=client,
     )
+    outcome.web_store_failed = store_failed
+    # Brave 가 실패한 검색은 기록하지 않는다 → 다음 질문에서 다시 시도한다
+    if cache is not None and not outcome.web_failed and not store_failed:
+        try:
+            cache.save(outcome, query_ko=query_ko, work_id=work_id)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("[websearch] 웹 보강분 적재 실패: %s", type(exc).__name__)
+            outcome.web_store_failed = True
     return rewrite, outcome
+
+
+def _store_from_settings() -> WebCache | None:
+    """WEB_STORE=true 면 기본 저장소, 아니면 None (적재 없이 그 요청에만 쓴다)"""
+    from shared.core.config import settings
+
+    if not settings.WEB_STORE:
+        return None
+    from webstore import default_store
+
+    return default_store()
 
 
 class WebSearchInput(BaseModel):
@@ -348,6 +403,8 @@ async def brave_web_search(query: str, count: int = DEFAULT_COUNT) -> dict[str, 
         "lookup_key": outcome.lookup_key,
         "web_called": outcome.web_called,
         "web_failed": outcome.web_failed,
+        "web_cache_hit": outcome.web_cache_hit,
+        "web_store_failed": outcome.web_store_failed,
         "error": outcome.error,
         "results": [
             {
