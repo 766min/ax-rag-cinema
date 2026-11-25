@@ -76,14 +76,19 @@ def run_question(
     llm: BaseChatModel,
     config: SearchConfig,
     reranker: Reranker | None = None,
+    search_query: str | None = None,
 ) -> PipelineResult:
-    """질문 하나를 끝까지 돌린다. 검색 · 생성 실패는 예외 대신 상태로 돌려준다 (§7)."""
+    """질문 하나를 끝까지 돌린다. 검색 · 생성 실패는 예외 대신 상태로 돌려준다 (§7).
+
+    search_query: 미리 만든 검색어 (V2 진단의 질의 방식). 주면 이름 사전 치환 대신 이 글로 검색한다.
+    답변 생성에는 언제나 원래 한국어 질문을 쓴다.
+    """
     if mode not in SUPPORTED_MODES:
         raise NotImplementedError(f"아직 구현하지 않은 구성입니다: {mode}")
     if mode == RetrievalMode.HYBRID_RERANK and reranker is None:
         raise ValueError("C 구성(hybrid_rerank)은 reranker 가 필요합니다")
 
-    query = normalizer.normalize(question)
+    query = search_query if search_query is not None else normalizer.normalize(question)
     try:
         candidates = retriever.search(query, mode, config)
         if reranker is not None and mode == RetrievalMode.HYBRID_RERANK:

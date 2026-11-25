@@ -70,3 +70,19 @@ def test_인용이_없으면_no_evidence() -> None:
 def test_C는_재정렬기가_없으면_막는다() -> None:
     with pytest.raises(ValueError, match="reranker"):
         run_question("q", RetrievalMode.HYBRID_RERANK, _retriever(), NORMALIZER, FakeLLM(), CONFIG)  # type: ignore[arg-type]
+
+
+def test_미리_만든_검색어를_주면_사전_치환_대신_그_글로_검색한다() -> None:
+    store = FakeStore([("a", 0.9)])
+    retriever = Retriever(store, CORPUS)  # type: ignore[arg-type]
+    result = run_question(
+        "타노스는?",
+        RetrievalMode.VECTOR,
+        retriever,
+        NORMALIZER,
+        FakeLLM(),  # type: ignore[arg-type]
+        CONFIG,
+        search_query="Why does Thanos collect the stones?",
+    )
+    assert store.queries == ["Why does Thanos collect the stones?"]
+    assert result.query_normalized == "Why does Thanos collect the stones?"

@@ -9,6 +9,7 @@ from evals.items import check_ready
 from evals.recorder import Recorder, measure
 from retrieval.normalize import ALIAS_VERSION, AliasNormalizer
 from retrieval.pipeline import Retriever, SearchConfig, run_question
+from retrieval.query import QueryPlan
 from retrieval.refine import Reranker
 from shared.core.logger import get_logger
 from shared.core.models import EvalItem, EvidenceSource, RunRecord, Trace
@@ -38,14 +39,26 @@ def run_eval(
     llm: BaseChatModel,
     setup: RunSetup,
     reranker: Reranker | None = None,
+    plans: dict[str, QueryPlan] | None = None,
 ) -> list[RunRecord]:
-    """문항을 차례로 돌리고 한 줄씩 기록한다. 정답 키가 이번 색인과 안 맞으면 시작하지 않는다."""
+    """문항을 차례로 돌리고 한 줄씩 기록한다. 정답 키가 이번 색인과 안 맞으면 시작하지 않는다.
+
+    plans: 문항별 미리 만든 검색 질의 (V2 진단). 없으면 V1 처럼 이름 사전 치환으로 검색한다.
+    """
     check_ready(items, setup.index_version)
     records: list[RunRecord] = []
     for item in items:
+        plan = plans[item.question_id] if plans else None
         with measure() as m:
             result = run_question(
-                item.question, mode, retriever, normalizer, llm, setup.config, reranker
+                item.question,
+                mode,
+                retriever,
+                normalizer,
+                llm,
+                setup.config,
+                reranker,
+                search_query=plan.query_used if plan else None,
             )
         status = result.answer.status
         record = RunRecord(
@@ -66,12 +79,13 @@ def run_eval(
                 **setup.config.as_params(),
                 "reranker": getattr(reranker, "name", None),
                 **setup.extra_params,
+                **({"query_plan": plan.as_dict()} if plan else {}),
             },
             trace=Trace(
                 query_ko=item.question,
                 query_normalized=result.query_normalized,
-                query_en="",  # 리라이트(C+리라이트)는 아직 없음
-                rewrite_failed=False,
+                query_en=plan.query_en if plan else "",  # 공식 C+리라이트는 아직 없음 (V2 진단만)
+                rewrite_failed=plan.rewrite_failed if plan else False,
                 retrieval_mode=mode,
                 evidence_source=(
                     EvidenceSource.DOCUMENTS

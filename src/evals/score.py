@@ -54,7 +54,12 @@ def evidence_recall(
     청크가 여럿이면(overlap) 그중 하나만 와도 1.0, 근거가 여러 청크로 나뉘었으면 다 와야 1.0 이다.
     missing 인용(정답 청크 없음)은 0 으로 센다.
     """
-    top = set(record.top_chunk_ids(k))
+    return evidence_recall_ids(citations, record.top_chunk_ids(k))
+
+
+def evidence_recall_ids(citations: list[dict[str, Any]], top_ids: list[str]) -> dict[str, Any]:
+    """evidence_recall 과 같은 계산을 상위 청크 ID 목록으로 한다 (검색만 하는 진단 실험용)."""
+    top = set(top_ids)
     per_citation = []
     for c in citations:
         excerpt: str = c.get("excerpt", "")

@@ -108,3 +108,27 @@ def test_정답_키_버전이_다르면_시작하지_않는다(tmp_path: Path) -
             FakeLLM(),
             bad,
         )  # type: ignore[arg-type]
+
+
+def test_질의_계획을_주면_그_글로_검색하고_기록에_남긴다(tmp_path: Path) -> None:
+    from retrieval.query import QueryPlan
+
+    store = FakeStore([("a", 0.9), ("b", 0.5)])
+    plans = {
+        "Q1": QueryPlan("Q1", "rewrite", "타노스?", "Thanos?", query_en="Thanos?"),
+        "Q2": QueryPlan("Q2", "rewrite", "없는 이야기?", "fallback", rewrite_failed=True),
+    }
+    records = run_eval(
+        _items(),
+        RetrievalMode.VECTOR,
+        Recorder("p-try", results_dir=tmp_path),
+        Retriever(store, CORPUS),  # type: ignore[arg-type]
+        AliasNormalizer([]),
+        FakeLLM(),  # type: ignore[arg-type]
+        SETUP,
+        plans=plans,
+    )
+    assert store.queries == ["Thanos?", "fallback"]
+    assert records[0].trace.query_en == "Thanos?"
+    assert records[1].trace.rewrite_failed is True
+    assert records[0].params["query_plan"]["variant"] == "rewrite"

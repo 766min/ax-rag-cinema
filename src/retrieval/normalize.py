@@ -28,18 +28,22 @@ class AliasNormalizer:
             mapping.setdefault(alias.alias_ko, alias.canonical_en)
         self._aliases = sorted(mapping.items(), key=lambda kv: len(kv[0]), reverse=True)
 
-    def normalize(self, question: str) -> str:
-        result = question
-        taken: list[tuple[int, int]] = []  # 이미 치환한 구간 (긴 이름 안의 짧은 이름은 건너뜀)
-        additions: list[tuple[int, str]] = []
+    def matches(self, question: str) -> list[tuple[int, str, str]]:
+        """질문에서 찾은 이름 (끝 위치, 한국어, 영어). 긴 이름 안의 짧은 이름은 건너뛴다."""
+        taken: list[tuple[int, int]] = []
+        found: list[tuple[int, str, str]] = []
         for ko, en in self._aliases:
-            start = result.find(ko)
+            start = question.find(ko)
             while start != -1:
                 end = start + len(ko)
                 if not any(s <= start and end <= e for s, e in taken):
                     taken.append((start, end))
-                    additions.append((end, f" ({en})"))
-                start = result.find(ko, end)
-        for position, text in sorted(additions, reverse=True):
-            result = result[:position] + text + result[position:]
+                    found.append((end, ko, en))
+                start = question.find(ko, end)
+        return found
+
+    def normalize(self, question: str) -> str:
+        result = question
+        for end, _, en in sorted(self.matches(question), reverse=True):
+            result = result[:end] + f" ({en})" + result[end:]
         return result

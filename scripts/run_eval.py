@@ -33,10 +33,12 @@ from evals.score import summarize  # noqa: E402
 from generation.answer import PROMPT_VERSION  # noqa: E402
 from retrieval.normalize import AliasNormalizer, load_aliases  # noqa: E402
 from retrieval.pipeline import Retriever, SearchConfig  # noqa: E402
+from retrieval.query import VARIANTS, build_plan, read_jsonl_map  # noqa: E402
 from shared.core.config import settings  # noqa: E402
 from shared.core.schemas import RetrievalMode  # noqa: E402
 from shared.core.vector_store import get_llm, get_raw_db_connection, get_vector_store  # noqa: E402
 
+MANUAL_EN = PROJECT_ROOT / "experiments" / "v2" / "manual_en.jsonl"
 MODES = {"vector": RetrievalMode.VECTOR, "hybrid": RetrievalMode.HYBRID}
 
 
@@ -50,6 +52,12 @@ def main() -> None:
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--pool", type=int, default=20)
     parser.add_argument("--results-version", required=True, help="결과 버전 (예: v1)")
+    parser.add_argument(
+        "--query",
+        choices=VARIANTS,
+        help="V2 진단: 검색 질의 방식. 생략하면 V1 과 같은 이름 사전 치환. "
+        "rewrite 는 results/{버전}/rewrites.jsonl 의 값을 쓴다 (여기서 새로 만들지 않음)",
+    )
     args = parser.parse_args()
     mode = MODES[args.mode]
     recipe = RECIPES[args.recipe]
@@ -93,6 +101,21 @@ def main() -> None:
         f"{datetime.now():%Y-%m-%d-%H%M}-{recipe.recipe_id.lower()}-{args.mode}-try"
     )
     config = SearchConfig(top_k=args.top_k, pool=args.pool)
+    aliases = load_aliases(DATASET_DIR / "aliases.jsonl")
+    plans = None
+    if args.query:
+        rewrites_path = root / "rewrites.jsonl"
+        plans = {
+            i.question_id: build_plan(
+                args.query,
+                i.question_id,
+                i.question,
+                aliases,
+                {q: r["query_en"] for q, r in read_jsonl_map(MANUAL_EN, "question_id").items()},
+                read_jsonl_map(rewrites_path, "question_id") if rewrites_path.exists() else None,
+            )
+            for i in items
+        }
 
     records = run_eval(
         items=items,
@@ -101,7 +124,7 @@ def main() -> None:
         retriever=Retriever(
             get_vector_store(collection), {cid: text for cid, (text, _) in corpus.items()}
         ),
-        normalizer=AliasNormalizer(load_aliases(DATASET_DIR / "aliases.jsonl")),
+        normalizer=AliasNormalizer(aliases),
         llm=get_llm(),
         setup=RunSetup(
             index_version=version,
@@ -119,8 +142,10 @@ def main() -> None:
                 "git_dirty": info["git_dirty"],
                 "code_sha256": info["code_sha256"],
                 "eval_item_ids": [i.question_id for i in items],
+                "query_variant": args.query or "alias (V1 기본)",
             },
         ),
+        plans=plans,
     )
     # 실행 원본(RunRecord)은 Recorder 가 results/{run_id}.jsonl 에 남겼다.
     # 아래는 그 원본에서 계산한 요약과 수동 채점 시트 (results/eval/{run_id}/, 새 폴더로만)
@@ -137,6 +162,7 @@ def main() -> None:
                 "run_id": run_id,
                 "recipe": recipe.recipe_id,
                 "mode": args.mode,
+                "query_variant": args.query or "alias (V1 기본)",
                 "index_version": version,
                 "collection": collection,
                 "dataset": fingerprint,
