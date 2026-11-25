@@ -4,7 +4,7 @@ import csv
 from pathlib import Path
 from typing import Any
 
-from shared.core.models import EvalItem, RunRecord
+from shared.core.models import Candidate, EvalItem, RunRecord
 
 COLUMNS = [
     "recipe_id",
@@ -53,7 +53,7 @@ def grading_rows(
                 "key_facts": " / ".join(item.key_facts),
                 "gold_evidence": raw.get("원문 근거 발췌", ""),
                 "gold_chunk_ids": " ".join(item.gold_chunk_ids),
-                "candidates": "\n".join(f"{c.rank}. {c.chunk_id} ({c.vector_score})" for c in top),
+                "candidates": "\n".join(_candidate_line(c) for c in top),
                 "status": str(record.status),
                 "answer": record.answer or "",
                 "cited_chunks": "\n\n".join(
@@ -66,6 +66,19 @@ def grading_rows(
             }
         )
     return rows
+
+
+def _candidate_line(c: Candidate) -> str:
+    """순위 · 청크 · 단계별 점수 (없는 점수는 빼고)."""
+    scores = {
+        "vec": c.vector_score,
+        "bm25": c.bm25_score,
+        "rrf": c.rrf_score,
+        "rerank": c.rerank_score,
+        "before": c.rank_before_rerank,
+    }
+    shown = ", ".join(f"{k}={v:.4g}" for k, v in scores.items() if v is not None)
+    return f"{c.rank}. {c.chunk_id} ({shown})"
 
 
 def write_csv(path: Path, rows: list[dict[str, str]]) -> None:

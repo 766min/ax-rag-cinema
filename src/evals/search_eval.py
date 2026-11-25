@@ -134,8 +134,10 @@ def aggregate(rows: list[dict[str, Any]], k: int = 5) -> dict[str, Any]:
     answerable = [r for r in rows if r["answerable"]]
     unanswerable = [r for r in rows if not r["answerable"]]
 
-    def avg(values: list[float]) -> float | None:
-        return round(mean(values), 3) if values else None
+    def avg(values: list[float | None]) -> float | None:
+        # BM25 단독은 겹치는 단어가 없으면 후보가 0개라 1위 점수가 없다 (None 은 빼고 평균)
+        present = [v for v in values if v is not None]
+        return round(mean(present), 3) if present else None
 
     outcomes: dict[str, int] = {}
     for r in answerable:
@@ -149,9 +151,80 @@ def aggregate(rows: list[dict[str, Any]], k: int = 5) -> dict[str, Any]:
         "evidence_mean_recall": avg([r["evidence"]["mean_recall"] for r in answerable]),
         "evidence_all_recovered": sum(r["evidence"]["all_recovered"] for r in answerable),
         "top1_similarity_mean": avg([r["top1_similarity"] for r in answerable]),
+        "empty_results": sum(r.get("top1_similarity") is None for r in rows),
         "best_gold_similarity_mean": avg(
             [r["best_gold_similarity"] for r in answerable if r["best_gold_similarity"] is not None]
         ),
         "outcomes": outcomes,
         "unanswerable_top1_similarity": [r["top1_similarity"] for r in unanswerable],
+    }
+
+
+# --- V3: A · B · C 단계별 기록 ---------------------------------------------------------
+
+STAGE_MODES = ("vector", "bm25", "hybrid", "hybrid_rerank")  # bm25 단독은 진단용 (공식 구성 아님)
+
+
+def run_stages(
+    query: str,
+    vector_hits: list[tuple[str, float]],
+    bm25: Any,
+    texts: dict[str, str],
+    pool: int,
+    reranker: Any | None = None,
+) -> dict[str, Any]:
+    """한 질의의 단계별 후보 (점수 · 순위 · 시간). bm25: retrieval.search.BM25Index.
+
+    hybrid = RRF(벡터 상위 pool, BM25 상위 pool) 상위 pool 개. hybrid_rerank = 그 pool 개를 재정렬.
+    """
+    import time
+
+    from retrieval.refine import rerank
+    from retrieval.search import rrf_merge, vector_candidates
+
+    timings: dict[str, float] = {}
+    started = time.perf_counter()
+    bm25_hits = bm25.search(query, pool)
+    timings["bm25_ms"] = round((time.perf_counter() - started) * 1000, 2)
+    started = time.perf_counter()
+    hybrid = rrf_merge(vector_hits, bm25_hits)[:pool]
+    timings["rrf_ms"] = round((time.perf_counter() - started) * 1000, 2)
+
+    stages: dict[str, Any] = {
+        "vector": [c.model_dump(mode="json") for c in vector_candidates(vector_hits)],
+        "bm25": [
+            {"chunk_id": cid, "rank": i, "bm25_score": round(score, 4)}
+            for i, (cid, score) in enumerate(bm25_hits, start=1)
+        ],
+        "hybrid": [c.model_dump(mode="json") for c in hybrid],
+    }
+    if reranker is not None:
+        started = time.perf_counter()
+        reranked = rerank(query, hybrid, texts, reranker)
+        timings["rerank_ms"] = round((time.perf_counter() - started) * 1000, 2)
+        stages["hybrid_rerank"] = [c.model_dump(mode="json") for c in reranked]
+        stages["rerank_truncated_pairs"] = reranker.truncated(
+            query, [texts[c.chunk_id] for c in hybrid]
+        )
+    vector_ids = {cid for cid, _ in vector_hits}
+    bm25_ids = {cid for cid, _ in bm25_hits}
+    stages["overlap_vector_bm25"] = len(vector_ids & bm25_ids)
+    stages["timings"] = timings
+    return stages
+
+
+def gold_movement(stages: dict[str, Any], gold_ids: list[str]) -> dict[str, Any]:
+    """정답 청크마다 단계별 순위 (없으면 None) · 어느 검색기에서만 찾았는지."""
+    gold = set(gold_ids)
+
+    def ranks(name: str) -> dict[str, int]:
+        return {c["chunk_id"]: c["rank"] for c in stages.get(name, []) if c["chunk_id"] in gold}
+
+    by_stage = {name: ranks(name) for name in STAGE_MODES if name in stages}
+    in_vector, in_bm25 = set(by_stage.get("vector", {})), set(by_stage.get("bm25", {}))
+    return {
+        "ranks": {cid: {name: by_stage[name].get(cid) for name in by_stage} for cid in gold_ids},
+        "only_vector": sorted(in_vector - in_bm25),
+        "only_bm25": sorted(in_bm25 - in_vector),
+        "both": sorted(in_vector & in_bm25),
     }

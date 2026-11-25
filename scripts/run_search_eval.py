@@ -1,4 +1,7 @@
-"""검색만 하는 진단 실험 (V2 EXP-02 질의 방식 · EXP-03 청킹). 답변은 만들지 않는다.
+"""검색만 하는 진단 실험 (V2 EXP-02 · EXP-03, V3 EXP-04~06). 답변은 만들지 않는다.
+
+--modes: vector(A) · bm25(진단) · hybrid(B) · hybrid_rerank(C). 기본 vector (V2 와 같음).
+hybrid_rerank 는 Cross-Encoder 가 필요해 sentence-transformers 를 겹쳐 설치해 실행한다 (retrieval.refine).
 
 uv run python scripts/run_search_eval.py --results-version v2 --exp exp02 --recipes CK04 \
     --variants raw,alias,alias_plus,rewrite,manual_en
@@ -31,19 +34,23 @@ from etl.dataset import (  # noqa: E402
     index_version,
     load_dataset,
 )
-from etl.load import meta_values  # noqa: E402
+from etl.load import load_corpus, meta_values  # noqa: E402
 from evals.items import load_eval_items, map_citations, read_question_set  # noqa: E402
 from evals.provenance import results_dir, run_info  # noqa: E402
 from evals.search_eval import (  # noqa: E402
+    STAGE_MODES,
     aggregate,
+    gold_movement,
     gold_scores,
     http_calls,
+    run_stages,
     score_question,
     search_vector,
     summarize_calls,
 )
 from retrieval.normalize import load_aliases  # noqa: E402
 from retrieval.query import VARIANTS, build_plan, make_rewrite, read_jsonl_map  # noqa: E402
+from retrieval.search import BM25Index  # noqa: E402
 from shared.core.config import settings  # noqa: E402
 from shared.core.vector_store import (  # noqa: E402
     get_embeddings,
@@ -87,7 +94,11 @@ def main() -> None:
     parser.add_argument("--variants", required=True, help=f"쉼표 구분: {','.join(VARIANTS)}")
     parser.add_argument("--items", default=DEV_ITEMS)
     parser.add_argument("--run-id", help="생략하면 {날짜-시각}")
+    parser.add_argument("--modes", default="vector", help=f"쉼표 구분: {','.join(STAGE_MODES)}")
     args = parser.parse_args()
+    modes = args.modes.split(",")
+    if set(modes) - set(STAGE_MODES):
+        raise SystemExit(f"알 수 없는 검색 방식: {sorted(set(modes) - set(STAGE_MODES))}")
 
     recipes = [RECIPES[r] for r in args.recipes.split(",")]
     variants = args.variants.split(",")
@@ -129,6 +140,22 @@ def main() -> None:
             ms = round((time.perf_counter() - started) * 1000)
         embed_meta[plan.query_used] = {"embed_ms": ms, "api_calls": summarize_calls(calls)}
 
+    reranker: Any = None
+    reranker_meta: dict[str, Any] = {}
+    if "hybrid_rerank" in modes:
+        from retrieval.refine import CrossEncoderReranker
+
+        started = time.perf_counter()
+        reranker = CrossEncoderReranker()
+        reranker_meta = {
+            "name": reranker.name,
+            "device": reranker.device,
+            "dtype": reranker.dtype,
+            "max_length": reranker.max_length,
+            "load_s": round(time.perf_counter() - started, 2),
+        }
+    needs_stages = any(m != "vector" for m in modes)
+
     conn = get_raw_db_connection()
     rows: list[dict[str, Any]] = []
     compare: list[dict[str, Any]] = []
@@ -147,8 +174,13 @@ def main() -> None:
                     if i.question_id in questions
                 }
                 store = get_vector_store(collection)
+                texts: dict[str, str] = {}
+                bm25: Any = None
+                if needs_stages:
+                    texts = {cid: text for cid, (text, _) in load_corpus(conn, collection).items()}
+                    bm25 = BM25Index(texts.items())
                 for variant in variants:
-                    per_variant = []
+                    per_mode: dict[str, list[dict[str, Any]]] = {m: [] for m in modes}
                     for qid in item_ids:
                         plan = plans[(variant, qid)]
                         item = items[qid]
@@ -158,35 +190,63 @@ def main() -> None:
                         search_ms = round((time.perf_counter() - started) * 1000)
                         gold = gold_scores(conn, collection, vector, item.gold_chunk_ids)
                         citations = map_citations(raw_by_id[qid], chunks, data.sections)
-                        scored = score_question(item, hits, gold, citations, TOP_K)
-                        row = {
-                            "exp": args.exp,
-                            "run_id": run_id,
-                            "recipe": recipe.recipe_id,
-                            "index_version": version,
-                            "collection": collection,
-                            "variant": variant,
-                            "question_id": qid,
-                            "query": plan.as_dict(),
-                            "embed": embed_meta[plan.query_used],
-                            "search_ms": search_ms,
-                            "gold_chunk_ids": item.gold_chunk_ids,
-                            "candidates": [
-                                {"rank": i, "chunk_id": cid, "similarity": round(score, 6)}
-                                for i, (cid, score) in enumerate(hits, start=1)
-                            ],
-                            **scored,
-                        }
-                        raw_out.write(json.dumps(row, ensure_ascii=False) + "\n")
-                        rows.append(row)
-                        per_variant.append(scored)
-                    summary = aggregate(per_variant, TOP_K)
-                    compare.append(
-                        {"recipe": recipe.recipe_id, "variant": variant, "chunks": len(chunks)}
-                        | {k: v for k, v in summary.items() if not isinstance(v, (dict, list))}
-                        | {"outcomes": json.dumps(summary["outcomes"], ensure_ascii=False)}
-                    )
-                    print(f"{recipe.recipe_id} {variant}: {compare[-1]}")
+                        stages = (
+                            run_stages(plan.query_used, hits, bm25, texts, POOL, reranker)
+                            if needs_stages
+                            else {}
+                        )
+                        similarity = dict(hits)
+                        for mode in modes:
+                            if mode == "vector":
+                                ranked = [cid for cid, _ in hits]
+                            else:
+                                ranked = [c["chunk_id"] for c in stages[mode]]
+                            missing = [cid for cid in ranked if cid not in similarity]
+                            for cid, found in gold_scores(
+                                conn, collection, vector, missing
+                            ).items():
+                                similarity[cid] = float(found["similarity"])
+                            final = [(cid, similarity[cid]) for cid in ranked]
+                            scored = score_question(item, final, gold, citations, TOP_K)
+                            row = {
+                                "exp": args.exp,
+                                "run_id": run_id,
+                                "recipe": recipe.recipe_id,
+                                "index_version": version,
+                                "collection": collection,
+                                "variant": variant,
+                                "mode": mode,
+                                "question_id": qid,
+                                "query": plan.as_dict(),
+                                "embed": embed_meta[plan.query_used],
+                                "search_ms": search_ms,
+                                "gold_chunk_ids": item.gold_chunk_ids,
+                                # 최종 순위 · 그 청크의 벡터 코사인 유사도 (방식별 점수는 stages 에)
+                                "candidates": [
+                                    {"rank": i, "chunk_id": cid, "similarity": round(score, 6)}
+                                    for i, (cid, score) in enumerate(final, start=1)
+                                ],
+                                **scored,
+                            }
+                            if needs_stages:
+                                row["stages"] = stages
+                                row["gold_movement"] = gold_movement(stages, item.gold_chunk_ids)
+                            raw_out.write(json.dumps(row, ensure_ascii=False) + "\n")
+                            rows.append(row)
+                            per_mode[mode].append(scored)
+                    for mode in modes:
+                        summary = aggregate(per_mode[mode], TOP_K)
+                        compare.append(
+                            {
+                                "recipe": recipe.recipe_id,
+                                "variant": variant,
+                                "mode": mode,
+                                "chunks": len(chunks),
+                            }
+                            | {k: v for k, v in summary.items() if not isinstance(v, (dict, list))}
+                            | {"outcomes": json.dumps(summary["outcomes"], ensure_ascii=False)}
+                        )
+                        print(f"{recipe.recipe_id} {variant} {mode}: {compare[-1]}")
     finally:
         conn.close()
 
@@ -195,7 +255,9 @@ def main() -> None:
             {
                 "exp": args.exp,
                 "run_id": run_id,
-                "mode": "vector (A), 검색만",
+                "modes": modes,
+                "rrf_k": 60,
+                "reranker": reranker_meta or None,
                 "pool": POOL,
                 "top_k": TOP_K,
                 "score": "cosine similarity = 1 - cosine distance (PGVector <=>)",
@@ -219,6 +281,7 @@ def main() -> None:
             {
                 "recipe": r["recipe"],
                 "variant": r["variant"],
+                "mode": r["mode"],
                 "question_id": r["question_id"],
                 "answerable": r["answerable"],
                 "query_used": r["query"]["query_used"],

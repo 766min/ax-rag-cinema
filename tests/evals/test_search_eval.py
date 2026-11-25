@@ -77,3 +77,53 @@ def test_HTTP_요청_로그를_센다() -> None:
     assert summary["requests"] == 2
     assert summary["by_endpoint"] == {"embeddings": 1, "completions": 1}
     assert [c["status"] for c in summary["non_2xx"]] == ["429"]
+
+
+# --- V3 단계별 기록 ---------------------------------------------------------------
+
+
+class _BM25:
+    def __init__(self, ranked: list[tuple[str, float]]) -> None:
+        self.ranked = ranked
+
+    def search(self, query: str, k: int) -> list[tuple[str, float]]:
+        return self.ranked[:k]
+
+
+class _Reranker:
+    name = "fake"
+
+    def score(self, query: str, texts: list[str]) -> list[float]:
+        return [float(len(t)) for t in texts]  # 긴 글일수록 위로
+
+    def truncated(self, query: str, texts: list[str]) -> int:
+        return 0
+
+
+def test_단계별로_벡터_BM25_RRF_재정렬_순위를_남긴다() -> None:
+    from evals.search_eval import gold_movement, run_stages
+
+    texts = {"a": "x", "b": "xx", "c": "xxx", "d": "xxxx"}
+    vector = [("a", 0.9), ("b", 0.8), ("c", 0.7)]
+    stages = run_stages("q", vector, _BM25([("c", 5.0), ("d", 4.0)]), texts, 3, _Reranker())
+
+    assert [c["chunk_id"] for c in stages["vector"]] == ["a", "b", "c"]
+    assert [c["chunk_id"] for c in stages["bm25"]] == ["c", "d"]
+    # c 는 두 목록에 모두 있어 RRF 1위. b(벡터 2위)와 d(BM25 2위)는 점수가 같고, 먼저 넣은 벡터 쪽이
+    # 앞선다. 후보는 pool(3)개로 잘려 d 가 빠진다
+    assert [c["chunk_id"] for c in stages["hybrid"]] == ["c", "a", "b"]
+    assert [c["chunk_id"] for c in stages["hybrid_rerank"]] == ["c", "b", "a"]
+    assert stages["hybrid_rerank"][1]["rank_before_rerank"] == 3
+    assert stages["overlap_vector_bm25"] == 1
+
+    moved = gold_movement(stages, ["d", "b"])
+    assert moved["ranks"]["d"] == {"vector": None, "bm25": 2, "hybrid": None, "hybrid_rerank": None}
+    assert moved["ranks"]["b"] == {"vector": 2, "bm25": None, "hybrid": 3, "hybrid_rerank": 2}
+    assert (moved["only_bm25"], moved["only_vector"]) == (["d"], ["b"])
+
+
+def test_후보가_0개인_문항도_요약할_수_있다() -> None:
+    empty = score_question(_item(["c1"]), [], {"c1": {"similarity": 0.5, "rank": 7}}, [])
+    summary = aggregate([empty])
+    assert summary["hit@5"] == 0.0 and summary["top1_similarity_mean"] is None
+    assert summary["empty_results"] == 1
