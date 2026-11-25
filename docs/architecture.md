@@ -322,10 +322,12 @@ Brave Search API 약관 3(b) 사용 제한은 다음을 금지한다.
 | 저장소 | 내용 | 키 |
 |---|---|---|
 | 웹 컬렉션 `WEB_COLLECTION` (PGVector) | 웹 청크. 위 "Brave 결과 → 팀 데이터 양식" 그대로, 메타데이터에 `fetched_at` 추가 | `chunk_id` — 같은 URL 은 덮어쓰고, `content_hash` 가 같으면 다시 임베딩하지 않는다 |
-| 검색 기록 표 `web_search_log` (Postgres, 처음 쓸 때 만든다) | `lookup_key` · `query_ko` · `query_en` · `work_id` · `chunk_ids`(Brave 순위 순) · `searched_at` | `lookup_key` |
+| 검색 기록 표 `web_search_log` (Postgres, 처음 쓸 때 만든다) | `lookup_key` · `query_ko` · `query_en` · `work_id` · `chunk_ids`(Brave 순위 순) · `searched_at` · `results`(그 질문이 받은 결과 그대로) | `lookup_key` |
 
 - 2번 단계의 "검색한 적이 있는가" 는 검색 기록 표로 본다. 결과가 0건인 검색도 기록해서 Brave 를 다시 부르지 않는다.
-- 같은 URL 이 다른 질문에서 다시 나오면 청크 메타데이터의 `lookup_key` 는 마지막 질문 것으로 덮인다. 그래서 질문 → 청크 목록은 기록 표가 들고, 청크는 `chunk_ids` 로 꺼낸다 (메타데이터 필터 `lookup_key` 만으로 찾지 않는다).
+- 같은 URL 이 다른 질문에서 다시 나오면 웹 컬렉션의 청크는 마지막 질문 것으로 덮인다. Brave 스니펫은 질문마다 다른 대목을 잘라 주므로 **스니펫 본문까지 바뀐다** (실측: 겹친 URL 2개 모두 스니펫이 달랐다). 그래서 질문 → 결과는 기록 표가 `results` 로 그대로 들고, 재사용할 때는 그 질문이 받은 스니펫을 돌려준다. 웹 컬렉션은 URL 마다 최신 스니펫 하나를 두는 유사도 검색용이다.
+- 재사용할 때 웹 컬렉션에서 지워진 청크는 빼고 돌려준다. 모두 지워졌으면 다시 검색한다.
+- 재사용할 때는 LLM 영어 변환을 하지 않는다. `lookup_key` 는 사전 치환만으로 만들 수 있으므로 저장소를 먼저 보고, 기록에 남은 `query_en` 을 돌려준다 (`rewrite_skipped = true`).
 - 기록이 `WEB_STORE_TTL_DAYS`(기본 30일)보다 오래되면 다시 검색한다.
 - Brave 호출이 실패한 검색은 기록하지 않는다 → 다음 질문에서 다시 시도한다.
 - 저장소 조회 · 적재가 실패해도 답변은 막지 않는다. 검색 결과로 그대로 답하고 `web_store_failed` 를 기록한다.

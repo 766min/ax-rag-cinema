@@ -6,15 +6,17 @@ Brave 결과를 팀 양식(websearch.to_team_format)으로 바꾼 뒤
 
 검색 기록을 따로 두는 이유
 - 결과가 0건인 검색도 "이미 찾아봤다" 로 남겨야 Brave 를 다시 부르지 않는다 (§6 판정 기준).
-- 같은 URL 이 다른 질문에서 다시 나오면 청크 메타데이터의 lookup_key 는 마지막 질문 것으로 덮인다.
-  질문 → 청크 목록을 기록 표가 들고 있어야 앞 질문으로도 다시 찾을 수 있다.
+- 같은 URL 이 다른 질문에서 다시 나오면 청크(스니펫 · 메타데이터)는 마지막 질문 것으로 덮인다.
+  Brave 스니펫은 질문마다 다른 대목을 잘라 주므로, 기록 표가 그 질문이 받은 결과 그대로(results)를
+  들고 있어야 앞 질문이 다시 물었을 때 같은 근거를 돌려줄 수 있다.
+  웹 컬렉션은 URL 마다 최신 스니펫 하나를 두는 검색용 색인이다.
 
 평가 실행기는 이 모듈을 쓰지 않는다 (§6 지키는 선).
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
@@ -58,6 +60,8 @@ class SearchRecord:
     work_id: str | None
     chunk_ids: list[str]
     searched_at: datetime
+    # 그 질문이 받은 결과 그대로 (청크 칸 + 결과 메타데이터). 예전 행은 비어 있을 수 있다
+    results: list[dict[str, Any]] = field(default_factory=list)
 
 
 class SearchLog(Protocol):
@@ -103,6 +107,11 @@ class PgSearchLog:
                 )
                 """
             )
+            # 처음 만든 표에는 없던 칸 (2026-11-25 추가)
+            cur.execute(
+                f"ALTER TABLE {self.TABLE} "
+                f"ADD COLUMN IF NOT EXISTS results JSONB NOT NULL DEFAULT '[]'::jsonb"
+            )
         conn.commit()
         self._ready = True
 
@@ -114,8 +123,8 @@ class PgSearchLog:
             self._ensure_table(conn)
             with conn.cursor() as cur:
                 cur.execute(
-                    f"SELECT lookup_key, query_ko, query_en, work_id, chunk_ids, searched_at "
-                    f"FROM {self.TABLE} WHERE lookup_key = %s",
+                    f"SELECT lookup_key, query_ko, query_en, work_id, chunk_ids, searched_at, "
+                    f"results FROM {self.TABLE} WHERE lookup_key = %s",
                     (key,),
                 )
                 row = cur.fetchone()
@@ -124,7 +133,8 @@ class PgSearchLog:
         if row is None:
             return None
         chunk_ids = row[4] if isinstance(row[4], list) else json.loads(row[4])
-        return SearchRecord(row[0], row[1], row[2], row[3], list(chunk_ids), row[5])
+        results = row[6] if isinstance(row[6], list) else json.loads(row[6] or "[]")
+        return SearchRecord(row[0], row[1], row[2], row[3], list(chunk_ids), row[5], list(results))
 
     def put(self, record: SearchRecord) -> None:
         import json
@@ -136,14 +146,15 @@ class PgSearchLog:
                 cur.execute(
                     f"""
                     INSERT INTO {self.TABLE}
-                        (lookup_key, query_ko, query_en, work_id, chunk_ids, searched_at)
-                    VALUES (%s, %s, %s, %s, %s::jsonb, %s)
+                        (lookup_key, query_ko, query_en, work_id, chunk_ids, searched_at, results)
+                    VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s::jsonb)
                     ON CONFLICT (lookup_key) DO UPDATE SET
                         query_ko = EXCLUDED.query_ko,
                         query_en = EXCLUDED.query_en,
                         work_id = EXCLUDED.work_id,
                         chunk_ids = EXCLUDED.chunk_ids,
-                        searched_at = EXCLUDED.searched_at
+                        searched_at = EXCLUDED.searched_at,
+                        results = EXCLUDED.results
                     """,
                     (
                         record.lookup_key,
@@ -152,6 +163,7 @@ class PgSearchLog:
                         record.work_id,
                         json.dumps(record.chunk_ids),
                         record.searched_at,
+                        json.dumps(record.results, ensure_ascii=False),
                     ),
                 )
             conn.commit()
@@ -161,7 +173,11 @@ class PgSearchLog:
 
 def from_vector_document(doc: LangChainDocument) -> WebResult:
     """웹 컬렉션에서 꺼낸 행을 websearch 가 만든 모양(WebResult)으로 되돌린다"""
-    meta = dict(doc.metadata)
+    return _from_metadata(dict(doc.metadata))
+
+
+def _from_metadata(meta: dict[str, Any]) -> WebResult:
+    """청크 칸 + 결과 메타데이터 (to_vector_document 의 metadata) → WebResult"""
     chunk = Chunk.model_validate({k: v for k, v in meta.items() if k in _CHUNK_FIELDS})
     fetched_raw = meta.get("fetched_at")
     fetched = datetime.fromisoformat(fetched_raw) if isinstance(fetched_raw, str) else None
@@ -216,6 +232,7 @@ class WebStore:
             return None
         if not record.chunk_ids:
             return CachedSearch(results=[], query_en=record.query_en)
+        # 웹 컬렉션에 남아 있는 청크만 쓴다. 지운 청크(삭제 · 정리)는 되살리지 않는다
         found = {
             d.metadata.get("chunk_id"): d for d in self.collection.get_by_ids(record.chunk_ids)
         }
@@ -223,8 +240,13 @@ class WebStore:
             # 기록은 있는데 청크가 모두 지워졌다 (컬렉션을 비운 경우 등) → 다시 검색한다
             logger.info("[webstore] 기록의 청크가 없음 → 다시 검색 (key=%s)", key)
             return None
+        if record.results:
+            # 그 질문이 받은 스니펫 그대로. 다른 질문이 같은 URL 을 덮어써도 바뀌지 않는다
+            results = [_from_metadata(r) for r in record.results if r.get("chunk_id") in found]
+        else:
+            # 예전 행(results 없음): 웹 컬렉션의 현재 청크로 대신한다
+            results = [from_vector_document(found[cid]) for cid in record.chunk_ids if cid in found]
         # 기록 순서(= Brave 순위) 그대로. 일부만 지워졌으면 남은 것만
-        results = [from_vector_document(found[cid]) for cid in record.chunk_ids if cid in found]
         return CachedSearch(results=results, query_en=record.query_en)
 
     def save(self, outcome: WebSearchOutcome, *, query_ko: str, work_id: str | None) -> SaveReport:
@@ -258,6 +280,7 @@ class WebStore:
                 work_id=work_id,
                 chunk_ids=ids,
                 searched_at=self._now(),
+                results=[to_vector_document(r).metadata for r in outcome.results],
             )
         )
         logger.info(

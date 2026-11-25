@@ -275,3 +275,30 @@ def test_miss_still_runs_llm_rewrite() -> None:
     assert len(calls) == 1
     assert rewrite["rewrite_skipped"] is False
     assert outcome.web_called is True
+
+
+def test_shared_url_keeps_each_questions_own_snippet() -> None:
+    """같은 URL 이 다른 스니펫으로 다시 와도, 앞 질문은 자기가 받은 스니펫을 그대로 돌려받는다"""
+    store = _store()
+    first, _ = _ask(store)
+    later_payload = {
+        "web": {
+            "results": [
+                {
+                    "title": "Thunderbolts* box office",
+                    "url": "https://example.com/a",  # 같은 URL, 다른 대목
+                    "description": "Opened with $76 million in week one.",
+                }
+            ]
+        }
+    }
+    _ask(store, "썬더볼츠 평가는?", payload=later_payload)
+    collection = store.collection
+    assert isinstance(collection, MemoryCollection)
+    shared_id = first.results[0].chunk.chunk_id
+    # 웹 컬렉션(검색용)은 최신 스니펫으로 바뀌었다
+    assert "76 million" in collection.rows[shared_id].metadata["text"]
+    again, calls = _ask(store)
+    assert calls == []
+    assert [r.chunk.text for r in again.results] == [r.chunk.text for r in first.results]
+    assert "382 million" in again.results[0].chunk.text
