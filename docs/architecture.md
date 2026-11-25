@@ -322,7 +322,7 @@ Brave Search API 약관 3(b) 사용 제한은 다음을 금지한다.
 | 저장소 | 내용 | 키 |
 |---|---|---|
 | 웹 컬렉션 `WEB_COLLECTION` (PGVector) | 웹 청크. 위 "Brave 결과 → 팀 데이터 양식" 그대로, 메타데이터에 `fetched_at` 추가 | `chunk_id` — 같은 URL 은 덮어쓰고, `content_hash` 가 같으면 다시 임베딩하지 않는다 |
-| 검색 기록 표 `web_search_log` (Postgres, 처음 쓸 때 만든다) | `lookup_key` · `query_ko` · `query_en` · `work_id` · `chunk_ids`(Brave 순위 순) · `searched_at` · `results`(그 질문이 받은 결과 그대로) | `lookup_key` |
+| 검색 기록 표 `web_search_log` (Postgres, 처음 쓸 때 만든다) | `lookup_key` · `query_ko` · `query_en` · `work_id` · `chunk_ids`(Brave 순위 순) · `searched_at` · `results`(그 질문이 받은 결과 그대로) · `requested`(그때 요청한 개수 `count`) | `lookup_key` |
 
 - 2번 단계의 "검색한 적이 있는가" 는 검색 기록 표로 본다. 결과가 0건인 검색도 기록해서 Brave 를 다시 부르지 않는다.
 - 같은 URL 이 다른 질문에서 다시 나오면 웹 컬렉션의 청크는 마지막 질문 것으로 덮인다. Brave 스니펫은 질문마다 다른 대목을 잘라 주므로 **스니펫 본문까지 바뀐다** (실측: 겹친 URL 2개 모두 스니펫이 달랐다). 그래서 질문 → 결과는 기록 표가 `results` 로 그대로 들고, 재사용할 때는 그 질문이 받은 스니펫을 돌려준다. 웹 컬렉션은 URL 마다 최신 스니펫 하나를 두는 유사도 검색용이다.
@@ -330,6 +330,8 @@ Brave Search API 약관 3(b) 사용 제한은 다음을 금지한다.
 - 재사용할 때는 LLM 영어 변환을 하지 않는다. `lookup_key` 는 사전 치환만으로 만들 수 있으므로 저장소를 먼저 보고, 기록에 남은 `query_en` 을 돌려준다 (`rewrite_skipped = true`).
 - 기록이 `WEB_STORE_TTL_DAYS`(기본 30일)보다 오래되면 다시 검색한다. **결과가 0건인 기록은 `WEB_STORE_EMPTY_TTL_DAYS`(기본 1일)만** 기억한다 — Brave 가 일시적으로 비었거나 아직 기사가 없는 최신 소식일 수 있어서, 길게 기억하면 그 질문이 오래 "정보 부족" 으로 고정된다.
 - Brave 호출이 실패한 검색은 기록하지 않는다 → 다음 질문에서 다시 시도한다.
+- **요청 개수(`count`)** — 검색 기록은 질문으로만 찾으므로 그때 요청한 개수(`requested`)를 함께 둔다. 지금 `count` 가 더 크면 다시 검색하고, 같거나 작으면 저장분에서 앞의 `count` 건만 돌려준다. Brave 가 요청보다 적게 준 경우(5건 요청 → 2건)는 요청 개수로 비교하므로 매번 다시 찾지 않는다. `brave_web_search` 도구는 `count` 를 LLM 이 정하므로 이 규칙이 필요하다 (2026-11-25 리뷰 반영). 이 칸이 생기기 전의 행은 `requested = 0` 이라 한 번 다시 검색해 채운다.
+- **Brave 실패 시 예전 결과** — 기한이 지났거나 개수가 모자라 다시 검색했는데 Brave 가 실패하면, 저장해 둔 결과를 대신 돌려준다 (`web_failed = true`, `web_fallback = true`, 기한이 지났으면 `web_stale = true`). 답변은 "웹 검색 결과 · 미검증" 에 더해 받은 날짜(`fetched_at`)를 보여 오래된 결과임을 알린다. 대신 쓸 결과가 없으면(처음 질문 · 0건 기록) 지금처럼 정보 부족으로 끝난다. 기한이 지나도 DB 에서 지우지는 않으므로 이렇게 쓸 수 있다 (2026-11-25 리뷰 반영).
 - 저장소 조회 · 적재가 실패해도 답변은 막지 않는다. 검색 결과로 그대로 답하고 `web_store_failed` 를 기록한다.
 - 재사용한 경우 `web_called = false`, `web_cache_hit = true`.
 
@@ -430,6 +432,7 @@ Brave Search API 약관 3(b) 사용 제한은 다음을 금지한다.
 | `web_cache_hit` | 전에 넣어 둔 웹 보강분으로 답했는가 | 기록 |
 | `web_failed` | Brave 호출이 실패했는가 | 기록 |
 | `web_store_failed` | 웹 보강분 조회 · 적재가 실패했는가 (답변은 그대로 진행) | 기록 |
+| `web_fallback` · `web_stale` | Brave 가 실패해 저장분을 대신 썼는가 · 그 저장분이 기한을 넘겼는가 | 화면("오래된 결과" 표시) · 기록 |
 | `index_version` | 답할 때의 색인 버전 (§4.2) | 기록 |
 
 - 평가 실행에서는 `web_called` · `web_cache_hit` 가 항상 거짓이다. 참인 기록이 하나라도 있으면 웹 흐름이 꺼지지 않은 것이므로 그 실행은 다시 돌린다.

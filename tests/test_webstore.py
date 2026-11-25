@@ -73,14 +73,21 @@ async def _translator(_system: str, text: str) -> str:
     return text.replace("흥행 수익은", "box office gross")
 
 
-def _ask(store: WebStore, question: str = "썬더볼츠 흥행 수익은?", payload: Any = PAYLOAD) -> Any:
+def _ask(
+    store: WebStore,
+    question: str = "썬더볼츠 흥행 수익은?",
+    payload: Any = PAYLOAD,
+    count: int = 5,
+) -> Any:
     calls: list[str] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         calls.append(request.url.params["q"])
         if isinstance(payload, int):
             return httpx.Response(payload)
-        return httpx.Response(200, json=payload)
+        # 실제 Brave 처럼 count 개까지만 돌려준다
+        limit = int(request.url.params["count"])
+        return httpx.Response(200, json={"web": {"results": payload["web"]["results"][:limit]}})
 
     async def run() -> Any:
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
@@ -91,6 +98,7 @@ def _ask(store: WebStore, question: str = "썬더볼츠 흥행 수익은?", payl
                 api_key="test-key",
                 client=client,
                 store=store,
+                count=count,
             )
 
     _rewrite, outcome = asyncio.run(run())
@@ -158,7 +166,7 @@ def test_unchanged_chunk_is_not_embedded_again() -> None:
     outcome, calls = _ask(store, "썬더볼츠 평가는?")
     assert len(calls) == 1
     assert len(collection.add_calls) == 1
-    report = store.save(outcome, query_ko="썬더볼츠 평가는?", work_id=None)
+    report = store.save(outcome, query_ko="썬더볼츠 평가는?", work_id=None, count=5)
     assert report.inserted == 0 and report.unchanged_skipped == len(outcome.results)
 
 
@@ -317,3 +325,66 @@ def test_zero_result_is_remembered_only_for_empty_ttl() -> None:
     _, full_calls = _ask(next_day)
     assert len(empty_calls) == 1  # 0건 기록은 하루 지나 다시 검색
     assert full_calls == []  # 결과 있는 기록은 그대로 재사용
+
+
+THREE = {
+    "web": {
+        "results": [
+            {"title": f"T{i}", "url": f"https://example.com/{i}", "description": f"Snippet {i}."}
+            for i in range(1, 4)
+        ]
+    }
+}
+
+
+def test_larger_count_searches_again_smaller_count_is_sliced() -> None:
+    """리뷰 지적 1: 검색 기록은 질문으로만 찾으므로, 요청 개수를 함께 저장해 비교한다"""
+    store = _store()
+    first, calls1 = _ask(store, payload=THREE, count=1)
+    assert len(calls1) == 1 and len(first.results) == 1
+    more, calls2 = _ask(store, payload=THREE, count=3)  # 더 많이 → 다시 검색
+    assert len(calls2) == 1 and more.web_cache_hit is False and len(more.results) == 3
+    fewer, calls3 = _ask(store, payload=THREE, count=2)  # 더 적게 → 저장분에서 앞 2건
+    assert calls3 == [] and fewer.web_cache_hit is True
+    assert [r.chunk.chunk_id for r in fewer.results] == [r.chunk.chunk_id for r in more.results[:2]]
+
+
+def test_brave_returning_fewer_than_asked_is_still_reused() -> None:
+    """Brave 가 요청보다 적게 줘도(5건 요청 → 2건) 요청 개수로 비교하므로 매번 다시 찾지 않는다"""
+    store = _store()
+    _ask(store, count=5)
+    again, calls = _ask(store, count=5)
+    assert calls == [] and again.web_cache_hit is True and len(again.results) == 2
+
+
+def test_expired_record_is_used_as_stale_when_brave_fails() -> None:
+    """리뷰 지적 2: 기한이 지나 다시 검색했는데 Brave 가 실패하면 예전 결과를 '오래된 결과' 로"""
+    old = _store(NOW)
+    first, _ = _ask(old)
+    later = WebStore(old.collection, old.log, ttl_days=30, now=lambda: NOW + timedelta(days=31))
+    outcome, calls = _ask(later, payload=500)
+    assert len(calls) == 1
+    assert outcome.web_failed is True and outcome.web_fallback is True
+    assert outcome.web_stale is True
+    assert [r.chunk.text for r in outcome.results] == [r.chunk.text for r in first.results]
+    # 실패한 검색은 기록하지 않으므로 다음 질문에서 다시 Brave 를 시도한다
+    _, retry = _ask(later)
+    assert len(retry) == 1
+
+
+def test_fewer_cached_results_are_used_when_brave_fails_for_larger_count() -> None:
+    """개수가 모자라 다시 검색했는데 Brave 가 실패 → 기한 안의 저장분이라 stale 은 아님"""
+    store = _store()
+    _ask(store, payload=THREE, count=1)
+    outcome, calls = _ask(store, payload=500, count=3)
+    assert len(calls) == 1
+    assert outcome.web_fallback is True and outcome.web_stale is False
+    assert len(outcome.results) == 1
+
+
+def test_no_fallback_without_stored_results() -> None:
+    """저장분이 없거나 0건 기록이면 대신 쓸 것이 없다 → 지금처럼 빈 결과 + web_failed"""
+    store = _store()
+    outcome, _ = _ask(store, payload=500)
+    assert outcome.web_failed is True and outcome.web_fallback is False
+    assert outcome.results == []

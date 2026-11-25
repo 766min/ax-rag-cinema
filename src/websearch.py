@@ -64,22 +64,32 @@ class WebSearchOutcome:
     web_failed: bool = False
     web_cache_hit: bool = False  # 전에 넣어 둔 웹 보강분을 썼다 (Brave 를 부르지 않음)
     web_store_failed: bool = False  # 적재 · 재조회 실패. 답변은 그대로 진행한다
+    web_fallback: bool = False  # Brave 가 실패해서 저장해 둔 예전 결과를 대신 돌려줬다
+    web_stale: bool = False  # 돌려준 저장분이 유효 기간을 넘긴 "오래된 결과" 다
     error: str | None = None
 
 
 @dataclass(frozen=True)
 class CachedSearch:
-    """전에 한 웹 검색: 그때 결과(0건일 수 있음)와 그때 쓴 영어 검색어"""
+    """전에 한 웹 검색: 그때 결과(0건일 수 있음) · 쓴 영어 검색어 · 요청 개수 · 기한 초과 여부"""
 
     results: list[WebResult]
     query_en: str
+    requested: int = 0  # 그때 Brave 에 요청한 개수 (count). 예전 행은 0
+    expired: bool = False  # 유효 기간을 넘겼다 → 다시 검색하되, Brave 가 실패하면 대신 쓸 수 있다
+
+    def covers(self, count: int) -> bool:
+        """기한 안이고, 지금 요청한 개수 이상을 요청했던 검색이면 그대로 재사용한다"""
+        return not self.expired and self.requested >= count
 
 
 class WebCache(Protocol):
     """웹 보강분 저장소 (webstore.WebStore). 테스트에서는 가짜를 넣는다"""
 
     def lookup(self, key: str) -> CachedSearch | None: ...
-    def save(self, outcome: WebSearchOutcome, *, query_ko: str, work_id: str | None) -> Any: ...
+    def save(
+        self, outcome: WebSearchOutcome, *, query_ko: str, work_id: str | None, count: int
+    ) -> Any: ...
 
 
 def lookup_key(query_normalized: str) -> str:
@@ -331,6 +341,10 @@ async def search_web_for_question(
     사전 치환(LLM 없음)으로 lookup_key → (store 가 있으면) 검색 기록 조회 →
     없을 때만 LLM 영어 변환 → Brave → 팀 양식 → 적재.
     재사용할 때는 LLM 을 부르지 않고, 그때 저장한 영어 검색어를 돌려준다 (rewrite_skipped=True).
+    재사용 조건: 기한 안 + 그때 요청한 개수 >= 지금 count. 그때보다 많이 달라면 다시 검색하고,
+    적게 달라면 앞에서 count 건만 잘라 준다.
+    다시 검색했는데 Brave 가 실패하면 저장분(기한이 지났어도)을 대신 돌려준다
+    (web_failed · web_fallback = True, 기한이 지났으면 web_stale = True).
     store 를 안 주면 WEB_STORE 설정을 따른다 (true 면 webstore.default_store()).
     적재 · 조회가 실패해도 검색 결과는 그대로 돌려주고 web_store_failed 만 켠다.
     돌려주는 rewrite 결과(query_normalized · query_en · rewrite_failed)는 호출 기록(Trace)에 쓴다.
@@ -355,14 +369,14 @@ async def search_web_for_question(
         except Exception as exc:  # noqa: BLE001 — 저장소 장애로 답변을 막지 않는다
             logger.warning("[websearch] 웹 보강분 조회 실패: %s", type(exc).__name__)
             cached, store_failed = None, True
-        if cached is not None:
+        if cached is not None and cached.covers(count):
             hit = WebSearchOutcome(
                 query_en=cached.query_en,
                 lookup_key=key,
-                results=cached.results,
+                results=cached.results[:count],
                 web_cache_hit=True,
             )
-            logger.info("[websearch] 보강분 재사용 key=%s, results=%d", key, len(cached.results))
+            logger.info("[websearch] 보강분 재사용 key=%s, results=%d", key, len(hit.results))
             reused = {
                 "query_ko": query_ko,
                 "query_normalized": normalized,
@@ -372,6 +386,8 @@ async def search_web_for_question(
                 "matched_aliases": matched,
             }
             return reused, hit
+    else:
+        cached = None
 
     rewrite = await (
         rewrite_movie_query(query_ko, alias_table, translator)
@@ -390,10 +406,18 @@ async def search_web_for_question(
         client=client,
     )
     outcome.web_store_failed = store_failed
+    if outcome.web_failed and cached is not None and cached.results:
+        # 기한이 지났거나 개수가 모자라 다시 검색했는데 Brave 가 실패 → 예전 결과라도 돌려준다
+        outcome.results = cached.results[:count]
+        outcome.web_fallback = True
+        outcome.web_stale = cached.expired
+        logger.info("[websearch] Brave 실패 → 저장분 대신 씀 key=%s, stale=%s", key, cached.expired)
     # Brave 가 실패한 검색은 기록하지 않는다 → 다음 질문에서 다시 시도한다
     if cache is not None and not outcome.web_failed and not store_failed:
         try:
-            await asyncio.to_thread(cache.save, outcome, query_ko=query_ko, work_id=work_id)
+            await asyncio.to_thread(
+                cache.save, outcome, query_ko=query_ko, work_id=work_id, count=count
+            )
         except Exception as exc:  # noqa: BLE001
             logger.warning("[websearch] 웹 보강분 적재 실패: %s", type(exc).__name__)
             outcome.web_store_failed = True
@@ -433,6 +457,8 @@ async def brave_web_search(query: str, count: int = DEFAULT_COUNT) -> dict[str, 
         "web_failed": outcome.web_failed,
         "web_cache_hit": outcome.web_cache_hit,
         "web_store_failed": outcome.web_store_failed,
+        "web_fallback": outcome.web_fallback,
+        "web_stale": outcome.web_stale,
         "error": outcome.error,
         "results": [
             {

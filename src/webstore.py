@@ -65,6 +65,8 @@ class SearchRecord:
     searched_at: datetime
     # 그 질문이 받은 결과 그대로 (청크 칸 + 결과 메타데이터). 예전 행은 비어 있을 수 있다
     results: list[dict[str, Any]] = field(default_factory=list)
+    # 그때 Brave 에 요청한 개수 (count). 더 많이 달라는 질문이 오면 다시 검색한다. 예전 행은 0
+    requested: int = 0
 
 
 class SearchLog(Protocol):
@@ -115,6 +117,10 @@ class PgSearchLog:
                 f"ALTER TABLE {self.TABLE} "
                 f"ADD COLUMN IF NOT EXISTS results JSONB NOT NULL DEFAULT '[]'::jsonb"
             )
+            cur.execute(
+                f"ALTER TABLE {self.TABLE} "
+                f"ADD COLUMN IF NOT EXISTS requested INTEGER NOT NULL DEFAULT 0"
+            )
         conn.commit()
         self._ready = True
 
@@ -127,7 +133,7 @@ class PgSearchLog:
             with conn.cursor() as cur:
                 cur.execute(
                     f"SELECT lookup_key, query_ko, query_en, work_id, chunk_ids, searched_at, "
-                    f"results FROM {self.TABLE} WHERE lookup_key = %s",
+                    f"results, requested FROM {self.TABLE} WHERE lookup_key = %s",
                     (key,),
                 )
                 row = cur.fetchone()
@@ -137,7 +143,9 @@ class PgSearchLog:
             return None
         chunk_ids = row[4] if isinstance(row[4], list) else json.loads(row[4])
         results = row[6] if isinstance(row[6], list) else json.loads(row[6] or "[]")
-        return SearchRecord(row[0], row[1], row[2], row[3], list(chunk_ids), row[5], list(results))
+        return SearchRecord(
+            row[0], row[1], row[2], row[3], list(chunk_ids), row[5], list(results), int(row[7])
+        )
 
     def put(self, record: SearchRecord) -> None:
         import json
@@ -149,15 +157,17 @@ class PgSearchLog:
                 cur.execute(
                     f"""
                     INSERT INTO {self.TABLE}
-                        (lookup_key, query_ko, query_en, work_id, chunk_ids, searched_at, results)
-                    VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s::jsonb)
+                        (lookup_key, query_ko, query_en, work_id, chunk_ids, searched_at,
+                         results, requested)
+                    VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s::jsonb, %s)
                     ON CONFLICT (lookup_key) DO UPDATE SET
                         query_ko = EXCLUDED.query_ko,
                         query_en = EXCLUDED.query_en,
                         work_id = EXCLUDED.work_id,
                         chunk_ids = EXCLUDED.chunk_ids,
                         searched_at = EXCLUDED.searched_at,
-                        results = EXCLUDED.results
+                        results = EXCLUDED.results,
+                        requested = EXCLUDED.requested
                     """,
                     (
                         record.lookup_key,
@@ -167,6 +177,7 @@ class PgSearchLog:
                         json.dumps(record.chunk_ids),
                         record.searched_at,
                         json.dumps(record.results, ensure_ascii=False),
+                        record.requested,
                     ),
                 )
             conn.commit()
@@ -225,7 +236,11 @@ class WebStore:
         self._now = now or (lambda: datetime.now(UTC))
 
     def lookup(self, key: str) -> CachedSearch | None:
-        """검색한 적이 있으면 그때 결과(0건일 수 있음)와 검색어, 없거나 기한이 지났으면 None"""
+        """검색한 적이 있으면 그때 결과(0건일 수 있음) · 검색어 · 요청 개수, 없으면 None.
+
+        기한이 지난 기록도 expired=True 로 돌려준다. 재사용할지(covers)는 호출하는 쪽이 정하고,
+        다시 검색했는데 Brave 가 실패하면 이 결과를 "오래된 결과" 로 대신 쓴다.
+        """
         record = self.log.get(key)
         if record is None:
             return None
@@ -233,11 +248,13 @@ class WebStore:
         if searched.tzinfo is None:
             searched = searched.replace(tzinfo=UTC)
         ttl = self.ttl if record.chunk_ids else self.empty_ttl
-        if self._now() - searched > ttl:
+        expired = self._now() - searched > ttl
+        if expired:
             logger.info("[webstore] 기한 지남 → 다시 검색 (key=%s)", key)
-            return None
         if not record.chunk_ids:
-            return CachedSearch(results=[], query_en=record.query_en)
+            return CachedSearch(
+                results=[], query_en=record.query_en, requested=record.requested, expired=expired
+            )
         # 웹 컬렉션에 남아 있는 청크만 쓴다. 지운 청크(삭제 · 정리)는 되살리지 않는다
         found = {
             d.metadata.get("chunk_id"): d for d in self.collection.get_by_ids(record.chunk_ids)
@@ -253,9 +270,13 @@ class WebStore:
             # 예전 행(results 없음): 웹 컬렉션의 현재 청크로 대신한다
             results = [from_vector_document(found[cid]) for cid in record.chunk_ids if cid in found]
         # 기록 순서(= Brave 순위) 그대로. 일부만 지워졌으면 남은 것만
-        return CachedSearch(results=results, query_en=record.query_en)
+        return CachedSearch(
+            results=results, query_en=record.query_en, requested=record.requested, expired=expired
+        )
 
-    def save(self, outcome: WebSearchOutcome, *, query_ko: str, work_id: str | None) -> SaveReport:
+    def save(
+        self, outcome: WebSearchOutcome, *, query_ko: str, work_id: str | None, count: int
+    ) -> SaveReport:
         """청크를 웹 컬렉션에 넣고(내용이 같으면 다시 임베딩하지 않음) 검색 기록을 남긴다"""
         report = SaveReport()
         ids = [r.chunk.chunk_id for r in outcome.results]
@@ -287,6 +308,7 @@ class WebStore:
                 chunk_ids=ids,
                 searched_at=self._now(),
                 results=[to_vector_document(r).metadata for r in outcome.results],
+                requested=count,
             )
         )
         logger.info(
