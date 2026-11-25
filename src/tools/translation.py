@@ -87,11 +87,23 @@ def _load_alias_source(source: Path) -> tuple[Alias, ...]:
     return tuple(Alias.model_validate(json.loads(line)) for line in lines if line.strip())
 
 
+_TRAILING_SYMBOLS = re.compile(r"[^\w]+$")
+
+
 def _name_pairs(aliases: Iterable[Alias], *, answer: bool = False) -> list[tuple[str, str]]:
+    aliases = list(aliases)
     pairs = [
         (a.canonical_en, a.alias_ko) if answer else (a.alias_ko, a.canonical_en) for a in aliases
     ]
     extra = [(en, ko) if answer else (ko, en) for ko, en in CHARACTER_NAMES.items()]
+    if not answer:
+        # Users rarely type a title's trailing symbols ("썬더볼츠*", "왓 이프...?"), so the
+        # query side also matches the name without them. Answers keep the official title.
+        extra += [
+            (bare, a.canonical_en)
+            for a in aliases
+            if (bare := _TRAILING_SYMBOLS.sub("", a.alias_ko)) and bare != a.alias_ko
+        ]
     # Longer names must win over their substrings ("아이언맨 2" before "아이언맨").
     unique = dict.fromkeys(source for source, _ in [*pairs, *extra])
     targets = {source: target for source, target in reversed([*pairs, *extra])}

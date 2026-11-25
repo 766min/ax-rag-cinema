@@ -198,3 +198,34 @@ def test_chunk_ids_with_three_digit_positions_are_protected() -> None:
     result = asyncio.run(translate_answer_to_korean(answer, [], fake))
     assert "p123" not in seen[0]
     assert result["answer_ko"] == "Long plot. [tt4154796-wikipedia-plot-p123]"
+
+
+THUNDERBOLTS = Alias(
+    alias_ko="썬더볼츠*", canonical_en="Thunderbolts*", kind="work", target_id="tt20969586"
+)
+WHAT_IF = Alias(
+    alias_ko="왓 이프...?", canonical_en="What If...?", kind="work", target_id="tt10168312"
+)
+
+
+def test_query_matches_alias_without_trailing_symbols() -> None:
+    _, matched = normalize_query("썬더볼츠 흥행 수익은? 왓 이프는?", [THUNDERBOLTS, WHAT_IF])
+    assert matched == [
+        {"alias_ko": "썬더볼츠", "canonical_en": "Thunderbolts*"},
+        {"alias_ko": "왓 이프", "canonical_en": "What If...?"},
+    ]
+
+
+def test_query_still_matches_alias_with_its_symbols() -> None:
+    _, matched = normalize_query("썬더볼츠* 흥행 수익은?", [THUNDERBOLTS])
+    assert matched == [{"alias_ko": "썬더볼츠*", "canonical_en": "Thunderbolts*"}]
+
+
+def test_answer_keeps_official_title_with_symbols() -> None:
+    async def fake(_system: str, text: str) -> str:
+        return text
+
+    result = asyncio.run(
+        translate_answer_to_korean("Thunderbolts* was a hit.", [THUNDERBOLTS], fake)
+    )
+    assert result["answer_ko"] == "썬더볼츠* was a hit."
