@@ -4,7 +4,10 @@
     uv run python scripts/try_websearch.py "썬더볼츠 흥행 수익은 얼마야?" --count 3 --no-rewrite
 
 필요한 것: .env 의 BRAVE_API_KEY (+ 영어 변환을 쓰면 OPENAI_API_KEY · LLM_* 설정),
-data/cineverse-dataset-schema/aliases.jsonl. 결과는 화면에만 찍고 어디에도 저장하지 않는다.
+data/cineverse-dataset-schema/aliases.jsonl.
+.env 의 WEB_STORE=true 면 결과를 웹 컬렉션 · web_search_log 에 넣고, 같은 질문을 다시 하면
+Brave 없이 넣어 둔 결과를 쓴다 (web_cache_hit). false 면 화면에만 찍고 저장하지 않는다.
+--no-rewrite 는 저장소를 거치지 않는다.
 """
 
 import argparse
@@ -54,6 +57,9 @@ async def main() -> None:
     print(f"영어 변환 실패: {rewrite_failed}")
     print(f"lookup_key    : {outcome.lookup_key}")
     print(f"걸린 시간     : {elapsed:.1f}초")
+    print(f"web_called    : {outcome.web_called}")
+    print(f"web_cache_hit : {outcome.web_cache_hit}")
+    print(f"web_store_failed: {outcome.web_store_failed}")
     if outcome.web_failed:
         print(f"\n웹 검색 실패: {outcome.error}")
         return
