@@ -72,6 +72,14 @@ def main() -> None:
                 f"{collection} 에 다른 임베딩 모델({models})로 만든 행이 있습니다. "
                 "지우지 않고 멈춥니다. 다른 컬렉션 이름을 쓰거나 팀과 정리 방법을 정하세요."
             )
+        # 같은 레시피 ID 의 설정을 바꾸면 컬렉션 이름은 같고 색인 버전만 달라진다. 이때 적재하면
+        # 예전 청크가 지워지므로 멈춘다 (예전 결과의 컬렉션을 보존하려고)
+        versions = meta_values(conn, collection, "index_version") - {None}
+        if versions and versions != {version}:
+            raise SystemExit(
+                f"{collection} 에 다른 색인 버전({versions})의 행이 있습니다. 지우지 않고 멈춥니다. "
+                "레시피 ID 를 새로 정하세요."
+            )
         to_add, to_delete = plan(chunks, existing, version)
         encoding, tokens = count_tokens([index_text(c) for c in to_add], settings.EMBEDDING_MODEL)
         scope = {

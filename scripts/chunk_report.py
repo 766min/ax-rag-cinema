@@ -45,6 +45,21 @@ def _counts(citations: Any) -> dict[str, int]:
     return {s: statuses.count(s) for s in ("contained", "split", "partial", "missing")}
 
 
+def _distribution(values: list[int]) -> dict[str, Any]:
+    """개수 · 최소 · 중앙값 · 평균 · p90 · 최대."""
+    if not values:
+        return {"n": 0}
+    ordered = sorted(values)
+    return {
+        "n": len(ordered),
+        "min": ordered[0],
+        "median": median(ordered),
+        "mean": round(mean(ordered), 1),
+        "p90": ordered[min(len(ordered) - 1, int(len(ordered) * 0.9))],
+        "max": ordered[-1],
+    }
+
+
 def _histogram(lengths: list[int]) -> dict[str, int]:
     edges = (0, *BUCKETS)
     hist = {f"{lo}-{hi - 1}": 0 for lo, hi in zip(edges, BUCKETS, strict=False)}
@@ -92,6 +107,12 @@ def _coverage(section_text: str, chunks: list[Chunk]) -> dict[str, Any]:
         ),
         "chunk_chars": sum(len(normalize_ws(c.text)) for c in chunks),
         "not_in_section": [c.chunk_id for c, s in zip(chunks, spans, strict=True) if s is None],
+        # 같은 절 안에서 이웃한 청크가 실제로 겹친 글자 수 (공백 정규화 기준)
+        "overlaps": [
+            max(0, prev[1] - cur[0])
+            for prev, cur in zip(spans, spans[1:], strict=False)
+            if prev and cur
+        ],
         "uncovered": gaps,
     }
 
@@ -110,10 +131,11 @@ def report(recipe: ChunkRecipe, data: Dataset) -> dict[str, Any]:
     dropped: list[dict[str, Any]] = []
     source_chars = covered_chars = chunk_chars = uncovered_nonspace = 0
     not_in_section: list[str] = []
+    overlaps: list[int] = []
     uncovered: list[dict[str, Any]] = []
-    for doc, section, _ in data.scope:
+    for doc, section, kind in data.scope:
         team_id = doc.source_ids.get("team_document_id") or ""
-        _, gone = recipe.split(section["text"])
+        _, gone = recipe.split(section["text"], str(kind))
         for piece in gone:
             dropped.append(
                 {
@@ -132,6 +154,7 @@ def report(recipe: ChunkRecipe, data: Dataset) -> dict[str, Any]:
         chunk_chars += cov["chunk_chars"]
         uncovered_nonspace += cov["uncovered_nonspace"]
         not_in_section += cov["not_in_section"]
+        overlaps += cov["overlaps"]
         for gap in cov["uncovered"]:
             uncovered.append({"doc_id": doc.doc_id, "section_index": key[1], "text": gap})
 
@@ -160,6 +183,7 @@ def report(recipe: ChunkRecipe, data: Dataset) -> dict[str, Any]:
             "under_50": sum(n < 50 for n in lengths),
             "under_100": sum(n < 100 for n in lengths),
         },
+        "overlap": _distribution(overlaps) | {"zero": sum(o == 0 for o in overlaps)},
         "dropped": {"count": len(dropped), "items": dropped},
         "coverage": {
             "source_chars_normalized": source_chars,
@@ -190,6 +214,7 @@ def report(recipe: ChunkRecipe, data: Dataset) -> dict[str, Any]:
             "input": "header + '\\n' + text",
             "total": sum(tokens),
             "max": max(tokens),
+            "distribution": _distribution(tokens),
             "over_input_limit": sum(t > EMBEDDING_INPUT_LIMIT for t in tokens),
             "input_limit_assumed": EMBEDDING_INPUT_LIMIT,
         },

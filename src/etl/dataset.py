@@ -158,7 +158,7 @@ def build_chunks(data: Dataset, recipe: ChunkRecipe) -> list[Chunk]:
     """범위의 절을 레시피대로 잘라 팀 Chunk 로. position 은 문서 안 순번 (models.Chunk 설명)."""
     by_doc: dict[str, list[tuple[dict[str, Any], Section, str]]] = {}
     for doc, row, section in data.scope:
-        for text in split_text(row["text"], recipe):
+        for text in split_text(row["text"], recipe, str(section)):
             by_doc.setdefault(doc.doc_id, []).append((row, section, text))
 
     chunks: list[Chunk] = []
