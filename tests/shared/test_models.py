@@ -1,4 +1,4 @@
-# 데이터 모양(src/shared/core/models.py) 테스트: 청크 ID 규칙과 값 검사가 지켜지는지 확인한다
+# 데이터 모양(src/shared/core/models.py · schemas.py) 테스트: 청크 ID 규칙과 값 검사가 지켜지는지 확인한다
 import json
 from pathlib import Path
 
@@ -18,7 +18,9 @@ from shared.core.models import (
 )
 from shared.core.schemas import Section
 
-QUESTION_SET = Path(__file__).resolve().parents[1] / "question_set.jsonl"
+# 레포 루트(pyproject.toml 이 있는 폴더)에서 찾는다. 테스트 파일을 옮겨도 경로가 틀어져 조용히 건너뛰지 않게
+REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists())
+QUESTION_SET = REPO_ROOT / "question_set.jsonl"
 
 
 def make_chunk(**overrides: object) -> Chunk:
@@ -294,11 +296,82 @@ def test_chunk_from_page_without_work_rejects_work_id() -> None:
         )
 
 
+# ---------- 인물 서사 · 세계관 본문 청크 (2026-11-25 데이터셋의 빈 team_section) ----------
+
+
+@pytest.mark.parametrize(
+    ("chunk_id", "doc_id", "section"),
+    [
+        # Q007 근거: Loki (Marvel Cinematic Universe) > Fictional character biography > Early life
+        ("wp-61651800-biography-p01", "wp-61651800", "biography"),
+        # Q001 근거: Features of the Marvel Cinematic Universe > Objects > Infinity Stones
+        ("wp-66902704-lore-p03", "wp-66902704", "lore"),
+    ],
+)
+def test_biography_and_lore_chunks(chunk_id: str, doc_id: str, section: Section) -> None:
+    chunk = make_chunk(
+        chunk_id=chunk_id, doc_id=doc_id, work_id=None, section=section, position=int(chunk_id[-2:])
+    )
+    assert chunk.chunk_id == chunk_id
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        # 절 종류와 chunk_id 가운데 부분이 다름
+        {"chunk_id": "wp-61651800-biography-p01", "section": "lore"},
+        {"chunk_id": "wp-66902704-lore-p01", "section": "biography"},
+        # 새 종류라도 출처 규칙은 그대로 (wp- 문서에 work_id 를 붙이면 막힘)
+        {"chunk_id": "wp-61651800-biography-p01", "section": "biography", "work_id": "tt0800369"},
+    ],
+)
+def test_biography_and_lore_follow_id_rules(overrides: dict[str, object]) -> None:
+    fields: dict[str, object] = {"doc_id": overrides["chunk_id"].rsplit("-", 2)[0], "work_id": None}  # type: ignore[union-attr]
+    fields.update(overrides)
+    with pytest.raises(ValidationError):
+        make_chunk(**fields)
+
+
 # ---------- 닫힌 값 목록 ----------
 
 
 def test_source_id_values_match_architecture() -> None:
     assert {s.value for s in SourceId} == {"fandom", "wikipedia_en", "brave"}
+
+
+def test_section_values() -> None:
+    # 청크 ID 가운데 들어가는 값이라, 바뀌면 팀원끼리 청크 ID 가 어긋난다 (영민님 요청 2026-11-25)
+    assert [s.value for s in Section] == [
+        "synopsis",
+        "plot",
+        "intro",
+        "biography",
+        "lore",
+        "connection",
+        "card",
+        "web",
+    ]
+
+
+def test_biography_and_lore_are_not_cards_or_web() -> None:
+    # 카드 · 웹 전용 규칙에 새 종류가 끼면 안 된다 (models.py Chunk._check_ids)
+    with pytest.raises(ValidationError):
+        make_chunk(
+            chunk_id="wp-61651800-biography",
+            doc_id="wp-61651800",
+            work_id=None,
+            section="biography",
+            total=1,
+        )
+    with pytest.raises(ValidationError):
+        make_chunk(
+            chunk_id="web-0123456789ab-lore-p01",
+            doc_id="web-0123456789ab",
+            work_id=None,
+            source_id=SourceId.BRAVE,
+            section="lore",
+            total=1,
+        )
 
 
 def test_unknown_source_id_is_rejected() -> None:
