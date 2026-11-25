@@ -1,10 +1,10 @@
 """청킹 결과 검수 (임베딩 없음, API · DB 호출 없음).
 
 레시피마다 청크 통계 · 버린 조각 · 절 경계 · 원문 커버리지 · ID · 정답 근거 매핑 · 임베딩 토큰 추정을
-results/chunking/{실행시각}/ 아래 새 파일로 남긴다. 해석이나 판정은 넣지 않는다.
+results/{버전}/chunking/{실행시각}/ 아래 새 파일로 남긴다. 해석이나 판정은 넣지 않는다.
 
-    uv run python scripts/chunk_report.py                  # CK01~CK04 전부
-    uv run python scripts/chunk_report.py --recipe CK02    # 하나만
+    uv run python scripts/chunk_report.py --results-version v1                 # CK01~CK04 전부
+    uv run python scripts/chunk_report.py --results-version v1 --recipe CK02   # 하나만
 """
 
 import argparse
@@ -12,6 +12,7 @@ import json
 import re
 import sys
 import time
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from statistics import mean, median
@@ -19,22 +20,19 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from etl.handoff import (  # noqa: E402
-    HANDOFF_DIR,
+from etl.chunking import RECIPES, ChunkRecipe, chunk_spans, normalize_ws  # noqa: E402
+from etl.dataset import (  # noqa: E402
     PROJECT_ROOT,
-    RECIPES,
-    ChunkRecipe,
-    build,
-    chunk_spans,
+    Dataset,
+    build_chunks,
     dataset_fingerprint,
     index_version,
-    normalize_ws,
-    read_jsonl,
-    section_texts,
-    source_sections,
+    load_dataset,
+    scope_documents,
 )
 from etl.load import count_tokens, index_text  # noqa: E402
 from evals.items import map_citations, read_question_set  # noqa: E402
+from evals.provenance import results_dir, run_info  # noqa: E402
 from shared.core.models import Chunk  # noqa: E402
 
 BUCKETS = (50, 100, 250, 500, 750, 1000, 1500, 2000, 4000)
@@ -62,7 +60,7 @@ def _histogram(lengths: list[int]) -> dict[str, int]:
 
 
 def _coverage(section_text: str, chunks: list[Chunk]) -> dict[str, Any]:
-    """절 원문(공백 정규화)에서 청크들이 덮는 범위 (handoff.chunk_spans 와 같은 기준).
+    """절 원문(공백 정규화)에서 청크들이 덮는 범위 (etl.chunking.chunk_spans 와 같은 기준).
 
     절 안에서 찾지 못한 청크는 not_in_section 으로 센다 (절 경계를 넘었거나 글이 바뀐 경우).
     """
@@ -98,12 +96,12 @@ def _coverage(section_text: str, chunks: list[Chunk]) -> dict[str, Any]:
     }
 
 
-def report(recipe: ChunkRecipe, works_raw: list[dict], docs_raw: list[dict]) -> dict[str, Any]:
+def report(recipe: ChunkRecipe, data: Dataset) -> dict[str, Any]:
     started = time.perf_counter()
-    _, documents, chunks = build(works_raw, docs_raw, recipe)
+    chunks = build_chunks(data, recipe)
     elapsed_ms = round((time.perf_counter() - started) * 1000)
+    documents = scope_documents(data)
 
-    sections = list(source_sections(works_raw, docs_raw))
     by_section: dict[tuple[str, str], list[Chunk]] = {}
     for c in chunks:
         key = (c.source_ids["team_document_id"] or "", c.source_ids["section_index"] or "")
@@ -113,19 +111,21 @@ def report(recipe: ChunkRecipe, works_raw: list[dict], docs_raw: list[dict]) -> 
     source_chars = covered_chars = chunk_chars = uncovered_nonspace = 0
     not_in_section: list[str] = []
     uncovered: list[dict[str, Any]] = []
-    for raw_doc, section in sections:
+    for doc, section, _ in data.scope:
+        team_id = doc.source_ids.get("team_document_id") or ""
         _, gone = recipe.split(section["text"])
         for piece in gone:
             dropped.append(
                 {
-                    "team_document_id": raw_doc["doc_id"],
-                    "title": raw_doc["title"],
+                    "doc_id": doc.doc_id,
+                    "team_document_id": team_id,
+                    "title": data.titles[doc.doc_id],
                     "section_index": section["section_index"],
                     "text": piece,
                     "reason": f"min_chars({recipe.min_chars}) 미만",
                 }
             )
-        key = (raw_doc["doc_id"], str(section["section_index"]))
+        key = (team_id, str(section["section_index"]))
         cov = _coverage(section["text"], sorted(by_section.get(key, []), key=lambda c: c.position))
         source_chars += cov["source_chars"]
         covered_chars += cov["covered_chars"]
@@ -133,9 +133,7 @@ def report(recipe: ChunkRecipe, works_raw: list[dict], docs_raw: list[dict]) -> 
         uncovered_nonspace += cov["uncovered_nonspace"]
         not_in_section += cov["not_in_section"]
         for gap in cov["uncovered"]:
-            uncovered.append(
-                {"team_document_id": raw_doc["doc_id"], "section_index": key[1], "text": gap}
-            )
+            uncovered.append({"doc_id": doc.doc_id, "section_index": key[1], "text": gap})
 
     lengths = sorted(len(c.text) for c in chunks)
     ids = [c.chunk_id for c in chunks]
@@ -147,19 +145,11 @@ def report(recipe: ChunkRecipe, works_raw: list[dict], docs_raw: list[dict]) -> 
     return {
         "recipe": recipe.recipe_id,
         "chunking_version": recipe.version,
-        "settings": {
-            "method": recipe.method,
-            "chunk_size": recipe.size,
-            "chunk_overlap": recipe.overlap,
-            "merge_min": recipe.merge_min if recipe.method == "paragraph" else None,
-            "min_chars": recipe.min_chars,
-            "separators": list(recipe.separators) if recipe.method == "rcts" else None,
-            "keep_separator": recipe.keep_separator if recipe.method == "rcts" else None,
-            "length_function": "len (문자 수)",
-        },
+        "settings": recipe.settings(),
         "documents": len(documents),
-        "source_sections": len(sections),
+        "source_sections": len(data.scope),
         "chunks": len(chunks),
+        "chunks_by_section": dict(Counter(str(c.section) for c in chunks)),
         "chunk_ms": elapsed_ms,
         "length": {
             "min": lengths[0],
@@ -237,20 +227,21 @@ def _sample_text(rep: dict[str, Any]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--recipe", choices=RECIPES, action="append")
+    parser.add_argument("--results-version", required=True, help="결과 버전 (예: v1)")
     args = parser.parse_args()
     recipes = [RECIPES[r] for r in (args.recipe or RECIPES)]
 
-    works_raw = read_jsonl(HANDOFF_DIR / "works.jsonl")
-    docs_raw = read_jsonl(HANDOFF_DIR / "documents.jsonl")
     fingerprint = dataset_fingerprint()
+    data = load_dataset()
     questions = read_question_set()
-    sections = section_texts(docs_raw)
+    sections = data.sections
+    info = run_info(args.results_version)
 
-    out_dir = PROJECT_ROOT / "results" / "chunking" / f"{datetime.now():%Y%m%d-%H%M%S}"
+    out_dir = results_dir(args.results_version) / "chunking" / f"{datetime.now():%Y%m%d-%H%M%S}"
     out_dir.mkdir(parents=True, exist_ok=False)  # 같은 시각 폴더가 있으면 실패 (덮어쓰기 방지)
 
     for recipe in recipes:
-        rep = report(recipe, works_raw, docs_raw)
+        rep = report(recipe, data)
         chunks = rep["_samples"]["chunks"]
         gold = [c for raw in questions for c in map_citations(raw, chunks, sections)]
         for g in gold:
@@ -259,6 +250,7 @@ def main() -> None:
             )
         rep["index_version"] = index_version(recipe, fingerprint)
         rep["dataset"] = fingerprint
+        rep["run_info"] = info
         rep["gold_mapping"] = {
             "status_counts_answerable": _counts(g for g in gold if g["answerable"]),
             "status_counts_unanswerable": _counts(g for g in gold if not g["answerable"]),

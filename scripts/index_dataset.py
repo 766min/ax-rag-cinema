@@ -1,7 +1,7 @@
-"""handoff 데이터를 레시피대로 청킹해 레시피 전용 컬렉션에 적재한다 (실제 임베딩 API 호출, 비용 발생).
+"""팀 데이터셋을 레시피대로 청킹해 레시피 전용 컬렉션에 적재한다 (실제 임베딩 API 호출, 비용 발생).
 
-uv run python scripts/index_handoff.py --recipe CK03 --dry-run  # 범위 · 토큰 추정만 (API 호출 없음)
-uv run python scripts/index_handoff.py --recipe CK03            # 증분 적재 + results/index/ 기록
+uv run python scripts/index_dataset.py --results-version v1 --recipe CK03 --dry-run  # 범위 · 토큰만
+uv run python scripts/index_dataset.py --results-version v1 --recipe CK03            # 증분 적재 + 기록
 """
 
 import argparse
@@ -13,13 +13,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from etl.handoff import (  # noqa: E402
+from etl.chunking import RECIPES  # noqa: E402
+from etl.dataset import (  # noqa: E402
     PROJECT_ROOT,
-    RECIPES,
+    build_chunks,
     collection_for,
     dataset_fingerprint,
     index_version,
-    load_handoff,
+    load_dataset,
+    scope_documents,
 )
 from etl.load import (  # noqa: E402
     count_tokens,
@@ -29,23 +31,27 @@ from etl.load import (  # noqa: E402
     meta_values,
     plan,
 )
+from evals.provenance import results_dir, run_info  # noqa: E402
 from shared.core.config import settings  # noqa: E402
 from shared.core.logger import get_logger  # noqa: E402
 from shared.core.vector_store import get_raw_db_connection, get_vector_store  # noqa: E402
 
-logger = get_logger("scripts.index_handoff")
+logger = get_logger("scripts.index_dataset")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--recipe", choices=RECIPES, required=True)
     parser.add_argument("--dry-run", action="store_true", help="적재하지 않고 범위 · 토큰만 본다")
+    parser.add_argument("--results-version", required=True, help="결과 버전 (예: v1)")
     args = parser.parse_args()
     recipe = RECIPES[args.recipe]
+    out = results_dir(args.results_version) / "index"
+    info = run_info(args.results_version)
 
     fingerprint = dataset_fingerprint()
     version = index_version(recipe, fingerprint)
-    collection = collection_for(settings.MOVIE_COLLECTION, recipe)
+    collection = collection_for(settings.MOVIE_COLLECTION, recipe, fingerprint)
     # 색인 설정: 청크마다 같이 저장하고, 다른 설정으로 만든 행이 섞여 있으면 적재를 멈춘다
     index_meta = {
         "embedding_model": settings.EMBEDDING_MODEL,
@@ -53,7 +59,9 @@ def main() -> None:
         "distance": "cosine",  # shared.core.vector_store.get_vector_store 의 설정
         "recipe": recipe.recipe_id,
     }
-    _, documents, chunks = load_handoff(recipe=recipe)
+    data = load_dataset()
+    documents = scope_documents(data)
+    chunks = build_chunks(data, recipe)
 
     conn = get_raw_db_connection()
     try:
@@ -96,7 +104,6 @@ def main() -> None:
     finally:
         conn.close()
 
-    out = PROJECT_ROOT / "results" / "index"
     out.mkdir(parents=True, exist_ok=True)
     path = out / f"{datetime.now():%Y%m%d-%H%M%S}-{recipe.recipe_id}.json"
     record = {
@@ -105,6 +112,7 @@ def main() -> None:
         "index_seconds": seconds,
         "index_meta": index_meta,
         "dataset": fingerprint,
+        "run_info": info,
         "usage_note": "임베딩 토큰은 tiktoken 추정값 (API 보고값 아님)",
     }
     with open(path, "x", encoding="utf-8") as f:

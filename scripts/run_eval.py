@@ -1,7 +1,7 @@
-"""골든셋으로 A(vector) · B(hybrid) 구성을 평가하고 results/ 에 기록한다 (실제 API 호출, 비용 발생).
+"""골든셋으로 A(vector) · B(hybrid) 구성을 평가하고 results/{버전}/ 에 기록한다 (실제 API 호출, 비용 발생).
 
-uv run python scripts/run_eval.py --recipe CK03 --mode vector --limit 3   # 3문항 시험 (-try)
-uv run python scripts/run_eval.py --recipe CK03 --mode vector --items Q001,Q003,Q019
+uv run python scripts/run_eval.py --results-version v1 --recipe CK03 --mode vector --limit 1
+uv run python scripts/run_eval.py --results-version v1 --recipe CK03 --mode vector --items Q001,Q019
 """
 
 import argparse
@@ -12,20 +12,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from etl.handoff import (  # noqa: E402
-    HANDOFF_DIR,
+from etl.chunking import RECIPES  # noqa: E402
+from etl.dataset import (  # noqa: E402
+    DATASET_DIR,
     PROJECT_ROOT,
-    RECIPES,
+    SCOPE_VERSION,
+    build_chunks,
     collection_for,
     dataset_fingerprint,
     index_version,
-    load_handoff,
-    read_jsonl,
-    section_texts,
+    load_dataset,
 )
 from etl.load import load_corpus  # noqa: E402
 from evals.grading import grading_rows, write_csv  # noqa: E402
 from evals.items import check_ready, load_eval_items, map_citations, read_question_set  # noqa: E402
+from evals.provenance import results_dir, run_info  # noqa: E402
 from evals.recorder import Recorder  # noqa: E402
 from evals.run import RunSetup, run_eval  # noqa: E402
 from evals.score import summarize  # noqa: E402
@@ -48,13 +49,16 @@ def main() -> None:
     parser.add_argument("--limit", type=int, help="앞에서부터 N문항만 (비용 확인용)")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--pool", type=int, default=20)
+    parser.add_argument("--results-version", required=True, help="결과 버전 (예: v1)")
     args = parser.parse_args()
     mode = MODES[args.mode]
     recipe = RECIPES[args.recipe]
+    root = results_dir(args.results_version)
+    info = run_info(args.results_version)
     fingerprint = dataset_fingerprint()
     version = index_version(recipe, fingerprint)
 
-    collection = collection_for(settings.MOVIE_COLLECTION, recipe)
+    collection = collection_for(settings.MOVIE_COLLECTION, recipe, fingerprint)
     conn = get_raw_db_connection()
     try:
         corpus = load_corpus(conn, collection)
@@ -69,11 +73,12 @@ def main() -> None:
     if versions != {version}:
         raise SystemExit(
             f"컬렉션 {collection} 의 색인 버전 {versions} 이 코드({version})와 다릅니다. "
-            f"scripts/index_handoff.py --recipe {recipe.recipe_id} 를 먼저 돌리세요."
+            f"scripts/index_dataset.py --recipe {recipe.recipe_id} 를 먼저 돌리세요."
         )
 
-    _, _, chunks = load_handoff(recipe=recipe)
-    sections = section_texts(read_jsonl(HANDOFF_DIR / "documents.jsonl"))
+    data = load_dataset()
+    chunks = build_chunks(data, recipe)
+    sections = data.sections
     items = load_eval_items(chunks, sections, version)
     if args.items:
         wanted = args.items.split(",")
@@ -92,11 +97,11 @@ def main() -> None:
     records = run_eval(
         items=items,
         mode=mode,
-        recorder=Recorder(run_id),
+        recorder=Recorder(run_id, results_dir=str(root)),
         retriever=Retriever(
             get_vector_store(collection), {cid: text for cid, (text, _) in corpus.items()}
         ),
-        normalizer=AliasNormalizer(load_aliases(HANDOFF_DIR / "aliases.jsonl")),
+        normalizer=AliasNormalizer(load_aliases(DATASET_DIR / "aliases.jsonl")),
         llm=get_llm(),
         setup=RunSetup(
             index_version=version,
@@ -109,6 +114,10 @@ def main() -> None:
                 "chunking_version": recipe.version,
                 "collection": collection,
                 "dataset": fingerprint,
+                "scope_version": SCOPE_VERSION,
+                "git_commit": info["git_commit"],
+                "git_dirty": info["git_dirty"],
+                "code_sha256": info["code_sha256"],
                 "eval_item_ids": [i.question_id for i in items],
             },
         ),
@@ -120,11 +129,20 @@ def main() -> None:
         i.question_id: map_citations(raw_by_id[i.question_id], chunks, sections) for i in items
     }
     summary = summarize(items, records, args.top_k, citations)
-    out = PROJECT_ROOT / "results" / "eval" / run_id
+    out = root / "eval" / run_id
     out.mkdir(parents=True, exist_ok=False)
     with open(out / "summary.json", "x", encoding="utf-8") as f:
         json.dump(
-            {"run_id": run_id, "recipe": recipe.recipe_id, "index_version": version, **summary},
+            {
+                "run_id": run_id,
+                "recipe": recipe.recipe_id,
+                "mode": args.mode,
+                "index_version": version,
+                "collection": collection,
+                "dataset": fingerprint,
+                "run_info": info,
+                **summary,
+            },
             f,
             ensure_ascii=False,
             indent=2,
@@ -136,7 +154,8 @@ def main() -> None:
     )
     short = {k: v for k, v in summary.items() if k != "evidence_by_question"}
     print(json.dumps(short, ensure_ascii=False, indent=2))
-    print(f"→ results/{run_id}.jsonl · results/eval/{run_id}/summary.json · grading.csv")
+    rel = root.relative_to(PROJECT_ROOT)
+    print(f"→ {rel}/{run_id}.jsonl · {rel}/eval/{run_id}/summary.json · grading.csv")
 
 
 if __name__ == "__main__":
