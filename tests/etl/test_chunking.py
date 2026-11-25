@@ -33,7 +33,7 @@ def test_빈_글은_청크가_없다() -> None:
 
 
 def test_레시피_목록과_기본값() -> None:
-    assert list(RECIPES) == ["CK01", "CK02", "CK03", "CK04", "CK05", "CK06"]
+    assert list(RECIPES) == ["CK01", "CK02", "CK03", "CK04", "CK05", "CK06", "CK07", "CK08", "CK09"]
     assert DEFAULT_RECIPE is RECIPES["CK03"]
 
 
@@ -156,3 +156,31 @@ def test_CK06은_절_종류마다_다른_레시피를_쓴다() -> None:
     assert split_text(long, ck06, "lore") == split_text(long, RECIPES["CK04"])
     with pytest.raises(ValueError, match="card"):
         split_text(long, ck06, "card")
+
+
+# --- V6: 겹침 문장 수만 다른 CK07 · CK08 · CK09 --------------------------------------------
+
+
+def test_CK07은_겹침이_없고_CK08은_앞_청크의_마지막_두_문장으로_시작한다() -> None:
+    text = _sentences(30)
+    ck07 = split_text(text, RECIPES["CK07"])
+    assert all(
+        not set(split_sentences(a)) & set(split_sentences(b))
+        for a, b in zip(ck07, ck07[1:], strict=False)
+    )
+    ck08 = split_text(text, RECIPES["CK08"])
+    for prev, cur in zip(ck08, ck08[1:], strict=False):
+        assert split_sentences(cur)[:2] == split_sentences(prev)[-2:]
+    assert all(len(c) <= 1000 for c in ck07 + ck08)
+
+
+def test_CK09는_절마다_겹침_문장_수가_다르다() -> None:
+    text = _sentences(30)
+    ck09 = RECIPES["CK09"]
+    assert split_text(text, ck09, "synopsis") == split_text(text, RECIPES["CK07"])
+    assert split_text(text, ck09, "intro") == split_text(text, RECIPES["CK07"])
+    assert split_text(text, ck09, "plot") == split_text(text, RECIPES["CK08"])
+    assert split_text(text, ck09, "biography") == split_text(text, RECIPES["CK05"])
+    assert split_text(text, ck09, "lore") == split_text(text, RECIPES["CK05"])
+    assert RECIPES["CK07"].version == "CK07-sent1000-os0-fb100-min10"
+    assert RECIPES["CK08"].version == "CK08-sent1000-os2-fb100-min10"

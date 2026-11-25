@@ -20,7 +20,13 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from etl.chunking import RECIPES, ChunkRecipe, chunk_spans, normalize_ws  # noqa: E402
+from etl.chunking import (  # noqa: E402
+    RECIPES,
+    ChunkRecipe,
+    chunk_spans,
+    normalize_ws,
+    split_sentences,
+)
 from etl.dataset import (  # noqa: E402
     PROJECT_ROOT,
     Dataset,
@@ -43,6 +49,14 @@ _SENTENCE_END = re.compile(r"[.!?\"'”’)\]]$")
 def _counts(citations: Any) -> dict[str, int]:
     statuses = [c["status"] for c in citations]
     return {s: statuses.count(s) for s in ("contained", "split", "partial", "missing")}
+
+
+def _overlap_tokens(texts: list[str]) -> list[int]:
+    """겹친 글의 토큰 수 (임베딩 모델 토크나이저 기준, 겹침 없는 쌍은 뺀다)."""
+    present = [t for t in texts if t]
+    if not present:
+        return []
+    return count_tokens(present, _embedding_model())[1]
 
 
 def _distribution(values: list[int]) -> dict[str, Any]:
@@ -113,6 +127,13 @@ def _coverage(section_text: str, chunks: list[Chunk]) -> dict[str, Any]:
             for prev, cur in zip(spans, spans[1:], strict=False)
             if prev and cur
         ],
+        # 겹친 원문 글 (토큰 · 문장 수를 세려고). 겹침이 없으면 빈 글
+        "overlap_texts": [
+            source[cur[0] : prev[1]] if prev[1] > cur[0] else ""
+            for prev, cur in zip(spans, spans[1:], strict=False)
+            if prev and cur
+        ],
+        "span_chars": sum(s[1] - s[0] for s in spans if s),
         "uncovered": gaps,
     }
 
@@ -132,6 +153,8 @@ def report(recipe: ChunkRecipe, data: Dataset) -> dict[str, Any]:
     source_chars = covered_chars = chunk_chars = uncovered_nonspace = 0
     not_in_section: list[str] = []
     overlaps: list[int] = []
+    overlap_texts: list[str] = []
+    span_chars = 0
     uncovered: list[dict[str, Any]] = []
     for doc, section, kind in data.scope:
         team_id = doc.source_ids.get("team_document_id") or ""
@@ -155,6 +178,8 @@ def report(recipe: ChunkRecipe, data: Dataset) -> dict[str, Any]:
         uncovered_nonspace += cov["uncovered_nonspace"]
         not_in_section += cov["not_in_section"]
         overlaps += cov["overlaps"]
+        overlap_texts += cov["overlap_texts"]
+        span_chars += cov["span_chars"]
         for gap in cov["uncovered"]:
             uncovered.append({"doc_id": doc.doc_id, "section_index": key[1], "text": gap})
 
@@ -183,7 +208,22 @@ def report(recipe: ChunkRecipe, data: Dataset) -> dict[str, Any]:
             "under_50": sum(n < 50 for n in lengths),
             "under_100": sum(n < 100 for n in lengths),
         },
-        "overlap": _distribution(overlaps) | {"zero": sum(o == 0 for o in overlaps)},
+        "overlap": _distribution(overlaps)
+        | {
+            "zero": sum(o == 0 for o in overlaps),
+            # V6: 겹침 발생 비율 = 겹친 이웃 쌍 / 같은 절 안 이웃 쌍
+            "occurrence_rate": round(sum(o > 0 for o in overlaps) / len(overlaps), 4)
+            if overlaps
+            else None,
+            "tokens": _distribution(_overlap_tokens(overlap_texts)),
+            "sentences": _distribution([len(split_sentences(t)) for t in overlap_texts if t]),
+        },
+        # V6: 색인 원문 중복률 = 1 - (청크들이 덮는 원문 글자 합집합) / (청크 구간 길이 합)
+        "index_duplication": {
+            "span_chars_total": span_chars,
+            "covered_chars_union": covered_chars,
+            "rate": round(1 - covered_chars / span_chars, 4) if span_chars else None,
+        },
         "dropped": {"count": len(dropped), "items": dropped},
         "coverage": {
             "source_chars_normalized": source_chars,

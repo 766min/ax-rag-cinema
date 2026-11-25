@@ -130,3 +130,52 @@ def test_후보가_0개인_문항도_요약할_수_있다() -> None:
     summary = aggregate([empty])
     assert summary["hit@5"] == 0.0 and summary["top1_similarity_mean"] is None
     assert summary["empty_results"] == 1
+
+
+# --- V6 중복 지표 -------------------------------------------------------------------
+
+
+def test_상위_청크의_원문_중복률과_고유_범위() -> None:
+    from evals.search_eval import context_redundancy
+
+    positions = {
+        "a": ("doc1", "1", 0, 100),
+        "b": ("doc1", "1", 80, 180),  # a 와 20자 겹침
+        "c": ("doc2", "3", 0, 50),
+    }
+    red = context_redundancy(["a", "b", "c", "zz"], positions)
+    assert (red["span_chars"], red["unique_chars"]) == (250, 230)
+    assert red["duplication_rate"] == round(1 - 230 / 250, 4)
+    assert (red["unique_docs"], red["unlocated"]) == (2, 1)
+
+
+def test_청크_위치와_인용별_절_종류() -> None:
+    from types import SimpleNamespace
+
+    from evals.search_eval import chunk_positions, evidence_by_section
+
+    section = "Alpha beta. Gamma delta."
+    chunks = [
+        SimpleNamespace(
+            chunk_id="x-plot-p01",
+            position=1,
+            text="Alpha beta.",
+            source_ids={"team_document_id": "d", "section_index": "1"},
+        ),
+        SimpleNamespace(
+            chunk_id="x-plot-p02",
+            position=2,
+            text="Gamma delta.",
+            source_ids={"team_document_id": "d", "section_index": "1"},
+        ),
+    ]
+    assert chunk_positions(chunks, {("d", "1"): section}) == {
+        "x-plot-p01": ("d", "1", 0, 11),
+        "x-plot-p02": ("d", "1", 12, 24),
+    }
+    cites = [{"chunk_ids": ["wp-1-biography-p03"]}, {"chunk_ids": []}]
+    evidence = {"citations": [{"recall": 1.0}, {"recall": 0.0}]}
+    assert evidence_by_section(cites, evidence) == [
+        {"section": "biography", "recall": 1.0},
+        {"section": "missing", "recall": 0.0},
+    ]

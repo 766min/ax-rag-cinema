@@ -127,6 +127,7 @@ def score_question(
         "top1_similarity": top1,
         "best_gold_similarity": max((g["similarity"] for g in gold.values()), default=None),
         "evidence": evidence,
+        "evidence_by_section": evidence_by_section(citations, evidence),
         "outcome": outcome,
     }
 
@@ -229,4 +230,103 @@ def gold_movement(stages: dict[str, Any], gold_ids: list[str]) -> dict[str, Any]
         "only_vector": sorted(in_vector - in_bm25),
         "only_bm25": sorted(in_bm25 - in_vector),
         "both": sorted(in_vector & in_bm25),
+    }
+
+
+# --- V6: 상위 k 의 원문 중복 · 절 종류별 근거 회수 ---------------------------------------
+
+_SECTION_IN_ID = re.compile(r"-(synopsis|plot|intro|biography|lore)-p\d+$")
+
+
+def chunk_positions(
+    chunks: list[Any], sections: dict[tuple[str, str], str]
+) -> dict[str, tuple[str, str, int, int]]:
+    """chunk_id → (원래 doc_…, 절 번호, 시작, 끝). 위치는 공백 정규화한 절 원문 기준 (chunk_spans)."""
+    from etl.chunking import chunk_spans
+
+    groups: dict[tuple[str, str], list[Any]] = {}
+    for c in chunks:
+        key = (c.source_ids.get("team_document_id") or "", c.source_ids.get("section_index") or "")
+        groups.setdefault(key, []).append(c)
+    positions: dict[str, tuple[str, str, int, int]] = {}
+    for key, members in groups.items():
+        members.sort(key=lambda c: c.position)
+        for c, span in zip(
+            members, chunk_spans(sections[key], [m.text for m in members]), strict=True
+        ):
+            if span:
+                positions[c.chunk_id] = (key[0], key[1], span[0], span[1])
+    return positions
+
+
+def context_redundancy(
+    top_ids: list[str], positions: dict[str, tuple[str, str, int, int]]
+) -> dict[str, Any]:
+    """상위 청크들의 원문 중복 (PLAN 정의).
+
+    중복률 = 1 - |같은 절 구간들의 합집합| / Σ 구간 길이. 고유 범위 = 합집합 글자 수.
+    고유 문서 수 = 서로 다른 원래 문서 수. 위치를 모르는 청크는 빼고 센다 (unlocated).
+    """
+    by_section: dict[tuple[str, str], list[tuple[int, int]]] = {}
+    docs: set[str] = set()
+    unlocated = 0
+    for cid in top_ids:
+        pos = positions.get(cid)
+        if pos is None:
+            unlocated += 1
+            continue
+        docs.add(pos[0])
+        by_section.setdefault((pos[0], pos[1]), []).append((pos[2], pos[3]))
+    total = sum(e - s for spans in by_section.values() for s, e in spans)
+    union = 0
+    for spans in by_section.values():
+        end = -1
+        for s, e in sorted(spans):
+            if s >= end:
+                union += e - s
+            elif e > end:
+                union += e - end
+            end = max(end, e)
+    return {
+        "span_chars": total,
+        "unique_chars": union,
+        "duplication_rate": round(1 - union / total, 4) if total else None,
+        "unique_docs": len(docs),
+        "unlocated": unlocated,
+    }
+
+
+def evidence_by_section(
+    citations: list[dict[str, Any]], evidence: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """인용마다 (정답 청크의 절 종류, 근거 회수율). missing 인용은 절 종류를 'missing' 으로."""
+    rows = []
+    for cite, ev in zip(citations, evidence["citations"], strict=True):
+        ids = cite.get("chunk_ids") or []
+        match = _SECTION_IN_ID.search(ids[0]) if ids else None
+        rows.append({"section": match.group(1) if match else "missing", "recall": ev["recall"]})
+    return rows
+
+
+def aggregate_v6(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """aggregate() 에 더하는 V6 지표 (답변 가능 문항 기준, 절 종류별은 인용 단위)."""
+    answerable = [r for r in rows if r["answerable"]]
+
+    def avg(values: list[float]) -> float | None:
+        present = [v for v in values if v is not None]
+        return round(mean(present), 4) if present else None
+
+    sections: dict[str, list[float]] = {}
+    for r in answerable:
+        for item in r.get("evidence_by_section", []):
+            sections.setdefault(item["section"], []).append(item["recall"])
+    red = [r["top_redundancy"] for r in answerable if "top_redundancy" in r]
+    return {
+        "top5_duplication_rate_mean": avg([x["duplication_rate"] for x in red]),
+        "top5_unique_chars_mean": avg([x["unique_chars"] for x in red]),
+        "top5_unique_docs_mean": avg([x["unique_docs"] for x in red]),
+        "evidence_recall_by_section": {
+            k: {"citations": len(v), "mean_recall": round(mean(v), 3)}
+            for k, v in sorted(sections.items())
+        },
     }

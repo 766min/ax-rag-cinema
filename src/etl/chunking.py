@@ -1,4 +1,5 @@
-"""청킹 레시피 (V1: CK01~CK04, V2: CK05 문장 단위 · CK06 절 종류별)와 청크 · 원문 위치 대조.
+"""청킹 레시피 (V1: CK01~CK04, V2: CK05 문장 단위 · CK06 절 종류별, V6: CK07~CK09 겹침 비교)와
+청크 · 원문 위치 대조.
 
 CK01~CK04 의 규칙과 version 은 V1 그대로다 (V1 컬렉션 · 정답 키와 맞아야 한다).
 
@@ -89,6 +90,14 @@ _CK01 = ChunkRecipe("CK01", "paragraph")
 _CK04 = ChunkRecipe("CK04", "rcts", size=1500, overlap=100)
 _WHOLE = ChunkRecipe("WHOLE", "whole")
 
+
+def _sentence(recipe_id: str, overlap_sentences: int) -> ChunkRecipe:
+    """CK05 와 같은 문장 단위 설정에 겹치는 문장 수만 바꾼 레시피 (CK09 의 절별 부품)."""
+    return ChunkRecipe(
+        recipe_id, "sentence", size=1000, overlap=100, overlap_sentences=overlap_sentences
+    )
+
+
 RECIPES: dict[str, ChunkRecipe] = {
     r.recipe_id: r
     for r in (
@@ -108,6 +117,20 @@ RECIPES: dict[str, ChunkRecipe] = {
                 ("plot", _CK01),
                 ("biography", _CK04),
                 ("lore", _CK04),
+            ),
+        ),
+        # V6 (EXP-09): CK05 와 같은 문장 단위 · 1000자 · 긴 문장 RCTS 1000/100, 겹치는 문장 수만 다르다
+        ChunkRecipe("CK07", "sentence", size=1000, overlap=100, overlap_sentences=0),
+        ChunkRecipe("CK08", "sentence", size=1000, overlap=100, overlap_sentences=2),
+        ChunkRecipe(
+            "CK09",
+            "section",
+            parts=(
+                ("synopsis", _sentence("SENT-os0", 0)),
+                ("plot", _sentence("SENT-os2", 2)),
+                ("intro", _sentence("SENT-os0", 0)),
+                ("biography", _sentence("SENT-os1", 1)),
+                ("lore", _sentence("SENT-os1", 1)),
             ),
         ),
     )

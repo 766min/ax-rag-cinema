@@ -40,6 +40,9 @@ from evals.provenance import results_dir, run_info  # noqa: E402
 from evals.search_eval import (  # noqa: E402
     STAGE_MODES,
     aggregate,
+    aggregate_v6,
+    chunk_positions,
+    context_redundancy,
     gold_movement,
     gold_scores,
     http_calls,
@@ -180,6 +183,7 @@ def main() -> None:
                     if i.question_id in questions
                 }
                 store = get_vector_store(collection)
+                positions = chunk_positions(chunks, data.sections)
                 texts: dict[str, str] = {}
                 bm25: Any = None
                 if needs_stages:
@@ -214,6 +218,7 @@ def main() -> None:
                                 similarity[cid] = float(found["similarity"])
                             final = [(cid, similarity[cid]) for cid in ranked]
                             scored = score_question(item, final, gold, citations, TOP_K)
+                            scored["top_redundancy"] = context_redundancy(ranked[:TOP_K], positions)
                             row = {
                                 "exp": args.exp,
                                 "run_id": run_id,
@@ -241,7 +246,7 @@ def main() -> None:
                             rows.append(row)
                             per_mode[mode].append(scored)
                     for mode in modes:
-                        summary = aggregate(per_mode[mode], TOP_K)
+                        summary = aggregate(per_mode[mode], TOP_K) | aggregate_v6(per_mode[mode])
                         compare.append(
                             {
                                 "recipe": recipe.recipe_id,
@@ -251,6 +256,11 @@ def main() -> None:
                             }
                             | {k: v for k, v in summary.items() if not isinstance(v, (dict, list))}
                             | {"outcomes": json.dumps(summary["outcomes"], ensure_ascii=False)}
+                            | {
+                                "evidence_recall_by_section": json.dumps(
+                                    summary["evidence_recall_by_section"], ensure_ascii=False
+                                )
+                            }
                         )
                         print(f"{recipe.recipe_id} {variant} {mode}: {compare[-1]}")
     finally:
