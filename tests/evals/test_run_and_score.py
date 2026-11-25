@@ -3,12 +3,12 @@ from pathlib import Path
 import pytest
 from fakes import FakeLLM, FakeStore
 
-from answer import CitedAnswer
 from evals.recorder import Recorder
 from evals.run import RunSetup, run_eval
 from evals.score import failure_type, summarize
-from retrieve.normalize import AliasNormalizer
-from retrieve.pipeline import Retriever, SearchConfig
+from generation.answer import CitedAnswer
+from retrieval.normalize import AliasNormalizer
+from retrieval.pipeline import Retriever, SearchConfig
 from shared.core.models import EvalItem, RunRecord
 from shared.core.schemas import AnswerStatus, RetrievalMode
 

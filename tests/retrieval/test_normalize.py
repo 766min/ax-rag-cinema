@@ -1,4 +1,4 @@
-from retrieve.normalize import AliasNormalizer
+from retrieval.normalize import AliasNormalizer
 from shared.core.models import Alias, AliasKind
 
 

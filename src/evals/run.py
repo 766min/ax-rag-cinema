@@ -7,9 +7,9 @@ from langchain_core.language_models import BaseChatModel
 
 from evals.items import check_ready
 from evals.recorder import Recorder, measure
-from retrieve.normalize import ALIAS_VERSION, AliasNormalizer
-from retrieve.pipeline import Retriever, SearchConfig, run_question
-from retrieve.refine import Reranker
+from retrieval.normalize import ALIAS_VERSION, AliasNormalizer
+from retrieval.pipeline import Retriever, SearchConfig, run_question
+from retrieval.refine import Reranker
 from shared.core.logger import get_logger
 from shared.core.models import EvalItem, EvidenceSource, RunRecord, Trace
 from shared.core.schemas import AnswerStatus, RetrievalMode

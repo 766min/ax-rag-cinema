@@ -1,6 +1,12 @@
 from fakes import FakeLLM
 
-from answer import NO_EVIDENCE_MESSAGE, CitedAnswer, format_context, generate_answer, resolve
+from generation.answer import (
+    NO_EVIDENCE_MESSAGE,
+    CitedAnswer,
+    format_context,
+    generate_answer,
+    resolve,
+)
 from shared.core.schemas import AnswerStatus
 
 IDS = ["a", "b", "c"]

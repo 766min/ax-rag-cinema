@@ -1,6 +1,6 @@
 import pytest
 
-from retrieve.refine import rerank
+from retrieval.refine import rerank
 from shared.core.models import Candidate
 
 

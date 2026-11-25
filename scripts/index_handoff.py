@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from build.handoff import (  # noqa: E402
+from etl.handoff import (  # noqa: E402
     PROJECT_ROOT,
     RECIPES,
     collection_for,
@@ -21,10 +21,7 @@ from build.handoff import (  # noqa: E402
     index_version,
     load_handoff,
 )
-from shared.core.config import settings  # noqa: E402
-from shared.core.logger import get_logger  # noqa: E402
-from shared.core.vector_store import get_raw_db_connection, get_vector_store  # noqa: E402
-from store.indexer import (  # noqa: E402
+from etl.load import (  # noqa: E402
     count_tokens,
     fetch_existing,
     index_chunks,
@@ -32,6 +29,9 @@ from store.indexer import (  # noqa: E402
     meta_values,
     plan,
 )
+from shared.core.config import settings  # noqa: E402
+from shared.core.logger import get_logger  # noqa: E402
+from shared.core.vector_store import get_raw_db_connection, get_vector_store  # noqa: E402
 
 logger = get_logger("scripts.index_handoff")
 

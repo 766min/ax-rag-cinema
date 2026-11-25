@@ -12,8 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from answer import PROMPT_VERSION  # noqa: E402
-from build.handoff import (  # noqa: E402
+from etl.handoff import (  # noqa: E402
     HANDOFF_DIR,
     PROJECT_ROOT,
     RECIPES,
@@ -24,17 +23,18 @@ from build.handoff import (  # noqa: E402
     read_jsonl,
     section_texts,
 )
+from etl.load import load_corpus  # noqa: E402
 from evals.grading import grading_rows, write_csv  # noqa: E402
 from evals.items import check_ready, load_eval_items, map_citations, read_question_set  # noqa: E402
 from evals.recorder import Recorder  # noqa: E402
 from evals.run import RunSetup, run_eval  # noqa: E402
 from evals.score import summarize  # noqa: E402
-from retrieve.normalize import AliasNormalizer, load_aliases  # noqa: E402
-from retrieve.pipeline import Retriever, SearchConfig  # noqa: E402
+from generation.answer import PROMPT_VERSION  # noqa: E402
+from retrieval.normalize import AliasNormalizer, load_aliases  # noqa: E402
+from retrieval.pipeline import Retriever, SearchConfig  # noqa: E402
 from shared.core.config import settings  # noqa: E402
 from shared.core.schemas import RetrievalMode  # noqa: E402
 from shared.core.vector_store import get_llm, get_raw_db_connection, get_vector_store  # noqa: E402
-from store.indexer import load_corpus  # noqa: E402
 
 MODES = {"vector": RetrievalMode.VECTOR, "hybrid": RetrievalMode.HYBRID}
 

@@ -1,6 +1,6 @@
 from fakes import FakeStore
 
-from retrieve.search import BM25Index, rrf_merge, tokenize, vector_candidates, vector_search
+from retrieval.search import BM25Index, rrf_merge, tokenize, vector_candidates, vector_search
 
 
 def test_토큰은_영어_소문자와_한글() -> None:

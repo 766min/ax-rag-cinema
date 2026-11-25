@@ -1,8 +1,6 @@
 from typing import Any
 
-from shared.core.models import Chunk, SourceId
-from shared.core.schemas import Section
-from store.indexer import (
+from etl.load import (
     count_tokens,
     fetch_existing,
     index_chunks,
@@ -12,6 +10,8 @@ from store.indexer import (
     row_id,
     to_document,
 )
+from shared.core.models import Chunk, SourceId
+from shared.core.schemas import Section
 
 
 def _chunk(position: int, text: str = "body") -> Chunk:

@@ -17,7 +17,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from build.handoff import PROJECT_ROOT, chunk_spans, normalize_ws
+from etl.handoff import PROJECT_ROOT, chunk_spans, normalize_ws
 from shared.core.models import Chunk, EvalItem
 
 QUESTION_SET = PROJECT_ROOT / "question_set.jsonl"
@@ -25,7 +25,7 @@ QUESTION_SET = PROJECT_ROOT / "question_set.jsonl"
 _CITE = re.compile(r"\[(\d+)\][^\[]*?(doc_[0-9a-f]{16}) / 섹션 (\d+)")
 _EXCERPT = re.compile(r"\[(\d+)\]\s*(.*?)(?=\n\s*\[\d+\]|\Z)", re.S)
 
-Sections = dict[tuple[str, str], str]  # (원본 doc_…, 절 번호) → 절 원문 (handoff.section_texts)
+Sections = dict[tuple[str, str], str]  # (원본 doc_…, 절 번호) → 절 원문 (etl.handoff.section_texts)
 
 
 def excerpt_core(excerpt: str) -> str:

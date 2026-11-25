@@ -5,7 +5,7 @@ from typing import Any
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnableLambda
 
-from answer import CitedAnswer
+from generation.answer import CitedAnswer
 
 
 class FakeStore:

@@ -1,9 +1,9 @@
 import pytest
 from fakes import FakeLLM, FakeStore
 
-from answer import CitedAnswer
-from retrieve.normalize import AliasNormalizer
-from retrieve.pipeline import Retriever, SearchConfig, run_question
+from generation.answer import CitedAnswer
+from retrieval.normalize import AliasNormalizer
+from retrieval.pipeline import Retriever, SearchConfig, run_question
 from shared.core.models import Alias, AliasKind
 from shared.core.schemas import AnswerStatus, RetrievalMode
 

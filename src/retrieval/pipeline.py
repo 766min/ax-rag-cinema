@@ -10,10 +10,10 @@ from typing import Any
 from langchain_core.language_models import BaseChatModel
 from langchain_core.vectorstores import VectorStore
 
-from answer import AnswerResult, generate_answer
-from retrieve.normalize import AliasNormalizer
-from retrieve.refine import Reranker, rerank
-from retrieve.search import BM25Index, Hit, rrf_merge, vector_candidates, vector_search
+from generation.answer import AnswerResult, generate_answer
+from retrieval.normalize import AliasNormalizer
+from retrieval.refine import Reranker, rerank
+from retrieval.search import BM25Index, Hit, rrf_merge, vector_candidates, vector_search
 from shared.core.models import Candidate
 from shared.core.schemas import AnswerStatus, RetrievalMode
 from shared.core.timing import measure_time

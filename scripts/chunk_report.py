@@ -19,7 +19,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from build.handoff import (  # noqa: E402
+from etl.handoff import (  # noqa: E402
     HANDOFF_DIR,
     PROJECT_ROOT,
     RECIPES,
@@ -33,9 +33,9 @@ from build.handoff import (  # noqa: E402
     section_texts,
     source_sections,
 )
+from etl.load import count_tokens, index_text  # noqa: E402
 from evals.items import map_citations, read_question_set  # noqa: E402
 from shared.core.models import Chunk  # noqa: E402
-from store.indexer import count_tokens, index_text  # noqa: E402
 
 BUCKETS = (50, 100, 250, 500, 750, 1000, 1500, 2000, 4000)
 EMBEDDING_INPUT_LIMIT = 8191  # OpenAI text-embedding-3 계열 입력 한도 (다른 모델이면 바꿔야 함)

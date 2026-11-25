@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from build.handoff import (
+from etl.handoff import (
     DEFAULT_RECIPE,
     HANDOFF_DIR,
     PROJECT_ROOT,
