@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from answer import PROMPT_VERSION  # noqa: E402
 from build.handoff import (  # noqa: E402
     HANDOFF_DIR,
+    PROJECT_ROOT,
     RECIPES,
     collection_for,
     dataset_fingerprint,
@@ -23,7 +24,8 @@ from build.handoff import (  # noqa: E402
     read_jsonl,
     section_texts,
 )
-from evals.items import check_ready, load_eval_items  # noqa: E402
+from evals.grading import grading_rows, write_csv  # noqa: E402
+from evals.items import check_ready, load_eval_items, map_citations, read_question_set  # noqa: E402
 from evals.recorder import Recorder  # noqa: E402
 from evals.run import RunSetup, run_eval  # noqa: E402
 from evals.score import summarize  # noqa: E402
@@ -111,7 +113,30 @@ def main() -> None:
             },
         ),
     )
-    print(json.dumps(summarize(items, records, args.top_k), ensure_ascii=False, indent=2))
+    # 실행 원본(RunRecord)은 Recorder 가 results/{run_id}.jsonl 에 남겼다.
+    # 아래는 그 원본에서 계산한 요약과 수동 채점 시트 (results/eval/{run_id}/, 새 폴더로만)
+    raw_by_id = {raw["query_id"]: raw for raw in read_question_set()}
+    citations = {
+        i.question_id: map_citations(raw_by_id[i.question_id], chunks, sections) for i in items
+    }
+    summary = summarize(items, records, args.top_k, citations)
+    out = PROJECT_ROOT / "results" / "eval" / run_id
+    out.mkdir(parents=True, exist_ok=False)
+    with open(out / "summary.json", "x", encoding="utf-8") as f:
+        json.dump(
+            {"run_id": run_id, "recipe": recipe.recipe_id, "index_version": version, **summary},
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
+    texts = {cid: text for cid, (text, _) in corpus.items()}
+    write_csv(
+        out / "grading.csv",
+        grading_rows(recipe.recipe_id, items, records, raw_by_id, texts, args.top_k),
+    )
+    short = {k: v for k, v in summary.items() if k != "evidence_by_question"}
+    print(json.dumps(short, ensure_ascii=False, indent=2))
+    print(f"→ results/{run_id}.jsonl · results/eval/{run_id}/summary.json · grading.csv")
 
 
 if __name__ == "__main__":

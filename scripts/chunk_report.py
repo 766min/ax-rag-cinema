@@ -42,6 +42,11 @@ EMBEDDING_INPUT_LIMIT = 8191  # OpenAI text-embedding-3 계열 입력 한도 (�
 _SENTENCE_END = re.compile(r"[.!?\"'”’)\]]$")
 
 
+def _counts(citations: Any) -> dict[str, int]:
+    statuses = [c["status"] for c in citations]
+    return {s: statuses.count(s) for s in ("contained", "split", "partial", "missing")}
+
+
 def _histogram(lengths: list[int]) -> dict[str, int]:
     edges = (0, *BUCKETS)
     hist = {f"{lo}-{hi - 1}": 0 for lo, hi in zip(edges, BUCKETS, strict=False)}
@@ -255,10 +260,8 @@ def main() -> None:
         rep["index_version"] = index_version(recipe, fingerprint)
         rep["dataset"] = fingerprint
         rep["gold_mapping"] = {
-            "status_counts": {
-                s: sum(g["status"] == s for g in gold)
-                for s in ("contained", "split", "partial", "missing")
-            },
+            "status_counts_answerable": _counts(g for g in gold if g["answerable"]),
+            "status_counts_unanswerable": _counts(g for g in gold if not g["answerable"]),
             "citations": gold,
         }
         sample = _sample_text(rep)
@@ -269,7 +272,8 @@ def main() -> None:
             f.write(sample)
         print(
             f"{recipe.recipe_id}: chunks {rep['chunks']} · dropped {rep['dropped']['count']} · "
-            f"gold {rep['gold_mapping']['status_counts']}"
+            f"gold(답변 가능) {rep['gold_mapping']['status_counts_answerable']} · "
+            f"gold(근거 없음 문항) {rep['gold_mapping']['status_counts_unanswerable']}"
         )
     print(f"→ {out_dir.relative_to(PROJECT_ROOT)}")
 

@@ -78,9 +78,15 @@ def _locate(core: str, section_text: str | None, chunks: list[Chunk]) -> dict[st
     hits = [(c, s) for c, s in zip(chunks, spans, strict=True) if s and s[0] < hi and lo < s[1]]
     if not hits:
         return {"status": "missing", "reason": "발췌 구간과 겹치는 청크 없음", "chunk_ids": []}
+    # 발췌 안에서 각 청크가 덮는 구간 [시작, 끝) — 근거 회수율(evidence_recall)이 이걸로 계산한다
+    pieces = [
+        {"chunk_id": c.chunk_id, "start": max(s0, lo) - lo, "end": min(s1, hi) - lo}
+        for c, (s0, s1) in hits
+    ]
+    evidence = {"excerpt": core, "pieces": pieces}
     whole = [c.chunk_id for c, s in hits if s[0] <= lo and hi <= s[1]]
     if whole:
-        return {"status": "contained", "chunk_ids": whole}
+        return {"status": "contained", "chunk_ids": whole, **evidence}
     covered: set[int] = set()
     for _, (s0, s1) in hits:
         covered.update(range(max(s0, lo), min(s1, hi)))
@@ -88,8 +94,8 @@ def _locate(core: str, section_text: str | None, chunks: list[Chunk]) -> dict[st
     gap = sum(1 for i in range(lo, hi) if i not in covered and source[i] != " ")
     ids = [c.chunk_id for c, _ in hits]
     if gap == 0:
-        return {"status": "split", "chunk_ids": ids}
-    return {"status": "partial", "uncovered_chars": gap, "chunk_ids": ids}
+        return {"status": "split", "chunk_ids": ids, **evidence}
+    return {"status": "partial", "uncovered_chars": gap, "chunk_ids": ids, **evidence}
 
 
 def gold_chunk_ids(raw: dict[str, Any], chunks: list[Chunk], sections: Sections) -> list[str]:
