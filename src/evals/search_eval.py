@@ -11,6 +11,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from statistics import mean
 from typing import Any
+from urllib.parse import urlsplit
 
 from etl.load import DBConnection
 from evals.score import evidence_recall_ids
@@ -61,7 +62,8 @@ def http_calls() -> Iterator[list[dict[str, str]]]:
 def summarize_calls(calls: list[dict[str, str]]) -> dict[str, Any]:
     by_endpoint: dict[str, int] = {}
     for call in calls:
-        endpoint = call["url"].rstrip("/").rsplit("/", 1)[-1]
+        # 질의 문자열(?q=…)은 빼고 경로 끝만 센다 (Brave 요청 주소에 질문이 들어 있어서)
+        endpoint = urlsplit(call["url"]).path.rstrip("/").rsplit("/", 1)[-1]
         by_endpoint[endpoint] = by_endpoint.get(endpoint, 0) + 1
     return {
         "requests": len(calls),

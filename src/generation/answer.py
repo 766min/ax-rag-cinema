@@ -77,3 +77,45 @@ def generate_answer(
     if not isinstance(output, CitedAnswer):
         raise TypeError(f"구조화 출력이 CitedAnswer 가 아닙니다: {type(output)}")
     return resolve(output, [chunk_id for chunk_id, _ in contexts])
+
+
+# --- V5 서비스 확인: 명석님 번역 경로(service.movie_qa)에 넣을 영어 초안 생성기 ---------------
+
+PROMPT_VERSION_EN = "p1-en"
+SYSTEM_PROMPT_EN = """You answer questions about the Marvel Cinematic Universe (MCU).
+Use only the facts in [Context]. Answer in English.
+
+[Rules]
+1. If the context has no evidence, write "{no_evidence}" as the answer and leave cited_numbers empty.
+2. End each factual sentence with the context number, like [1] or [2].
+3. Put only the numbers you actually used in cited_numbers.
+
+[Context]
+{context}
+"""
+NO_EVIDENCE_MESSAGE_EN = "The provided documents do not contain evidence to answer this question."
+
+
+def generate_answer_en(
+    question_en: str, contexts: list[tuple[str, str]], llm: BaseChatModel
+) -> AnswerResult:
+    """generate_answer 와 같은 규칙으로 영어 답을 만든다 (프롬프트만 영어). 인용 검증도 같다."""
+    if not contexts:
+        return AnswerResult(AnswerStatus.NO_EVIDENCE, NO_EVIDENCE_MESSAGE_EN)
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", SYSTEM_PROMPT_EN), ("human", "{question}")]
+    )
+    chain = (prompt | llm.with_structured_output(CitedAnswer)).with_retry(stop_after_attempt=2)
+    output = chain.invoke(
+        {
+            "context": format_context(contexts),
+            "question": question_en,
+            "no_evidence": NO_EVIDENCE_MESSAGE_EN,
+        }
+    )
+    if not isinstance(output, CitedAnswer):
+        raise TypeError(f"구조화 출력이 CitedAnswer 가 아닙니다: {type(output)}")
+    result = resolve(output, [chunk_id for chunk_id, _ in contexts])
+    if result.status == AnswerStatus.NO_EVIDENCE:
+        return AnswerResult(AnswerStatus.NO_EVIDENCE, NO_EVIDENCE_MESSAGE_EN)
+    return result

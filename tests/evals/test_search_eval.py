@@ -72,10 +72,13 @@ def test_HTTP_요청_로그를_센다() -> None:
         logger.info(
             'HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 X"'
         )
+        logger.info(
+            'HTTP Request: GET https://api.search.brave.com/res/v1/web/search?q=Who "HTTP/1.1 200 OK"'
+        )
         logger.info("관계없는 로그")
     summary = summarize_calls(calls)
-    assert summary["requests"] == 2
-    assert summary["by_endpoint"] == {"embeddings": 1, "completions": 1}
+    assert summary["requests"] == 3
+    assert summary["by_endpoint"] == {"embeddings": 1, "completions": 1, "search": 1}
     assert [c["status"] for c in summary["non_2xx"]] == ["429"]
 
 

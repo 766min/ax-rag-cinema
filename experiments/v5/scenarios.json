@@ -1,0 +1,133 @@
+[
+  {
+    "id": "S01",
+    "case": "내부 근거 충분 · 외부 검색 불필요",
+    "question": "타임 스톤이 뭐야?",
+    "paths": [
+      "korean_direct",
+      "en_translate"
+    ],
+    "brave": "real"
+  },
+  {
+    "id": "S02",
+    "case": "내부 근거 일부만 (여러 작품에 걸친 질문)",
+    "question": "바키(윈터 솔져)가 윈터 솔져, 시빌 워, 인피니티 워에서 어떻게 달라졌어? (스포)",
+    "paths": [
+      "korean_direct",
+      "en_translate"
+    ],
+    "brave": "real"
+  },
+  {
+    "id": "S03",
+    "case": "한국어 직접 생성 대 번역 경로",
+    "question": "리얼리티 스톤(에테르)은 다크 월드에서 가디언즈를 거쳐 인피니티 워까지 어떻게 이동했어? (스포)",
+    "paths": [
+      "korean_direct",
+      "en_translate"
+    ],
+    "brave": "off"
+  },
+  {
+    "id": "S04",
+    "case": "내부 근거 없음 (MCU, 흥행 수익은 색인에 없음)",
+    "question": "썬더볼츠* 전 세계 흥행 수익은 얼마야?",
+    "paths": [
+      "korean_direct"
+    ],
+    "brave": "real"
+  },
+  {
+    "id": "S05",
+    "case": "MCU 범위 밖",
+    "question": "타이타닉 감독은 누구야?",
+    "paths": [
+      "korean_direct"
+    ],
+    "brave": "real"
+  },
+  {
+    "id": "S06",
+    "case": "내부 근거 없음 (코믹스, 평가셋 Q019)",
+    "question": "타임 스톤은 코믹스에서는 어떻게 쓰여?",
+    "paths": [
+      "korean_direct"
+    ],
+    "brave": "real"
+  },
+  {
+    "id": "S07",
+    "case": "리라이트 실패 → 사전 치환 질의로 대체",
+    "question": "로키랑 토르는 무슨 관계야?",
+    "paths": [
+      "korean_direct"
+    ],
+    "brave": "off",
+    "translator": "fail"
+  },
+  {
+    "id": "S08",
+    "case": "Brave API 오류 (가짜 500)",
+    "question": "썬더볼츠* 전 세계 흥행 수익은 얼마야?",
+    "paths": [
+      "korean_direct"
+    ],
+    "brave": "mock_500"
+  },
+  {
+    "id": "S09",
+    "case": "Brave 타임아웃 (가짜)",
+    "question": "썬더볼츠* 전 세계 흥행 수익은 얼마야?",
+    "paths": [
+      "korean_direct"
+    ],
+    "brave": "mock_timeout"
+  },
+  {
+    "id": "S10",
+    "case": "외부 근거 불충분 (가짜: 관계없는 결과)",
+    "question": "썬더볼츠* 전 세계 흥행 수익은 얼마야?",
+    "paths": [
+      "korean_direct"
+    ],
+    "brave": "mock_irrelevant"
+  },
+  {
+    "id": "S04b",
+    "case": "내부 근거 없음 (상영 시간: 색인된 절에 없음) — S04 가 내부 문서로 답해 추가",
+    "question": "썬더볼츠*의 상영 시간은 몇 분이야?",
+    "paths": [
+      "korean_direct"
+    ],
+    "brave": "real"
+  },
+  {
+    "id": "S08b",
+    "case": "Brave API 오류 (가짜 500) — S08 은 웹까지 가지 않아 추가",
+    "question": "썬더볼츠*의 상영 시간은 몇 분이야?",
+    "paths": [
+      "korean_direct"
+    ],
+    "brave": "mock_500"
+  },
+  {
+    "id": "S09b",
+    "case": "Brave 타임아웃 (가짜) — S09 는 웹까지 가지 않아 추가",
+    "question": "썬더볼츠*의 상영 시간은 몇 분이야?",
+    "paths": [
+      "korean_direct"
+    ],
+    "brave": "mock_timeout"
+  },
+  {
+    "id": "S10b",
+    "case": "외부 근거 불충분 (가짜: 관계없는 결과) — 같은 질문으로 다시",
+    "question": "썬더볼츠*의 상영 시간은 몇 분이야?",
+    "paths": [
+      "korean_direct",
+      "en_translate"
+    ],
+    "brave": "mock_irrelevant"
+  }
+]
