@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import html
 import re
@@ -332,13 +333,19 @@ async def search_web_for_question(
     )
     matched = rewrite["matched_aliases"]
     work_id = single_work_id(matched, alias_table)
-    cache = store if store is not None else _store_from_settings()
     key = lookup_key(rewrite["query_normalized"])
 
+    # 저장소는 동기 DB 호출(psycopg · PGVector)이라 스레드에서 돌린다 → 이벤트 루프를 막지 않는다
     store_failed = False
+    cache: WebCache | None = None
+    try:
+        cache = store if store is not None else await asyncio.to_thread(_store_from_settings)
+    except Exception as exc:  # noqa: BLE001 — 저장소 장애로 답변을 막지 않는다
+        logger.warning("[websearch] 웹 저장소 연결 실패: %s", type(exc).__name__)
+        store_failed = True
     if cache is not None:
         try:
-            cached = cache.lookup(key)
+            cached = await asyncio.to_thread(cache.lookup, key)
         except Exception as exc:  # noqa: BLE001 — 저장소 장애로 답변을 막지 않는다
             logger.warning("[websearch] 웹 보강분 조회 실패: %s", type(exc).__name__)
             cached, store_failed = None, True
@@ -366,7 +373,7 @@ async def search_web_for_question(
     # Brave 가 실패한 검색은 기록하지 않는다 → 다음 질문에서 다시 시도한다
     if cache is not None and not outcome.web_failed and not store_failed:
         try:
-            cache.save(outcome, query_ko=query_ko, work_id=work_id)
+            await asyncio.to_thread(cache.save, outcome, query_ko=query_ko, work_id=work_id)
         except Exception as exc:  # noqa: BLE001
             logger.warning("[websearch] 웹 보강분 적재 실패: %s", type(exc).__name__)
             outcome.web_store_failed = True
