@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import httpx
+import pytest
 
 from shared.core.models import Alias, SourceId
 from websearch import (
@@ -38,6 +39,14 @@ BRAVE_PAYLOAD = {
         ]
     }
 }
+
+
+@pytest.fixture(autouse=True)
+def _no_store_from_env(monkeypatch: Any) -> None:
+    """로컬 .env 가 WEB_STORE=true 여도 이 파일의 테스트는 DB 에 닿지 않게 한다"""
+    import websearch
+
+    monkeypatch.setattr(websearch, "_store_from_settings", lambda: None)
 
 
 def _client(handler: Any) -> httpx.AsyncClient:

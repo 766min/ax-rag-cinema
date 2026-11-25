@@ -45,6 +45,7 @@ def get_vector_store(
         connection=settings.DATABASE_URL,
         distance_strategy=DistanceStrategy.COSINE,
         use_jsonb=True,
+        engine_args={"connect_args": {"connect_timeout": settings.DB_CONNECT_TIMEOUT}},
     )
 
 
@@ -62,4 +63,4 @@ def get_raw_db_connection() -> (
 ):  # 벡터 DB와는 별개로, SQL을 직접 날릴 수 있는 원시 DB 연결
     """증분 해시 조회 및 BM25 코퍼스 로드를 위한 DB 커넥션을 반환합니다."""
     raw_dsn = settings.DATABASE_URL.replace("postgresql+psycopg://", "postgresql://")
-    return psycopg.connect(raw_dsn)
+    return psycopg.connect(raw_dsn, connect_timeout=settings.DB_CONNECT_TIMEOUT)

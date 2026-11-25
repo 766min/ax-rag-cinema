@@ -1,0 +1,340 @@
+"""웹 검색 결과 적재 · 재조회 (architecture.md §6 의 2 · 6단계).
+
+Brave 결과를 팀 양식(websearch.to_team_format)으로 바꾼 뒤
+- 청크는 웹 컬렉션(WEB_COLLECTION)에 넣고 (같은 URL = 같은 chunk_id → 덮어씀)
+- "이 질문으로 검색한 적이 있는가" 는 검색 기록 표(web_search_log)에 lookup_key 로 남긴다.
+
+검색 기록을 따로 두는 이유
+- 결과가 0건인 검색도 "이미 찾아봤다" 로 남겨야 Brave 를 다시 부르지 않는다 (§6 판정 기준).
+- 같은 URL 이 다른 질문에서 다시 나오면 청크(스니펫 · 메타데이터)는 마지막 질문 것으로 덮인다.
+  Brave 스니펫은 질문마다 다른 대목을 잘라 주므로, 기록 표가 그 질문이 받은 결과 그대로(results)를
+  들고 있어야 앞 질문이 다시 물었을 때 같은 근거를 돌려줄 수 있다.
+  웹 컬렉션은 URL 마다 최신 스니펫 하나를 두는 검색용 색인이다.
+
+평가 실행기는 이 모듈을 쓰지 않는다 (§6 지키는 선).
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from typing import Any, Protocol
+
+from langchain_core.documents import Document as LangChainDocument
+
+from shared.core.logger import get_logger
+from shared.core.models import Chunk, Document, SourceId
+from websearch import (
+    BRAVE_LICENSE,
+    CachedSearch,
+    WebResult,
+    WebSearchOutcome,
+    to_vector_document,
+)
+
+logger = get_logger(__name__)
+
+DEFAULT_TTL_DAYS = 30
+# 0건 검색은 짧게만 기억한다. Brave 가 일시적으로 비었거나 아직 기사가 없는 최신 소식일 수 있어서,
+# 길게 기억하면 그 질문이 오래 "정보 부족" 으로 고정된다
+DEFAULT_EMPTY_TTL_DAYS = 1
+
+_CHUNK_FIELDS = set(Chunk.model_fields)
+_RESULT_META_FIELDS = (
+    "lookup_key",
+    "work_id",
+    "query_ko",
+    "query_en",
+    "rank",
+    "page_age",
+    "language",
+    "content_hash",
+    "fetched_at",
+)
+
+
+@dataclass(frozen=True)
+class SearchRecord:
+    """lookup_key 하나의 검색 기록"""
+
+    lookup_key: str
+    query_ko: str
+    query_en: str
+    work_id: str | None
+    chunk_ids: list[str]
+    searched_at: datetime
+    # 그 질문이 받은 결과 그대로 (청크 칸 + 결과 메타데이터). 예전 행은 비어 있을 수 있다
+    results: list[dict[str, Any]] = field(default_factory=list)
+    # 그때 Brave 에 요청한 개수 (count). 더 많이 달라는 질문이 오면 다시 검색한다. 예전 행은 0
+    requested: int = 0
+
+
+class SearchLog(Protocol):
+    """검색 기록 저장소. 운영은 PgSearchLog, 테스트는 메모리 구현을 쓴다"""
+
+    def get(self, key: str) -> SearchRecord | None: ...
+    def put(self, record: SearchRecord) -> None: ...
+
+
+class VectorCollection(Protocol):
+    """웹 컬렉션에서 쓰는 PGVector 기능만 (add_documents 는 같은 id 면 덮어쓴다)"""
+
+    def add_documents(self, documents: list[LangChainDocument], **kwargs: Any) -> list[str]: ...
+    def get_by_ids(self, ids: Any, /) -> list[LangChainDocument]: ...
+
+
+class PgSearchLog:
+    """Postgres 의 web_search_log 표. 처음 쓸 때 표를 만든다"""
+
+    TABLE = "web_search_log"
+
+    def __init__(self, connect: Any = None) -> None:
+        if connect is None:
+            from shared.core.vector_store import get_raw_db_connection
+
+            connect = get_raw_db_connection
+        self._connect = connect
+        self._ready = False
+
+    def _ensure_table(self, conn: Any) -> None:
+        if self._ready:
+            return
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {self.TABLE} (
+                    lookup_key  TEXT PRIMARY KEY,
+                    query_ko    TEXT NOT NULL,
+                    query_en    TEXT NOT NULL,
+                    work_id     TEXT,
+                    chunk_ids   JSONB NOT NULL,
+                    searched_at TIMESTAMPTZ NOT NULL
+                )
+                """
+            )
+            # 처음 만든 표에는 없던 칸 (2026-11-25 추가)
+            cur.execute(
+                f"ALTER TABLE {self.TABLE} "
+                f"ADD COLUMN IF NOT EXISTS results JSONB NOT NULL DEFAULT '[]'::jsonb"
+            )
+            cur.execute(
+                f"ALTER TABLE {self.TABLE} "
+                f"ADD COLUMN IF NOT EXISTS requested INTEGER NOT NULL DEFAULT 0"
+            )
+        conn.commit()
+        self._ready = True
+
+    def get(self, key: str) -> SearchRecord | None:
+        import json
+
+        conn = self._connect()
+        try:
+            self._ensure_table(conn)
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT lookup_key, query_ko, query_en, work_id, chunk_ids, searched_at, "
+                    f"results, requested FROM {self.TABLE} WHERE lookup_key = %s",
+                    (key,),
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        if row is None:
+            return None
+        chunk_ids = row[4] if isinstance(row[4], list) else json.loads(row[4])
+        results = row[6] if isinstance(row[6], list) else json.loads(row[6] or "[]")
+        return SearchRecord(
+            row[0], row[1], row[2], row[3], list(chunk_ids), row[5], list(results), int(row[7])
+        )
+
+    def put(self, record: SearchRecord) -> None:
+        import json
+
+        conn = self._connect()
+        try:
+            self._ensure_table(conn)
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {self.TABLE}
+                        (lookup_key, query_ko, query_en, work_id, chunk_ids, searched_at,
+                         results, requested)
+                    VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s::jsonb, %s)
+                    ON CONFLICT (lookup_key) DO UPDATE SET
+                        query_ko = EXCLUDED.query_ko,
+                        query_en = EXCLUDED.query_en,
+                        work_id = EXCLUDED.work_id,
+                        chunk_ids = EXCLUDED.chunk_ids,
+                        searched_at = EXCLUDED.searched_at,
+                        results = EXCLUDED.results,
+                        requested = EXCLUDED.requested
+                    """,
+                    (
+                        record.lookup_key,
+                        record.query_ko,
+                        record.query_en,
+                        record.work_id,
+                        json.dumps(record.chunk_ids),
+                        record.searched_at,
+                        json.dumps(record.results, ensure_ascii=False),
+                        record.requested,
+                    ),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def from_vector_document(doc: LangChainDocument) -> WebResult:
+    """웹 컬렉션에서 꺼낸 행을 websearch 가 만든 모양(WebResult)으로 되돌린다"""
+    return _from_metadata(dict(doc.metadata))
+
+
+def _from_metadata(meta: dict[str, Any]) -> WebResult:
+    """청크 칸 + 결과 메타데이터 (to_vector_document 의 metadata) → WebResult"""
+    chunk = Chunk.model_validate({k: v for k, v in meta.items() if k in _CHUNK_FIELDS})
+    fetched_raw = meta.get("fetched_at")
+    fetched = datetime.fromisoformat(fetched_raw) if isinstance(fetched_raw, str) else None
+    document = Document(
+        doc_id=chunk.doc_id,
+        work_id=chunk.work_id,
+        source_id=SourceId.BRAVE,
+        source_url=chunk.source_url,
+        license=BRAVE_LICENSE,
+        revid=0,
+        fetched_at=fetched,
+        doc_type="web",
+        source_ids={"brave_title": chunk.title_original},
+    )
+    metadata = {k: meta.get(k) for k in _RESULT_META_FIELDS}
+    return WebResult(document=document, chunk=chunk, metadata=metadata)
+
+
+@dataclass
+class SaveReport:
+    inserted: int = 0
+    updated: int = 0
+    unchanged_skipped: int = 0
+
+
+class WebStore:
+    """웹 컬렉션 + 검색 기록. websearch.search_web_for_question 이 store 로 받는다"""
+
+    def __init__(
+        self,
+        collection: VectorCollection,
+        log: SearchLog,
+        *,
+        ttl_days: int = DEFAULT_TTL_DAYS,
+        empty_ttl_days: int = DEFAULT_EMPTY_TTL_DAYS,
+        now: Any = None,
+    ) -> None:
+        self.collection = collection
+        self.log = log
+        self.ttl = timedelta(days=ttl_days)
+        self.empty_ttl = timedelta(days=empty_ttl_days)
+        self._now = now or (lambda: datetime.now(UTC))
+
+    def lookup(self, key: str) -> CachedSearch | None:
+        """검색한 적이 있으면 그때 결과(0건일 수 있음) · 검색어 · 요청 개수, 없으면 None.
+
+        기한이 지난 기록도 expired=True 로 돌려준다. 재사용할지(covers)는 호출하는 쪽이 정하고,
+        다시 검색했는데 Brave 가 실패하면 이 결과를 "오래된 결과" 로 대신 쓴다.
+        """
+        record = self.log.get(key)
+        if record is None:
+            return None
+        searched = record.searched_at
+        if searched.tzinfo is None:
+            searched = searched.replace(tzinfo=UTC)
+        ttl = self.ttl if record.chunk_ids else self.empty_ttl
+        expired = self._now() - searched > ttl
+        if expired:
+            logger.info("[webstore] 기한 지남 → 다시 검색 (key=%s)", key)
+        if not record.chunk_ids:
+            return CachedSearch(
+                results=[], query_en=record.query_en, requested=record.requested, expired=expired
+            )
+        # 웹 컬렉션에 남아 있는 청크만 쓴다. 지운 청크(삭제 · 정리)는 되살리지 않는다
+        found = {
+            d.metadata.get("chunk_id"): d for d in self.collection.get_by_ids(record.chunk_ids)
+        }
+        if not found:
+            # 기록은 있는데 청크가 모두 지워졌다 (컬렉션을 비운 경우 등) → 다시 검색한다
+            logger.info("[webstore] 기록의 청크가 없음 → 다시 검색 (key=%s)", key)
+            return None
+        if record.results:
+            # 그 질문이 받은 스니펫 그대로. 다른 질문이 같은 URL 을 덮어써도 바뀌지 않는다
+            results = [_from_metadata(r) for r in record.results if r.get("chunk_id") in found]
+        else:
+            # 예전 행(results 없음): 웹 컬렉션의 현재 청크로 대신한다
+            results = [from_vector_document(found[cid]) for cid in record.chunk_ids if cid in found]
+        # 기록 순서(= Brave 순위) 그대로. 일부만 지워졌으면 남은 것만
+        return CachedSearch(
+            results=results, query_en=record.query_en, requested=record.requested, expired=expired
+        )
+
+    def save(
+        self, outcome: WebSearchOutcome, *, query_ko: str, work_id: str | None, count: int
+    ) -> SaveReport:
+        """청크를 웹 컬렉션에 넣고(내용이 같으면 다시 임베딩하지 않음) 검색 기록을 남긴다"""
+        report = SaveReport()
+        ids = [r.chunk.chunk_id for r in outcome.results]
+        existing = {
+            d.metadata.get("chunk_id"): d.metadata.get("content_hash")
+            for d in (self.collection.get_by_ids(ids) if ids else [])
+        }
+        to_add: list[LangChainDocument] = []
+        add_ids: list[str] = []
+        for result in outcome.results:
+            cid = result.chunk.chunk_id
+            if cid in existing and existing[cid] == result.chunk.content_hash:
+                report.unchanged_skipped += 1
+                continue
+            if cid in existing:
+                report.updated += 1
+            else:
+                report.inserted += 1
+            to_add.append(to_vector_document(result))
+            add_ids.append(cid)
+        if to_add:
+            self.collection.add_documents(to_add, ids=add_ids)
+        self.log.put(
+            SearchRecord(
+                lookup_key=outcome.lookup_key,
+                query_ko=query_ko,
+                query_en=outcome.query_en,
+                work_id=work_id,
+                chunk_ids=ids,
+                searched_at=self._now(),
+                results=[to_vector_document(r).metadata for r in outcome.results],
+                requested=count,
+            )
+        )
+        logger.info(
+            "[webstore] key=%s inserted=%d updated=%d unchanged=%d",
+            outcome.lookup_key,
+            report.inserted,
+            report.updated,
+            report.unchanged_skipped,
+        )
+        return report
+
+
+_DEFAULT_STORE: WebStore | None = None
+
+
+def default_store() -> WebStore:
+    """WEB_STORE=true 일 때 서비스가 쓰는 저장소 (웹 컬렉션 + Postgres 검색 기록)"""
+    global _DEFAULT_STORE
+    if _DEFAULT_STORE is None:
+        from shared.core.config import settings
+        from shared.core.vector_store import get_vector_store
+
+        _DEFAULT_STORE = WebStore(
+            get_vector_store(settings.WEB_COLLECTION),
+            PgSearchLog(),
+            ttl_days=settings.WEB_STORE_TTL_DAYS,
+            empty_ttl_days=settings.WEB_STORE_EMPTY_TTL_DAYS,
+        )
+    return _DEFAULT_STORE

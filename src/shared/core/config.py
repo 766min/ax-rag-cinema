@@ -37,6 +37,8 @@ class Settings:
     REASONING_EFFORT: str = _require("REASONING_EFFORT")
     LLM_TIMEOUT: int = int(_require("LLM_TIMEOUT"))
     DATABASE_URL: str = _require("DATABASE_URL")
+    # DB 연결 대기 상한(초). 없으면 DB 가 응답하지 않을 때 요청이 끝없이 기다린다
+    DB_CONNECT_TIMEOUT: int = int(_optional("DB_CONNECT_TIMEOUT", "5"))
     MOVIE_COLLECTION: str = _require("MOVIE_COLLECTION")  # 고정 문서 컬렉션 (A·B·C 평가용)
 
     # 선택: D 구성 (LLM 가공 색인, 원문 컬렉션과 분리)
@@ -45,7 +47,9 @@ class Settings:
     # 선택: 웹 검색 (서비스 경로 전용, 평가에서는 끔)
     BRAVE_API_KEY: str = _optional("BRAVE_API_KEY", "")
     WEB_COLLECTION: str = _optional("WEB_COLLECTION", "mcu_web")
-    WEB_STORE: bool = _flag("WEB_STORE", default=False)  # Brave 약관상 저장 권한 확인 전에는 false
+    WEB_STORE: bool = _flag("WEB_STORE", default=False)  # 저장 권한 있는 Brave 요금제에서만 true
+    WEB_STORE_TTL_DAYS: int = int(_optional("WEB_STORE_TTL_DAYS", "30"))  # 지나면 다시 검색
+    WEB_STORE_EMPTY_TTL_DAYS: int = int(_optional("WEB_STORE_EMPTY_TTL_DAYS", "1"))  # 0건 검색
 
 
 settings = Settings()
