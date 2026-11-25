@@ -1,0 +1,390 @@
+"""웹 보강분 적재 · 재조회 (architecture.md §6 의 2 · 6단계, 튜터 실습 확인 시나리오 ③ · ④)"""
+
+import asyncio
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+import httpx
+import pytest
+from langchain_core.documents import Document as LangChainDocument
+
+from shared.core.models import Alias
+from websearch import lookup_key, search_web_for_question, to_team_format, to_vector_document
+from webstore import SearchRecord, WebStore, from_vector_document
+
+NOW = datetime(2026, 11, 25, 12, tzinfo=UTC)
+
+PAYLOAD = {
+    "web": {
+        "results": [
+            {
+                "title": "Thunderbolts* box office",
+                "url": "https://example.com/a",
+                "description": "Grossed $382 million.",
+            },
+            {
+                "title": "Thunderbolts* review",
+                "url": "https://example.com/b",
+                "description": "Critics praised it.",
+            },
+        ]
+    }
+}
+
+ALIASES = [
+    Alias(alias_ko="썬더볼츠", canonical_en="Thunderbolts*", kind="work", target_id="tt20969586"),
+]
+
+
+class MemoryCollection:
+    """PGVector 대신. add_documents 는 같은 id 면 덮어쓴다 (PGVector 의 ON CONFLICT 와 같음)"""
+
+    def __init__(self) -> None:
+        self.rows: dict[str, LangChainDocument] = {}
+        self.add_calls: list[list[str]] = []
+
+    def add_documents(self, documents: list[LangChainDocument], **kwargs: Any) -> list[str]:
+        ids = list(kwargs["ids"])
+        self.add_calls.append(ids)
+        for i, doc in zip(ids, documents, strict=True):
+            self.rows[i] = doc
+        return ids
+
+    def get_by_ids(self, ids: Any, /) -> list[LangChainDocument]:
+        return [self.rows[i] for i in ids if i in self.rows]
+
+
+class MemoryLog:
+    def __init__(self) -> None:
+        self.rows: dict[str, SearchRecord] = {}
+
+    def get(self, key: str) -> SearchRecord | None:
+        return self.rows.get(key)
+
+    def put(self, record: SearchRecord) -> None:
+        self.rows[record.lookup_key] = record
+
+
+def _store(now: datetime = NOW) -> WebStore:
+    return WebStore(MemoryCollection(), MemoryLog(), ttl_days=30, now=lambda: now)
+
+
+async def _translator(_system: str, text: str) -> str:
+    return text.replace("흥행 수익은", "box office gross")
+
+
+def _ask(
+    store: WebStore,
+    question: str = "썬더볼츠 흥행 수익은?",
+    payload: Any = PAYLOAD,
+    count: int = 5,
+) -> Any:
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.params["q"])
+        if isinstance(payload, int):
+            return httpx.Response(payload)
+        # 실제 Brave 처럼 count 개까지만 돌려준다
+        limit = int(request.url.params["count"])
+        return httpx.Response(200, json={"web": {"results": payload["web"]["results"][:limit]}})
+
+    async def run() -> Any:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await search_web_for_question(
+                question,
+                aliases=ALIASES,
+                translator=_translator,
+                api_key="test-key",
+                client=client,
+                store=store,
+                count=count,
+            )
+
+    _rewrite, outcome = asyncio.run(run())
+    return outcome, calls
+
+
+def test_first_question_calls_brave_and_stores_chunks() -> None:
+    store = _store()
+    outcome, calls = _ask(store)
+    assert len(calls) == 1
+    assert outcome.web_called is True and outcome.web_cache_hit is False
+    collection = store.collection
+    assert isinstance(collection, MemoryCollection)
+    assert set(collection.rows) == {r.chunk.chunk_id for r in outcome.results}
+    record = store.log.get(outcome.lookup_key)
+    assert record is not None
+    assert record.chunk_ids == [r.chunk.chunk_id for r in outcome.results]
+    assert record.work_id == "tt20969586"
+
+
+def test_same_question_again_reuses_store_without_calling_brave() -> None:
+    store = _store()
+    first, _ = _ask(store)
+    # 띄어쓰기 · 끝 문장부호가 달라도 같은 lookup_key
+    second, calls = _ask(store, "썬더볼츠   흥행 수익은")
+    assert calls == []
+    assert second.web_called is False and second.web_cache_hit is True
+    assert [r.chunk.chunk_id for r in second.results] == [r.chunk.chunk_id for r in first.results]
+    assert second.results[0].chunk.flags == ["unverified"]
+    assert second.results[0].document.source_url == "https://example.com/a"
+
+
+def test_zero_result_search_is_remembered() -> None:
+    store = _store()
+    _ask(store, payload={"web": {"results": []}})
+    again, calls = _ask(store, payload={"web": {"results": []}})
+    assert calls == []
+    assert again.web_cache_hit is True and again.results == []
+
+
+def test_failed_brave_call_is_not_recorded_so_next_question_retries() -> None:
+    store = _store()
+    failed, _ = _ask(store, payload=500)
+    assert failed.web_failed is True
+    assert store.log.get(failed.lookup_key) is None
+    _, calls = _ask(store)
+    assert len(calls) == 1
+
+
+def test_expired_record_searches_again() -> None:
+    old = _store(NOW)
+    _ask(old)
+    later = WebStore(old.collection, old.log, ttl_days=30, now=lambda: NOW + timedelta(days=31))
+    outcome, calls = _ask(later)
+    assert len(calls) == 1 and outcome.web_cache_hit is False
+
+
+def test_unchanged_chunk_is_not_embedded_again() -> None:
+    store = _store()
+    _ask(store)
+    collection = store.collection
+    assert isinstance(collection, MemoryCollection)
+    assert len(collection.add_calls) == 1
+    # 다른 질문이 같은 URL 을 다시 받아 옴 → 내용이 같으면 다시 임베딩하지 않는다
+    outcome, calls = _ask(store, "썬더볼츠 평가는?")
+    assert len(calls) == 1
+    assert len(collection.add_calls) == 1
+    report = store.save(outcome, query_ko="썬더볼츠 평가는?", work_id=None, count=5)
+    assert report.inserted == 0 and report.unchanged_skipped == len(outcome.results)
+
+
+def test_earlier_question_still_finds_shared_url_after_later_question() -> None:
+    """같은 URL 이 두 질문에 나오면 청크 메타데이터의 lookup_key 는 덮인다. 기록 표로 찾는다"""
+    store = _store()
+    first, _ = _ask(store)
+    _ask(store, "썬더볼츠 평가는?")
+    again, calls = _ask(store)
+    assert calls == []
+    assert [r.chunk.chunk_id for r in again.results] == [r.chunk.chunk_id for r in first.results]
+
+
+def test_store_failure_does_not_block_the_answer() -> None:
+    class BrokenLog(MemoryLog):
+        def get(self, key: str) -> SearchRecord | None:
+            raise ConnectionError("db down")
+
+    store = WebStore(MemoryCollection(), BrokenLog(), now=lambda: NOW)
+    outcome, calls = _ask(store)
+    assert len(calls) == 1
+    assert outcome.results and outcome.web_store_failed is True
+
+
+def test_vector_row_round_trips_to_team_format() -> None:
+    [result] = to_team_format(
+        PAYLOAD["web"]["results"][:1],
+        query_ko="q",
+        query_normalized="q",
+        query_en="q",
+        work_id="tt20969586",
+        fetched_at=NOW,
+    )
+    back = from_vector_document(to_vector_document(result))
+    assert back.chunk == result.chunk
+    assert back.document == result.document
+    assert back.metadata["lookup_key"] == lookup_key("q")
+
+
+@pytest.mark.parametrize("ttl", [0])
+def test_zero_ttl_always_searches(ttl: int) -> None:
+    store = WebStore(MemoryCollection(), MemoryLog(), ttl_days=ttl, now=lambda: NOW)
+    _ask(store)
+    later = WebStore(store.collection, store.log, ttl_days=ttl, now=lambda: NOW + timedelta(1))
+    _, calls = _ask(later)
+    assert len(calls) == 1
+
+
+def test_record_whose_chunks_were_all_deleted_searches_again() -> None:
+    store = _store()
+    _ask(store)
+    collection = store.collection
+    assert isinstance(collection, MemoryCollection)
+    collection.rows.clear()  # 웹 컬렉션을 비움
+    outcome, calls = _ask(store)
+    assert len(calls) == 1 and outcome.web_cache_hit is False
+    assert len(collection.rows) == len(outcome.results)
+
+
+def test_reuse_skips_llm_rewrite_and_returns_saved_query() -> None:
+    """저장분이 있으면 LLM 영어 변환을 부르지 않는다 (키는 사전 치환만으로 만든다)"""
+    store = _store()
+    first, _ = _ask(store)
+    calls: list[str] = []
+
+    async def counting_translator(_system: str, text: str) -> str:
+        calls.append(text)
+        return "should not be used"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("Brave 를 부르면 안 된다")
+
+    async def run() -> Any:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await search_web_for_question(
+                "썬더볼츠 흥행 수익은",
+                aliases=ALIASES,
+                translator=counting_translator,
+                api_key="test-key",
+                client=client,
+                store=store,
+            )
+
+    rewrite, outcome = asyncio.run(run())
+    assert calls == []
+    assert rewrite["rewrite_skipped"] is True
+    assert rewrite["query_en"] == first.query_en == outcome.query_en
+    assert outcome.web_cache_hit is True
+
+
+def test_miss_still_runs_llm_rewrite() -> None:
+    store = _store()
+    calls: list[str] = []
+
+    async def counting_translator(_system: str, text: str) -> str:
+        calls.append(text)
+        return text.replace("흥행 수익은?", "box office gross")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=PAYLOAD)
+
+    async def run() -> Any:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await search_web_for_question(
+                "썬더볼츠 흥행 수익은?",
+                aliases=ALIASES,
+                translator=counting_translator,
+                api_key="test-key",
+                client=client,
+                store=store,
+            )
+
+    rewrite, outcome = asyncio.run(run())
+    assert len(calls) == 1
+    assert rewrite["rewrite_skipped"] is False
+    assert outcome.web_called is True
+
+
+def test_shared_url_keeps_each_questions_own_snippet() -> None:
+    """같은 URL 이 다른 스니펫으로 다시 와도, 앞 질문은 자기가 받은 스니펫을 그대로 돌려받는다"""
+    store = _store()
+    first, _ = _ask(store)
+    later_payload = {
+        "web": {
+            "results": [
+                {
+                    "title": "Thunderbolts* box office",
+                    "url": "https://example.com/a",  # 같은 URL, 다른 대목
+                    "description": "Opened with $76 million in week one.",
+                }
+            ]
+        }
+    }
+    _ask(store, "썬더볼츠 평가는?", payload=later_payload)
+    collection = store.collection
+    assert isinstance(collection, MemoryCollection)
+    shared_id = first.results[0].chunk.chunk_id
+    # 웹 컬렉션(검색용)은 최신 스니펫으로 바뀌었다
+    assert "76 million" in collection.rows[shared_id].metadata["text"]
+    again, calls = _ask(store)
+    assert calls == []
+    assert [r.chunk.text for r in again.results] == [r.chunk.text for r in first.results]
+    assert "382 million" in again.results[0].chunk.text
+
+
+def test_zero_result_is_remembered_only_for_empty_ttl() -> None:
+    """0건 검색은 하루만 기억한다. 결과가 있는 검색은 30일 그대로"""
+    empty = {"web": {"results": []}}
+    store = _store(NOW)
+    _ask(store, "썬더볼츠 평가는?", payload=empty)  # 0건
+    _ask(store)  # 결과 있음
+    next_day = WebStore(
+        store.collection, store.log, ttl_days=30, now=lambda: NOW + timedelta(days=1, hours=1)
+    )
+    _, empty_calls = _ask(next_day, "썬더볼츠 평가는?", payload=empty)
+    _, full_calls = _ask(next_day)
+    assert len(empty_calls) == 1  # 0건 기록은 하루 지나 다시 검색
+    assert full_calls == []  # 결과 있는 기록은 그대로 재사용
+
+
+THREE = {
+    "web": {
+        "results": [
+            {"title": f"T{i}", "url": f"https://example.com/{i}", "description": f"Snippet {i}."}
+            for i in range(1, 4)
+        ]
+    }
+}
+
+
+def test_larger_count_searches_again_smaller_count_is_sliced() -> None:
+    """리뷰 지적 1: 검색 기록은 질문으로만 찾으므로, 요청 개수를 함께 저장해 비교한다"""
+    store = _store()
+    first, calls1 = _ask(store, payload=THREE, count=1)
+    assert len(calls1) == 1 and len(first.results) == 1
+    more, calls2 = _ask(store, payload=THREE, count=3)  # 더 많이 → 다시 검색
+    assert len(calls2) == 1 and more.web_cache_hit is False and len(more.results) == 3
+    fewer, calls3 = _ask(store, payload=THREE, count=2)  # 더 적게 → 저장분에서 앞 2건
+    assert calls3 == [] and fewer.web_cache_hit is True
+    assert [r.chunk.chunk_id for r in fewer.results] == [r.chunk.chunk_id for r in more.results[:2]]
+
+
+def test_brave_returning_fewer_than_asked_is_still_reused() -> None:
+    """Brave 가 요청보다 적게 줘도(5건 요청 → 2건) 요청 개수로 비교하므로 매번 다시 찾지 않는다"""
+    store = _store()
+    _ask(store, count=5)
+    again, calls = _ask(store, count=5)
+    assert calls == [] and again.web_cache_hit is True and len(again.results) == 2
+
+
+def test_expired_record_is_used_as_stale_when_brave_fails() -> None:
+    """리뷰 지적 2: 기한이 지나 다시 검색했는데 Brave 가 실패하면 예전 결과를 '오래된 결과' 로"""
+    old = _store(NOW)
+    first, _ = _ask(old)
+    later = WebStore(old.collection, old.log, ttl_days=30, now=lambda: NOW + timedelta(days=31))
+    outcome, calls = _ask(later, payload=500)
+    assert len(calls) == 1
+    assert outcome.web_failed is True and outcome.web_fallback is True
+    assert outcome.web_stale is True
+    assert [r.chunk.text for r in outcome.results] == [r.chunk.text for r in first.results]
+    # 실패한 검색은 기록하지 않으므로 다음 질문에서 다시 Brave 를 시도한다
+    _, retry = _ask(later)
+    assert len(retry) == 1
+
+
+def test_fewer_cached_results_are_used_when_brave_fails_for_larger_count() -> None:
+    """개수가 모자라 다시 검색했는데 Brave 가 실패 → 기한 안의 저장분이라 stale 은 아님"""
+    store = _store()
+    _ask(store, payload=THREE, count=1)
+    outcome, calls = _ask(store, payload=500, count=3)
+    assert len(calls) == 1
+    assert outcome.web_fallback is True and outcome.web_stale is False
+    assert len(outcome.results) == 1
+
+
+def test_no_fallback_without_stored_results() -> None:
+    """저장분이 없거나 0건 기록이면 대신 쓸 것이 없다 → 지금처럼 빈 결과 + web_failed"""
+    store = _store()
+    outcome, _ = _ask(store, payload=500)
+    assert outcome.web_failed is True and outcome.web_fallback is False
+    assert outcome.results == []
