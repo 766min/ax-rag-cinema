@@ -1,7 +1,9 @@
 import asyncio
-import zipfile
 from pathlib import Path
 
+import pytest
+
+import tools.translation as translation
 from shared.core.models import Alias
 from tools.translation import (
     load_aliases,
@@ -16,12 +18,32 @@ ALIASES = [
 ]
 
 
-def test_only_alias_zip_member_is_needed(tmp_path: Path) -> None:
-    archive = tmp_path / "handoff.zip"
-    with zipfile.ZipFile(archive, "w") as z:
-        z.writestr("handoff/aliases.jsonl", ALIASES[0].model_dump_json() + "\n")
-        z.writestr("handoff/documents.jsonl", "not valid JSON and not read")
-    assert load_aliases(archive) == ALIASES[:1]
+def test_dataset_aliases_jsonl_is_the_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dataset = tmp_path / "cineverse-dataset-schema" / "aliases.jsonl"
+    dataset.parent.mkdir()
+    dataset.write_text(ALIASES[0].model_dump_json() + "\n", encoding="utf-8")
+    monkeypatch.delenv("CINEVERSE_ALIASES_PATH", raising=False)
+    monkeypatch.setattr(translation, "ALIAS_CANDIDATES", (tmp_path / "missing.csv", dataset))
+    assert load_aliases() == ALIASES[:1]
+
+
+def test_missing_alias_file_says_where_to_put_the_dataset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("CINEVERSE_ALIASES_PATH", raising=False)
+    monkeypatch.setattr(translation, "ALIAS_CANDIDATES", (tmp_path / "none.jsonl",))
+    with pytest.raises(FileNotFoundError, match="cineverse-dataset-schema"):
+        load_aliases()
+
+
+def test_real_team_dataset_aliases_load_when_present() -> None:
+    if not translation.DATASET_ALIASES.exists():
+        pytest.skip("팀 데이터셋이 data/ 에 없습니다 (gitignore)")
+    aliases = load_aliases(translation.DATASET_ALIASES)
+    assert len(aliases) == 112
+    assert all(alias.target_id and alias.target_id.startswith("tt") for alias in aliases)
 
 
 def test_team_csv_aliases_are_supported(tmp_path: Path) -> None:

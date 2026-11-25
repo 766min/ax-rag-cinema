@@ -26,13 +26,15 @@ result = await answer_movie_question(
 
 ## 별칭 데이터
 
-팀이 정리한 `data/official/aliases_ko.csv`가 있으면 이를 우선 사용한다. 아직 없으면 기존 `data/local/aliases.jsonl`, 그마저 없으면 표준 경로 `data/local/cineverse_handoff/cineverse-integrated-dataset-handoff.zip`의 `handoff/aliases.jsonl`을 읽는다. `data/`는 Git에서 제외된다. 환경 변수 `CINEVERSE_ALIASES_PATH`를 지정하면 이 우선순위보다 먼저 적용하며 CSV·JSONL·ZIP 경로를 받을 수 있다. ZIP을 직접 지정해도 다른 대용량 구성원은 읽지 않으며, 읽은 별칭은 프로세스 안에서 캐시한다.
+2026-11-25 팀 데이터셋(`cineverse-dataset-schema`)의 `aliases.jsonl` 을 기본으로 읽는다. 저장소의 `data/` 아래에 풀어 두면 된다 (`data/` 는 Git 에서 제외된다).
+
+읽는 순서: 함수 인자 → 환경 변수 `CINEVERSE_ALIASES_PATH` → `data/official/aliases_ko.csv`(팀이 정리한 CSV, 있을 때) → `data/cineverse-dataset-schema/aliases.jsonl` → `data/local/aliases.jsonl`(예전 위치). 어느 것도 없으면 데이터셋을 풀 위치를 알려 주며 멈춘다. CSV · JSONL 을 받고, 읽은 별칭은 프로세스 안에서 캐시한다. 예전 handoff ZIP 은 더 이상 읽지 않는다.
 
 ```powershell
-$env:CINEVERSE_ALIASES_PATH = 'C:\Users\boomd\Downloads\cineverse-integrated-dataset-handoff.zip'
+$env:CINEVERSE_ALIASES_PATH = 'C:\path\to\cineverse-dataset-schema\aliases.jsonl'
 ```
 
-handoff 별칭 112개는 모두 작품명이다. 인물명 `아이언맨`, `캡틴 아메리카`(`캡틴아메리카` 포함), `토니 스타크`, `스티브 로저스`는 코드의 작은 명시적 보충 사전에 있다. 팀이 검증한 인물 별칭 파일을 마련하면 이 부분을 데이터로 옮긴다.
+데이터셋의 별칭 112개는 모두 작품명이고 `target_id` 는 `tt…` 다. 인물명 `아이언맨`, `캡틴 아메리카`(`캡틴아메리카` 포함), `토니 스타크`, `스티브 로저스`는 코드의 작은 명시적 보충 사전에 있다. 팀이 검증한 인물 별칭 파일을 마련하면 이 부분을 데이터로 옮긴다.
 
 ## 호출 예
 

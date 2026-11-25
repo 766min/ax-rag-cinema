@@ -1,14 +1,13 @@
 """Korean/English query and answer translation with fixed MCU names.
 
-The alias table is read from the local handoff ZIP (or a copied aliases.jsonl).
-Only the small alias member is read; the corpus is never loaded here.
+The alias table is read from the team dataset (data/cineverse-dataset-schema/aliases.jsonl,
+2026-11-25). Only the alias file is read; the corpus is never loaded here.
 """
 
 import csv
 import json
 import os
 import re
-import zipfile
 from collections.abc import Awaitable, Callable, Iterable
 from functools import lru_cache
 from pathlib import Path
@@ -22,19 +21,13 @@ from shared.core.models import _WORK_ID, Alias
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(PROJECT_ROOT / ".env")
-DEFAULT_ALIASES = PROJECT_ROOT / "data" / "local" / "aliases.jsonl"
 TEAM_ALIASES = PROJECT_ROOT / "data" / "official" / "aliases_ko.csv"
-DEFAULT_HANDOFF_ZIP = (
-    PROJECT_ROOT
-    / "data"
-    / "local"
-    / "cineverse_handoff"
-    / "cineverse-integrated-dataset-handoff.zip"
-)
-ZIP_MEMBER = "handoff/aliases.jsonl"
+DATASET_ALIASES = PROJECT_ROOT / "data" / "cineverse-dataset-schema" / "aliases.jsonl"
+LEGACY_ALIASES = PROJECT_ROOT / "data" / "local" / "aliases.jsonl"
+ALIAS_CANDIDATES = (TEAM_ALIASES, DATASET_ALIASES, LEGACY_ALIASES)
 Rewrite = Callable[[str, str], Awaitable[str]]
 
-# The handoff currently has work aliases only. These character names are a small,
+# The team dataset has work aliases only. These character names are a small,
 # explicit supplement, so a film title never has to double as a character record.
 CHARACTER_NAMES = {
     "캡틴 아메리카": "Captain America",
@@ -73,30 +66,24 @@ class AnswerInput(BaseModel):
 
 
 def load_aliases(path: Path | None = None) -> list[Alias]:
-    """Prefer the team's curated aliases, with the handoff aliases as a local fallback."""
+    """Read aliases: explicit path > CINEVERSE_ALIASES_PATH > team CSV > team dataset."""
     configured = os.getenv("CINEVERSE_ALIASES_PATH")
-    source = path or (
-        Path(configured)
-        if configured
-        else TEAM_ALIASES
-        if TEAM_ALIASES.exists()
-        else DEFAULT_ALIASES
-        if DEFAULT_ALIASES.exists()
-        else DEFAULT_HANDOFF_ZIP
-    )
+    source = path or (Path(configured) if configured else None)
+    if source is None:
+        source = next((candidate for candidate in ALIAS_CANDIDATES if candidate.exists()), None)
+    if source is None:
+        raise FileNotFoundError(
+            f"별칭 파일이 없습니다. 팀 데이터셋을 {DATASET_ALIASES.parent} 에 풀어 주세요."
+        )
     return list(_load_alias_source(source))
 
 
 @lru_cache(maxsize=8)
 def _load_alias_source(source: Path) -> tuple[Alias, ...]:
-    if source.suffix.lower() == ".zip":
-        with zipfile.ZipFile(source) as archive:
-            lines = archive.read(ZIP_MEMBER).decode("utf-8-sig").splitlines()
-    elif source.suffix.lower() == ".csv":
+    if source.suffix.lower() == ".csv":
         with source.open(encoding="utf-8-sig", newline="") as file:
             return tuple(Alias.model_validate(row) for row in csv.DictReader(file))
-    else:
-        lines = source.read_text(encoding="utf-8-sig").splitlines()
+    lines = source.read_text(encoding="utf-8-sig").splitlines()
     return tuple(Alias.model_validate(json.loads(line)) for line in lines if line.strip())
 
 
