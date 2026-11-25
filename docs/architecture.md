@@ -328,10 +328,30 @@ Brave Search API 약관 3(b) 사용 제한은 다음을 금지한다.
 - 같은 URL 이 다른 질문에서 다시 나오면 웹 컬렉션의 청크는 마지막 질문 것으로 덮인다. Brave 스니펫은 질문마다 다른 대목을 잘라 주므로 **스니펫 본문까지 바뀐다** (실측: 겹친 URL 2개 모두 스니펫이 달랐다). 그래서 질문 → 결과는 기록 표가 `results` 로 그대로 들고, 재사용할 때는 그 질문이 받은 스니펫을 돌려준다. 웹 컬렉션은 URL 마다 최신 스니펫 하나를 두는 유사도 검색용이다.
 - 재사용할 때 웹 컬렉션에서 지워진 청크는 빼고 돌려준다. 모두 지워졌으면 다시 검색한다.
 - 재사용할 때는 LLM 영어 변환을 하지 않는다. `lookup_key` 는 사전 치환만으로 만들 수 있으므로 저장소를 먼저 보고, 기록에 남은 `query_en` 을 돌려준다 (`rewrite_skipped = true`).
-- 기록이 `WEB_STORE_TTL_DAYS`(기본 30일)보다 오래되면 다시 검색한다.
+- 기록이 `WEB_STORE_TTL_DAYS`(기본 30일)보다 오래되면 다시 검색한다. **결과가 0건인 기록은 `WEB_STORE_EMPTY_TTL_DAYS`(기본 1일)만** 기억한다 — Brave 가 일시적으로 비었거나 아직 기사가 없는 최신 소식일 수 있어서, 길게 기억하면 그 질문이 오래 "정보 부족" 으로 고정된다.
 - Brave 호출이 실패한 검색은 기록하지 않는다 → 다음 질문에서 다시 시도한다.
 - 저장소 조회 · 적재가 실패해도 답변은 막지 않는다. 검색 결과로 그대로 답하고 `web_store_failed` 를 기록한다.
 - 재사용한 경우 `web_called = false`, `web_cache_hit = true`.
+
+**운영 메모** (2026-11-25, 실측 기준)
+
+| 항목 | 내용 | 대응 |
+|---|---|---|
+| DB 주소 | `.env` 의 `DATABASE_URL` 은 `127.0.0.1` 로 쓴다. `localhost` 는 IPv6 `::1` 을 먼저 시도하는데 Docker DB 는 IPv4 에만 열려 있어, Windows 에서 연결이 수십 초 멈춘다 (Mac · Linux 는 바로 넘어간다) | `.env.example` 반영. 배포 환경에서는 그 환경의 DB 호스트로 바꾼다 |
+| DB 연결 상한 | `DB_CONNECT_TIMEOUT`(기본 5초). 공용 팩토리 `get_vector_store` · `get_raw_db_connection` 에 적용 | DB 가 꺼져 있으면 요청마다 5초 기다린다. 그때는 본 문서 검색도 함께 실패하므로 시연 전에 Docker 가 켜져 있는지 확인한다 |
+| 재사용 속도 | 저장분이 있으면 LLM 변환 · Brave 없이 돌려준다. 서비스 안 두 번째 호출부터 0.01~0.03초 (첫 호출 약 3초는 DB · 사전 초기화) | — |
+| 날짜가 바뀐 같은 스니펫 | 머리말에 받은 날짜가 들어가 `content_hash` 가 달라지므로 다시 임베딩한다 | 새로 검색할 때만 생기고 건당 1원 미만이라 그대로 둔다. 날짜는 "언제 받은 정보인지" 를 보여 준다 |
+| 평가 격리 | 평가 실행기는 웹 컬렉션과 `web_search_log` 를 읽지 않는다 | 약관 3(b)(xiii) — 요금제 변경과 별개 |
+
+**직접 확인하는 법** (`WEB_STORE=true`, `docker compose up -d` 뒤)
+
+| # | 할 일 | 기대 결과 |
+|---|---|---|
+| 1 | `uv run python scripts/try_websearch.py "썬더볼츠 흥행 수익은 얼마야?"` | `web_called=True`, `web_cache_hit=False`, 결과 N건 |
+| 2 | 같은 질문을 띄어쓰기 · 물음표만 바꿔 다시 | `web_called=False`, `web_cache_hit=True`, "영어 변환 실패: 건너뜀", 1번과 같은 결과 · 순서 |
+| 3 | URL 이 겹칠 만한 다른 질문 → 1번 질문 다시 | 1번 질문은 처음 받은 스니펫 그대로 |
+| 4 | DB 확인: `select lookup_key, jsonb_array_length(chunk_ids), jsonb_array_length(results) from web_search_log;` | 질문마다 1행, 두 숫자가 같다 |
+| 5 | 시험 데이터 지우기 (선택) | `delete from web_search_log;` + 웹 컬렉션(`mcu_web`)의 행 삭제. 둘 중 하나만 지우면 다음 질문에서 다시 검색한다 |
 
 **확인 시나리오와 다섯 구성 평가의 순서** (2026-11-24 추가)
 

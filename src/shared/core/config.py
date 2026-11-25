@@ -49,6 +49,7 @@ class Settings:
     WEB_COLLECTION: str = _optional("WEB_COLLECTION", "mcu_web")
     WEB_STORE: bool = _flag("WEB_STORE", default=False)  # 저장 권한 있는 Brave 요금제에서만 true
     WEB_STORE_TTL_DAYS: int = int(_optional("WEB_STORE_TTL_DAYS", "30"))  # 지나면 다시 검색
+    WEB_STORE_EMPTY_TTL_DAYS: int = int(_optional("WEB_STORE_EMPTY_TTL_DAYS", "1"))  # 0건 검색
 
 
 settings = Settings()

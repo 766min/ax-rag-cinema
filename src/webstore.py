@@ -35,6 +35,9 @@ from websearch import (
 logger = get_logger(__name__)
 
 DEFAULT_TTL_DAYS = 30
+# 0건 검색은 짧게만 기억한다. Brave 가 일시적으로 비었거나 아직 기사가 없는 최신 소식일 수 있어서,
+# 길게 기억하면 그 질문이 오래 "정보 부족" 으로 고정된다
+DEFAULT_EMPTY_TTL_DAYS = 1
 
 _CHUNK_FIELDS = set(Chunk.model_fields)
 _RESULT_META_FIELDS = (
@@ -212,11 +215,13 @@ class WebStore:
         log: SearchLog,
         *,
         ttl_days: int = DEFAULT_TTL_DAYS,
+        empty_ttl_days: int = DEFAULT_EMPTY_TTL_DAYS,
         now: Any = None,
     ) -> None:
         self.collection = collection
         self.log = log
         self.ttl = timedelta(days=ttl_days)
+        self.empty_ttl = timedelta(days=empty_ttl_days)
         self._now = now or (lambda: datetime.now(UTC))
 
     def lookup(self, key: str) -> CachedSearch | None:
@@ -227,7 +232,8 @@ class WebStore:
         searched = record.searched_at
         if searched.tzinfo is None:
             searched = searched.replace(tzinfo=UTC)
-        if self._now() - searched > self.ttl:
+        ttl = self.ttl if record.chunk_ids else self.empty_ttl
+        if self._now() - searched > ttl:
             logger.info("[webstore] 기한 지남 → 다시 검색 (key=%s)", key)
             return None
         if not record.chunk_ids:
@@ -307,5 +313,6 @@ def default_store() -> WebStore:
             get_vector_store(settings.WEB_COLLECTION),
             PgSearchLog(),
             ttl_days=settings.WEB_STORE_TTL_DAYS,
+            empty_ttl_days=settings.WEB_STORE_EMPTY_TTL_DAYS,
         )
     return _DEFAULT_STORE

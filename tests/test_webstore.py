@@ -302,3 +302,18 @@ def test_shared_url_keeps_each_questions_own_snippet() -> None:
     assert calls == []
     assert [r.chunk.text for r in again.results] == [r.chunk.text for r in first.results]
     assert "382 million" in again.results[0].chunk.text
+
+
+def test_zero_result_is_remembered_only_for_empty_ttl() -> None:
+    """0건 검색은 하루만 기억한다. 결과가 있는 검색은 30일 그대로"""
+    empty = {"web": {"results": []}}
+    store = _store(NOW)
+    _ask(store, "썬더볼츠 평가는?", payload=empty)  # 0건
+    _ask(store)  # 결과 있음
+    next_day = WebStore(
+        store.collection, store.log, ttl_days=30, now=lambda: NOW + timedelta(days=1, hours=1)
+    )
+    _, empty_calls = _ask(next_day, "썬더볼츠 평가는?", payload=empty)
+    _, full_calls = _ask(next_day)
+    assert len(empty_calls) == 1  # 0건 기록은 하루 지나 다시 검색
+    assert full_calls == []  # 결과 있는 기록은 그대로 재사용
