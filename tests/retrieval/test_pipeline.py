@@ -86,3 +86,39 @@ def test_미리_만든_검색어를_주면_사전_치환_대신_그_글로_검�
     )
     assert store.queries == ["Why does Thanos collect the stones?"]
     assert result.query_normalized == "Why does Thanos collect the stones?"
+
+
+class _LongFirst:
+    name = "long-first"
+
+    def score(self, query: str, texts: list[str]) -> list[float]:
+        return [float(len(t)) for t in texts]
+
+
+def test_C와_C리라이트는_재정렬하고_리라이트는_검색어가_있어야_한다() -> None:
+    store = FakeStore([("b", 0.9), ("a", 0.8), ("c", 0.1)])
+    result = run_question(
+        "타노스는?",
+        RetrievalMode.HYBRID_RERANK_REWRITE,
+        Retriever(store, CORPUS),  # type: ignore[arg-type]
+        NORMALIZER,
+        FakeLLM(),  # type: ignore[arg-type]
+        CONFIG,
+        _LongFirst(),
+        search_query="Thanos",
+    )
+    assert store.queries == ["Thanos"]
+    assert result.candidates[0].chunk_id == "a"  # 가장 긴 글
+    assert result.candidates[0].rank_before_rerank is not None
+    assert len(result.candidates) <= CONFIG.pool  # RRF 결과도 후보 수(pool)로 자른다
+
+    with pytest.raises(ValueError, match="search_query"):
+        run_question(
+            "타노스는?",
+            RetrievalMode.HYBRID_RERANK_REWRITE,
+            _retriever(),
+            NORMALIZER,
+            FakeLLM(),  # type: ignore[arg-type]
+            CONFIG,
+            _LongFirst(),
+        )

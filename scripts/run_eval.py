@@ -39,7 +39,12 @@ from shared.core.schemas import RetrievalMode  # noqa: E402
 from shared.core.vector_store import get_llm, get_raw_db_connection, get_vector_store  # noqa: E402
 
 MANUAL_EN = PROJECT_ROOT / "experiments" / "v2" / "manual_en.jsonl"
-MODES = {"vector": RetrievalMode.VECTOR, "hybrid": RetrievalMode.HYBRID}
+MODES = {
+    "vector": RetrievalMode.VECTOR,
+    "hybrid": RetrievalMode.HYBRID,
+    "hybrid_rerank": RetrievalMode.HYBRID_RERANK,  # Cross-Encoder: sentence-transformers 겹쳐 설치
+    "hybrid_rerank_rewrite": RetrievalMode.HYBRID_RERANK_REWRITE,  # + --query rewrite
+}
 
 
 def main() -> None:
@@ -101,6 +106,13 @@ def main() -> None:
         f"{datetime.now():%Y-%m-%d-%H%M}-{recipe.recipe_id.lower()}-{args.mode}-try"
     )
     config = SearchConfig(top_k=args.top_k, pool=args.pool)
+    if mode == RetrievalMode.HYBRID_RERANK_REWRITE and args.query != "rewrite":
+        raise SystemExit("hybrid_rerank_rewrite 는 --query rewrite 와 함께 씁니다")
+    reranker = None
+    if mode in (RetrievalMode.HYBRID_RERANK, RetrievalMode.HYBRID_RERANK_REWRITE):
+        from retrieval.refine import CrossEncoderReranker
+
+        reranker = CrossEncoderReranker()
     aliases = load_aliases(DATASET_DIR / "aliases.jsonl")
     plans = None
     if args.query:
@@ -143,9 +155,11 @@ def main() -> None:
                 "code_sha256": info["code_sha256"],
                 "eval_item_ids": [i.question_id for i in items],
                 "query_variant": args.query or "alias (V1 기본)",
+                "reranker_device": getattr(reranker, "device", None),
             },
         ),
         plans=plans,
+        reranker=reranker,
     )
     # 실행 원본(RunRecord)은 Recorder 가 results/{run_id}.jsonl 에 남겼다.
     # 아래는 그 원본에서 계산한 요약과 수동 채점 시트 (results/eval/{run_id}/, 새 폴더로만)

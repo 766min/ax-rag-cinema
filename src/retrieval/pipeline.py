@@ -18,7 +18,13 @@ from shared.core.models import Candidate
 from shared.core.schemas import AnswerStatus, RetrievalMode
 from shared.core.timing import measure_time
 
-SUPPORTED_MODES = (RetrievalMode.VECTOR, RetrievalMode.HYBRID, RetrievalMode.HYBRID_RERANK)
+SUPPORTED_MODES = (
+    RetrievalMode.VECTOR,
+    RetrievalMode.HYBRID,
+    RetrievalMode.HYBRID_RERANK,
+    RetrievalMode.HYBRID_RERANK_REWRITE,
+)
+RERANK_MODES = (RetrievalMode.HYBRID_RERANK, RetrievalMode.HYBRID_RERANK_REWRITE)
 
 
 @dataclass
@@ -53,7 +59,9 @@ class Retriever:
     def search(self, query: str, mode: RetrievalMode, config: SearchConfig) -> list[Candidate]:
         if mode == RetrievalMode.VECTOR:
             return vector_candidates(self._vector(query, config.pool))
-        return rrf_merge(self._vector(query, config.pool), self.bm25.search(query, config.pool))
+        # RRF 는 두 목록을 합쳐 최대 2×pool 개가 되므로 pool 개로 자른다 (재정렬 입력 = 후보 20개)
+        merged = rrf_merge(self._vector(query, config.pool), self.bm25.search(query, config.pool))
+        return merged[: config.pool]
 
 
 @measure_time(label="rerank")
@@ -85,13 +93,15 @@ def run_question(
     """
     if mode not in SUPPORTED_MODES:
         raise NotImplementedError(f"아직 구현하지 않은 구성입니다: {mode}")
-    if mode == RetrievalMode.HYBRID_RERANK and reranker is None:
-        raise ValueError("C 구성(hybrid_rerank)은 reranker 가 필요합니다")
+    if mode in RERANK_MODES and reranker is None:
+        raise ValueError(f"{mode} 구성은 reranker 가 필요합니다")
+    if mode == RetrievalMode.HYBRID_RERANK_REWRITE and search_query is None:
+        raise ValueError("C+리라이트는 미리 만든 영어 검색어(search_query)가 필요합니다")
 
     query = search_query if search_query is not None else normalizer.normalize(question)
     try:
         candidates = retriever.search(query, mode, config)
-        if reranker is not None and mode == RetrievalMode.HYBRID_RERANK:
+        if reranker is not None and mode in RERANK_MODES:
             candidates = _rerank(query, candidates, retriever.texts, reranker)
     except Exception as exc:
         failed = AnswerResult(AnswerStatus.RETRIEVAL_ERROR, "")
