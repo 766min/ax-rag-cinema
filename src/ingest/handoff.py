@@ -230,26 +230,40 @@ def adapt_handoff(path: Path) -> ImportBundle:
     for row in raw_chunks:
         raw_work_id = row.get("work_id")
         raw_doc_id = row.get("doc_id")
-        canonical_work_id = work_map.get(str(raw_work_id)) if raw_work_id else None
         mapped_doc_id = doc_id_map.get(str(raw_doc_id)) if raw_doc_id else None
-        if not canonical_work_id or not mapped_doc_id:
-            report.skipped["chunk_without_canonical_work"] += 1
+        if not mapped_doc_id:
+            # Tell an unmapped work (no IMDb ID) apart from a document that is missing outright.
+            reason = (
+                "chunk_work_without_imdb_id"
+                if raw_work_id and str(raw_work_id) not in work_map
+                else "chunk_without_canonical_document"
+            )
+            report.skipped[reason] += 1
             continue
         doc = document_rows[row["doc_id"]]
-        work = work_rows[canonical_work_id]
+        if mapped_doc_id.startswith("wp-"):
+            # Character / universe pages have no work: keep them with work_id=None (#14).
+            chunk_work_id: str | None = None
+            title_ko = None
+            title_original = doc.get("title") or doc.get("page_title")
+        else:
+            chunk_work_id = document_to_work[str(raw_doc_id)]
+            work = work_rows[chunk_work_id]
+            title_ko = work.get("title_ko")
+            title_original = work.get("title_original")
         chunk_id = f"{mapped_doc_id}-{row['section']}-p{int(row['position']):02d}"
         chunk = Chunk(
             chunk_id=chunk_id,
             doc_id=mapped_doc_id,
-            work_id=canonical_work_id,
+            work_id=chunk_work_id,
             source_id=SourceId.WIKIPEDIA_EN,
             section=row["section"],
             position=row["position"],
             total=row["total"],
             text=row["text"],
             header=row.get("header") or "",
-            title_ko=work.get("title_ko"),
-            title_original=work.get("title_original"),
+            title_ko=title_ko,
+            title_original=title_original,
             source_url=doc.get("source_url") or doc.get("permalink") or "",
             revid=doc.get("revid") or doc.get("revision_id"),
             entities=row.get("entities") or [],
@@ -265,6 +279,12 @@ def adapt_handoff(path: Path) -> ImportBundle:
         )
         chunks.append(chunk)
         source_chunk_to_canonical[row["chunk_id"]] = chunk
+
+    # The ZIP may ship wp- documents without chunks; those still need the common chunking step.
+    chunked_docs = {chunk.doc_id for chunk in chunks}
+    report.skipped["wp_document_without_chunks"] += sum(
+        1 for doc in documents if doc.doc_id.startswith("wp-") and doc.doc_id not in chunked_docs
+    )
 
     enriched_chunks: list[Chunk] = []
     for row in raw_enriched:

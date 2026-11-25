@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from langchain_core.documents import Document as LangChainDocument
+from langchain_core.vectorstores import VectorStore
 from psycopg.types.json import Jsonb
 
 from ingest.handoff import ImportBundle
@@ -58,6 +59,10 @@ CREATE TABLE IF NOT EXISTS ingest_runs (
     enriched_index_version TEXT NOT NULL,
     report JSONB NOT NULL
 );
+-- pending -> completed | failed. Only completed runs describe what is actually indexed.
+ALTER TABLE ingest_runs ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending';
+ALTER TABLE ingest_runs ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ;
+ALTER TABLE ingest_runs ADD COLUMN IF NOT EXISTS vectors JSONB NOT NULL DEFAULT '{}'::jsonb;
 """
 
 
@@ -161,25 +166,22 @@ def upsert_metadata(bundle: ImportBundle, source_path: str) -> None:
                     for item in bundle.characters
                 ],
             )
-            cursor.execute(
-                """
-                INSERT INTO ingest_runs (
-                    source_path, base_index_version, enriched_index_version, report
-                ) VALUES (%s, %s, %s, %s)
-                """,
-                (
-                    source_path,
-                    bundle.report.base_index_version,
-                    bundle.report.enriched_index_version,
-                    Jsonb(bundle.report.as_dict()),
-                ),
-            )
         connection.commit()
     except Exception:
         connection.rollback()
         raise
     finally:
         connection.close()
+
+
+def storage_id(collection_name: str, chunk_id: str) -> str:
+    """Physical PGVector row ID.
+
+    langchain_pg_embedding.id is unique across every collection, so the logical chunk_id
+    alone would let the enriched copy overwrite the base row. Citations and gold keys keep
+    using metadata["chunk_id"]; only the stored row ID carries the collection prefix.
+    """
+    return f"{collection_name}:{chunk_id}"
 
 
 def _existing_hashes(collection_name: str) -> dict[str, str]:
@@ -203,51 +205,122 @@ def _existing_hashes(collection_name: str) -> dict[str, str]:
         connection.close()
 
 
-def _vector_document(chunk: Chunk, *, enriched: bool) -> LangChainDocument:
-    metadata = chunk.model_dump(mode="json")
+def _vector_document(chunk: Chunk, collection_name: str, *, enriched: bool) -> LangChainDocument:
+    metadata = chunk.model_dump(mode="json")  # keeps the logical chunk_id for citations
     metadata["enriched"] = enriched
     return LangChainDocument(
-        id=chunk.chunk_id,
+        id=storage_id(collection_name, chunk.chunk_id),
         page_content=f"{chunk.header}\n{chunk.text}".strip(),
         metadata=metadata,
     )
 
 
 def upsert_vectors(
-    chunks: list[Chunk], collection_name: str, *, enriched: bool, batch_size: int = 64
+    chunks: list[Chunk],
+    collection_name: str,
+    *,
+    enriched: bool,
+    batch_size: int = 64,
+    store: VectorStore | None = None,
+    existing: dict[str, str] | None = None,
 ) -> dict[str, int]:
-    from shared.core.vector_store import get_vector_store
+    if store is None:
+        from shared.core.vector_store import get_vector_store
 
-    store = get_vector_store(collection_name)
-    existing = _existing_hashes(collection_name)
-    changed = [chunk for chunk in chunks if existing.get(chunk.chunk_id) != chunk.content_hash]
+        store = get_vector_store(collection_name)
+    if existing is None:
+        existing = _existing_hashes(collection_name)
+    changed = [
+        chunk
+        for chunk in chunks
+        if existing.get(storage_id(collection_name, chunk.chunk_id)) != chunk.content_hash
+    ]
     for batch in _batches(changed, batch_size):
         store.add_documents(
-            [_vector_document(chunk, enriched=enriched) for chunk in batch],
-            ids=[chunk.chunk_id for chunk in batch],
+            [_vector_document(chunk, collection_name, enriched=enriched) for chunk in batch],
+            ids=[storage_id(collection_name, chunk.chunk_id) for chunk in batch],
         )
+    wanted = {storage_id(collection_name, chunk.chunk_id) for chunk in chunks}
     return {
         "input": len(chunks),
         "upserted": len(changed),
         "unchanged_skipped": len(chunks) - len(changed),
+        # Rows from an earlier version (or stored with the old unprefixed IDs) are reported,
+        # not deleted: other sources may share the collection.
+        "stale_remaining": len(set(existing) - wanted),
     }
+
+
+def _start_run(bundle: ImportBundle, source_path: str) -> int:
+    from shared.core.vector_store import get_raw_db_connection
+
+    connection = get_raw_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO ingest_runs (
+                    source_path, base_index_version, enriched_index_version, report, status
+                ) VALUES (%s, %s, %s, %s, 'pending')
+                RETURNING id
+                """,
+                (
+                    source_path,
+                    bundle.report.base_index_version,
+                    bundle.report.enriched_index_version,
+                    Jsonb(bundle.report.as_dict()),
+                ),
+            )
+            row = cursor.fetchone()
+        connection.commit()
+    finally:
+        connection.close()
+    if row is None:
+        raise RuntimeError("ingest_runs 행을 만들지 못했습니다.")
+    return int(row[0])
+
+
+def _finish_run(run_id: int, status: str, vectors: dict[str, Any] | None = None) -> None:
+    from shared.core.vector_store import get_raw_db_connection
+
+    connection = get_raw_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE ingest_runs
+                SET status = %s, finished_at = NOW(), vectors = %s
+                WHERE id = %s
+                """,
+                (status, Jsonb(vectors or {}), run_id),
+            )
+        connection.commit()
+    finally:
+        connection.close()
 
 
 def import_bundle(bundle: ImportBundle, source_path: str, batch_size: int = 64) -> dict[str, Any]:
+    """Load metadata and vectors; the index version counts only once every vector is stored.
+
+    Evaluation should read index versions from runs with status='completed'.
+    """
     from shared.core.config import settings
 
     upsert_metadata(bundle, source_path)
-    base = upsert_vectors(
-        bundle.chunks, settings.MOVIE_COLLECTION, enriched=False, batch_size=batch_size
-    )
-    enriched = upsert_vectors(
-        bundle.enriched_chunks,
-        settings.ENRICHED_COLLECTION,
-        enriched=True,
-        batch_size=batch_size,
-    )
-    return {
-        "metadata": bundle.report.adapted_counts,
-        "base_vectors": base,
-        "enriched_vectors": enriched,
-    }
+    run_id = _start_run(bundle, source_path)
+    try:
+        base = upsert_vectors(
+            bundle.chunks, settings.MOVIE_COLLECTION, enriched=False, batch_size=batch_size
+        )
+        enriched = upsert_vectors(
+            bundle.enriched_chunks,
+            settings.ENRICHED_COLLECTION,
+            enriched=True,
+            batch_size=batch_size,
+        )
+    except Exception:
+        _finish_run(run_id, "failed")
+        raise
+    vectors = {"base_vectors": base, "enriched_vectors": enriched}
+    _finish_run(run_id, "completed", vectors)
+    return {"run_id": run_id, "metadata": bundle.report.adapted_counts, **vectors}

@@ -86,6 +86,21 @@ def test_answer_preserves_name_citation_and_url() -> None:
     }
 
 
+def test_answer_protects_season_and_character_citations() -> None:
+    seen: list[str] = []
+
+    async def fake(_system: str, text: str) -> str:
+        seen.append(text)
+        # A model that mangles raw IDs must never see them.
+        return text.replace("-S1-", "-s1-").replace("wp-", "WP-")
+
+    answer = "It aired. [tt9140554-S1-wikipedia-plot-p01] [wp-52234178-intro-p02]"
+    result = asyncio.run(translate_answer_to_korean(answer, [], fake))
+    assert "tt9140554" not in seen[0] and "wp-52234178" not in seen[0]
+    assert "[tt9140554-S1-wikipedia-plot-p01]" in result["answer_ko"]
+    assert "[wp-52234178-intro-p02]" in result["answer_ko"]
+
+
 def test_answer_rejects_lost_citation() -> None:
     async def fake(_system: str, _text: str) -> str:
         return "아이언맨이 구했다."

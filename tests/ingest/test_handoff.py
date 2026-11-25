@@ -55,6 +55,21 @@ def _fixture_zip(tmp_path: Path) -> Path:
         "wikidata_qid": "Q1",
     }
     unmapped_document = {**document, "doc_id": "doc_unmapped", "document_id": "doc_unmapped"}
+    character_document = {
+        **document,
+        "doc_id": "doc_character",
+        "document_id": "doc_character",
+        "doc_kind": "character",
+        "title": "Tony Stark",
+        "pageid": 456,
+    }
+    empty_universe_document = {
+        **document,
+        "doc_id": "doc_universe",
+        "document_id": "doc_universe",
+        "doc_kind": "universe",
+        "pageid": 789,
+    }
     chunk = {
         "chunk_id": "doc_mapped-plot-p01",
         "doc_id": "doc_mapped",
@@ -73,6 +88,15 @@ def _fixture_zip(tmp_path: Path) -> Path:
         "chunk_id": "doc_unmapped-plot-p01",
         "doc_id": "doc_unmapped",
         "work_id": "cnt_unmapped",
+    }
+    character_chunk = {
+        **chunk,
+        "chunk_id": "doc_character-intro-p01",
+        "doc_id": "doc_character",
+        "work_id": None,
+        "section": "intro",
+        "text": "Tony Stark is a genius inventor.",
+        "header": "[Tony Stark · intro]",
     }
     enriched = {
         **chunk,
@@ -104,8 +128,11 @@ def _fixture_zip(tmp_path: Path) -> Path:
             json.dumps({"schema_version": "team-v1"}),
         )
         archive.writestr("handoff/works.jsonl", _jsonl(mapped_work, unmapped_work))
-        archive.writestr("handoff/documents.jsonl", _jsonl(document, unmapped_document))
-        archive.writestr("handoff/chunks.jsonl", _jsonl(chunk, unmapped_chunk))
+        archive.writestr(
+            "handoff/documents.jsonl",
+            _jsonl(document, unmapped_document, character_document, empty_universe_document),
+        )
+        archive.writestr("handoff/chunks.jsonl", _jsonl(chunk, unmapped_chunk, character_chunk))
         archive.writestr("handoff/enriched/enriched_chunks.jsonl", _jsonl(enriched))
         archive.writestr("handoff/aliases.jsonl", _jsonl(alias))
         archive.writestr("handoff/characters.jsonl", _jsonl(character))
@@ -117,14 +144,15 @@ def test_adapter_converts_ids_and_preserves_source_ids(tmp_path: Path) -> None:
     bundle = adapt_handoff(_fixture_zip(tmp_path))
     assert bundle.report.adapted_counts == {
         "works": 1,
-        "documents": 1,
-        "chunks": 1,
+        "documents": 3,
+        "chunks": 2,
         "enriched_chunks": 1,
         "aliases": 1,
         "characters": 1,
     }
     assert bundle.report.skipped["work_without_imdb_id"] == 1
-    assert bundle.report.skipped["chunk_without_canonical_work"] == 1
+    assert bundle.report.skipped["chunk_work_without_imdb_id"] == 1
+    assert bundle.report.skipped["wp_document_without_chunks"] == 1
 
     work = bundle.works[0]
     assert work.work_id == "tt0371746"
@@ -141,6 +169,12 @@ def test_adapter_converts_ids_and_preserves_source_ids(tmp_path: Path) -> None:
     assert bundle.enriched_chunks[0].chunk_id == chunk.chunk_id
     assert bundle.enriched_chunks[0].text == "Tony Stark creates an armored suit."
     assert bundle.report.base_index_version == index_version(bundle.chunks)
+
+    # Character pages have no work, but their chunks must still be indexed (#14).
+    character = next(item for item in bundle.chunks if item.doc_id.startswith("wp-"))
+    assert character.chunk_id == "wp-456-intro-p01"
+    assert character.work_id is None
+    assert character.title_original == "Tony Stark"
 
 
 def test_adapter_rejects_unknown_schema(tmp_path: Path) -> None:
