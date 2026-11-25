@@ -18,7 +18,9 @@ from shared.core.models import (
 )
 from shared.core.schemas import Section
 
-QUESTION_SET = Path(__file__).resolve().parents[1] / "question_set.jsonl"
+# 레포 루트(pyproject.toml 이 있는 폴더)에서 찾는다. 테스트 파일을 옮겨도 경로가 틀어져 조용히 건너뛰지 않게
+REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists())
+QUESTION_SET = REPO_ROOT / "question_set.jsonl"
 
 
 def make_chunk(**overrides: object) -> Chunk:
