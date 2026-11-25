@@ -37,6 +37,8 @@ class Settings:
     REASONING_EFFORT: str = _require("REASONING_EFFORT")
     LLM_TIMEOUT: int = int(_require("LLM_TIMEOUT"))
     DATABASE_URL: str = _require("DATABASE_URL")
+    # DB 연결 대기 상한(초). 없으면 DB 가 응답하지 않을 때 요청이 끝없이 기다린다
+    DB_CONNECT_TIMEOUT: int = int(_optional("DB_CONNECT_TIMEOUT", "5"))
     MOVIE_COLLECTION: str = _require("MOVIE_COLLECTION")  # 고정 문서 컬렉션 (A·B·C 평가용)
 
     # 선택: D 구성 (LLM 가공 색인, 원문 컬렉션과 분리)
