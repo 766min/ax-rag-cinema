@@ -36,8 +36,9 @@ def test_service_orders_english_search_draft_and_korean_translation() -> None:
 
     async def answer_translator(_system: str, text: str) -> str:
         calls.append("translate_answer")
-        assert text == "[[TERM_0]] is [[TERM_1]]. [[[TERM_2]]]"
-        return "[[TERM_0]]은 [[TERM_1]]입니다. [[[TERM_2]]]"
+        # References are protected before names, so the chunk ID takes TERM_0.
+        assert text == "[[TERM_1]] is [[TERM_2]]. [[[TERM_0]]]"
+        return "[[TERM_1]]은 [[TERM_2]]입니다. [[[TERM_0]]]"
 
     result = asyncio.run(
         answer_movie_question(

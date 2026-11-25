@@ -53,7 +53,7 @@ Return only the Korean answer."""
 _REFERENCE_PATTERN = re.compile(
     rf"https?://[^\s)\]>]+"
     rf"|\b(?:{_WORK_ID}(?:-wikipedia)?|wp-\d+|web-[0-9a-f]{{12}})"
-    rf"-(?:[a-z_]+-p\d{{2}}|card|connection)\b"
+    rf"-(?:[a-z_]+-p\d{{2,}}|card|connection)\b"  # :02d pads, it does not cap: p07 · p123
 )
 
 
@@ -101,20 +101,24 @@ def _name_pairs(aliases: Iterable[Alias], *, answer: bool = False) -> list[tuple
 
 
 def _protect(
-    text: str, pairs: list[tuple[str, str]], *, english: bool = False
+    text: str, pairs: list[tuple[str, str]], *, english: bool = False, start: int = 0
 ) -> tuple[str, list[tuple[str, str, str]]]:
     matches: list[tuple[str, str, str]] = []
     if not pairs:
         return text, matches
     alternatives = "|".join(re.escape(a) for a, _ in pairs)
     pattern = re.compile(
-        rf"(?<![A-Za-z0-9])(?:{alternatives})(?![A-Za-z0-9])" if english else alternatives,
+        rf"(?<![A-Za-z0-9])(?:{alternatives})(?![A-Za-z0-9])"
+        if english
+        # Korean: skip a name glued to the end of another word ("빅토르" is not "토르"),
+        # but allow particles after it ("토르의", "아이언맨과").
+        else rf"(?<![가-힣A-Za-z0-9])(?:{alternatives})",
         0 if english else re.IGNORECASE,
     )
     lookup = {a if english else a.casefold(): b for a, b in pairs}
 
     def replace(match: re.Match[str]) -> str:
-        token = f"[[TERM_{len(matches)}]]"
+        token = f"[[TERM_{start + len(matches)}]]"
         key = match.group() if english else match.group().casefold()
         matches.append((token, match.group(), lookup[key]))
         return token
@@ -178,12 +182,15 @@ async def rewrite_movie_query(
 async def translate_answer_to_korean(
     answer_en: str, aliases: Iterable[Alias], translator: Rewrite = model_translate
 ) -> dict:
-    protected, matches = _protect(answer_en, _name_pairs(aliases, answer=True), english=True)
-    # Citation URLs and source chunk IDs must survive the model call verbatim.
-    protected, references = _protect_references(protected, start=len(matches))
+    # Citation URLs and source chunk IDs go first, so a name inside a URL
+    # (https://en.wikipedia.org/wiki/Thor) is never turned into Korean.
+    protected, references = _protect_references(answer_en, start=0)
+    protected, matches = _protect(
+        protected, _name_pairs(aliases, answer=True), english=True, start=len(references)
+    )
     try:
         translated = await translator(ANSWER_SYSTEM, protected)
-        answer_ko = _restore(_restore(translated.strip(), references), matches)
+        answer_ko = _restore(_restore(translated.strip(), matches), references)
         if not answer_ko:
             raise ValueError("한국어 답변이 비었습니다.")
         return {"answer_ko": answer_ko, "translation_failed": False}

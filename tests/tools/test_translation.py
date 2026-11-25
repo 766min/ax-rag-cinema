@@ -145,3 +145,56 @@ def test_answer_does_not_treat_lowercase_common_word_as_title() -> None:
         translate_answer_to_korean("The echo followed Iron Man.", [echo, *ALIASES], fake)
     )
     assert result["answer_ko"] == "그 울림은 아이언맨을 따라갔다."
+
+
+THOR = Alias(alias_ko="토르", canonical_en="Thor", kind="work", target_id="tt0800369")
+
+
+def test_answer_keeps_names_inside_urls_untranslated() -> None:
+    async def fake(_system: str, text: str) -> str:
+        assert "wikipedia.org" not in text  # the whole URL is hidden from the model
+        return text
+
+    answer = "Thor returns. https://en.wikipedia.org/wiki/Thor [tt0800369-wikipedia-plot-p01]"
+    result = asyncio.run(translate_answer_to_korean(answer, [THOR], fake))
+    assert result["translation_failed"] is False
+    assert result["answer_ko"] == (
+        "토르 returns. https://en.wikipedia.org/wiki/Thor [tt0800369-wikipedia-plot-p01]"
+    )
+
+
+def test_korean_alias_is_not_matched_inside_another_word() -> None:
+    normalized, matched = normalize_query("빅토르는 누구야?", [THOR])
+    assert normalized == "빅토르는 누구야?"
+    assert matched == []
+
+
+def test_korean_alias_still_matches_with_particles() -> None:
+    normalized, matched = normalize_query("토르의 망치와 토르가 만난 사람은?", [THOR])
+    assert normalized == "토르의 망치와 토르가 만난 사람은? Thor"
+    assert matched == [{"alias_ko": "토르", "canonical_en": "Thor"}]
+
+
+def test_rewrite_does_not_protect_alias_inside_another_word() -> None:
+    sent: list[str] = []
+
+    async def fake(_system: str, text: str) -> str:
+        sent.append(text)
+        return "Who is Viktor?"
+
+    result = asyncio.run(rewrite_movie_query("빅토르는 누구야?", [THOR], fake))
+    assert "[[TERM_" not in sent[0]
+    assert result["query_en"] == "Who is Viktor?"
+
+
+def test_chunk_ids_with_three_digit_positions_are_protected() -> None:
+    seen: list[str] = []
+
+    async def fake(_system: str, text: str) -> str:
+        seen.append(text)
+        return text.replace("p123", "p12")  # a model that would damage a raw ID
+
+    answer = "Long plot. [tt4154796-wikipedia-plot-p123]"
+    result = asyncio.run(translate_answer_to_korean(answer, [], fake))
+    assert "p123" not in seen[0]
+    assert result["answer_ko"] == "Long plot. [tt4154796-wikipedia-plot-p123]"
