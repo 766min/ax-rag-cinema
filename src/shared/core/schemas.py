@@ -23,6 +23,8 @@ class Section(StrEnum):
     SYNOPSIS = "synopsis"  # 스포일러 없는 짧은 소개
     PLOT = "plot"  # 줄거리 문단
     INTRO = "intro"  # 인물 소개 문단 (두 편 이상 나온 인물)
+    BIOGRAPHY = "biography"  # 인물 서사 문단 (인물 문서의 작중 행적 절)
+    LORE = "lore"  # 세계관 문서의 본문 (아이템 · 조직 · 타임라인 · 멀티버스)
     CONNECTION = "connection"  # 연결 카드 (앞뒤 작품, 선행작 후보)
     CARD = "card"  # 작품 카드 한 줄 (모든 작품)
     WEB = "web"  # 웹 검색 결과 스니펫 (웹 컬렉션 전용)
