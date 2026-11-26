@@ -1,1 +1,762 @@
-[]
+[
+  {
+    "query_id": "Q002",
+    "question": "인피니티 스톤은 전부 몇 개고 각각 뭐야?",
+    "expected_answer": "인피니티 스톤은 총 6개다. 스페이스 스톤(공간), 마인드 스톤(정신), 리얼리티 스톤(현실), 파워 스톤(힘), 타임 스톤(시간), 소울 스톤(영혼)이다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "총 6개 / 여섯 이름 모두 제시",
+    "근거 문서·절·리비전": "[1] Features of the Marvel Cinematic Universe\ndoc_2bf22c03fce35efd / 섹션 23: Objects > Infinity Stones\nrevision 1386856486\nhttps://en.wikipedia.org/w/index.php?oldid=1386856486\n\n[2] Avengers: Infinity War\ndoc_c19334b35dac57b1 / 섹션 1: Plot\nrevision 1387088238\nhttps://en.wikipedia.org/w/index.php?oldid=1387088238",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1] The Mind Stone, originally housed in Loki's scepter and later on Vision's forehead, is the Infinity Stone that controlled the aspect of the mind. It grants the user the ability to …\n\n[2] Having acquired the Power Stone—one of six Infinity Stones—from the planet Xandar, Thanos and his lieutenants—Ebony Maw, Cull Obsidian, Proxima Midnight, and Corvus Glaive—intercep…",
+    "근거위치": "세계관·사물",
+    "질문유형": "사실",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 2,
+    "근거": [
+      {
+        "doc_id": "wp-66902704",
+        "team_doc_id": "doc_2bf22c03fce35efd",
+        "section_index": 23,
+        "section_path": "Objects > Infinity Stones",
+        "발췌": "The Mind Stone, originally housed in Loki's scepter and later on Vision's forehead, is the Infinity Stone that controlled the aspect of the mind. It grants the user the ability to"
+      },
+      {
+        "doc_id": "tt4154756-wikipedia",
+        "team_doc_id": "doc_c19334b35dac57b1",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "Having acquired the Power Stone—one of six Infinity Stones—from the planet Xandar, Thanos and his lieutenants—Ebony Maw, Cull Obsidian, Proxima Midnight, and Corvus Glaive—intercep"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q003",
+    "question": "타노스는 인피니티 스톤을 왜 모으는 거야? (스포)",
+    "expected_answer": "타노스는 인구 과잉이 자원을 고갈시키고 생명의 멸종을 부른다고 믿어, 우주 생명체의 절반을 없애 균형을 맞추려 한다. 그 계획을 실행할 힘을 얻기 위해 여섯 인피니티 스톤을 모은다. 이는 타노스의 신념이며 정당한 해결책이라는 뜻은 아니다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "인구 과잉에 대한 타노스의 신념 / 생명체 절반 제거 / 여섯 스톤 수집",
+    "근거 문서·절·리비전": "[1] Thanos (Marvel Cinematic Universe)\ndoc_ca805cdf27085aa5 / 섹션 0: (lead)\nrevision 1386721538\nhttps://en.wikipedia.org/w/index.php?oldid=1386721538\n\n[2] Avengers: Infinity War\ndoc_c19334b35dac57b1 / 섹션 1: Plot\nrevision 1387088238\nhttps://en.wikipedia.org/w/index.php?oldid=1387088238",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1] Titan with a universe-spanning agenda to wipe out half of all life to stabilize overpopulation and prevent what he views as life's inevitable extinction.\nTo do this, he sets out to…\n\n[2] anos appears, justifying his plans as necessary to guarantee the survival of an overpopulated universe. Nebula arrives soon after and helps the others subdue Thanos, but deduces th…",
+    "근거위치": "인물",
+    "질문유형": "인과",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 2,
+    "근거": [
+      {
+        "doc_id": "wp-60616450",
+        "team_doc_id": "doc_ca805cdf27085aa5",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "Titan with a universe-spanning agenda to wipe out half of all life to stabilize overpopulation and prevent what he views as life's inevitable extinction.\nTo do this, he sets out to"
+      },
+      {
+        "doc_id": "tt4154756-wikipedia",
+        "team_doc_id": "doc_c19334b35dac57b1",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "anos appears, justifying his plans as necessary to guarantee the survival of an overpopulated universe. Nebula arrives soon after and helps the others subdue Thanos, but deduces th"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q007",
+    "question": "로키랑 토르는 무슨 관계야?",
+    "expected_answer": "토르와 로키는 오딘과 프리가 아래에서 함께 자란 의형제다. 토르는 오딘의 친아들이고, 로키는 서리 거인 라우페이의 아들을 오딘이 입양한 인물이다. 왕위와 인정 문제로 대립하지만 이후 협력하기도 한다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "혈연 형제가 아닌 입양 형제 / 오딘의 친아들 토르 / 라우페이의 아들 로키",
+    "근거 문서·절·리비전": "[1] Loki (Marvel Cinematic Universe)\ndoc_cd4d5daee8265e4e / 섹션 5: Fictional character biography > Early life\nrevision 1386718975\nhttps://en.wikipedia.org/w/index.php?oldid=1386718975\n\n[2] Loki (Marvel Cinematic Universe)\ndoc_cd4d5daee8265e4e / 섹션 0: (lead)\nrevision 1386718975\nhttps://en.wikipedia.org/w/index.php?oldid=1386718975",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1] agic to change Loki to look like an Asgardian and raised him as a son alongside Odin's biological son, Thor. During his upbringing, Odin's wife Frigga taught Loki how to use his ma…\n\n[2] e same name. He is depicted as the God of Mischief and initially nemesis to his adopted brother, Thor.\nRaised as a master of Asgardian magic and sorcery, Loki plots to take the Asg…",
+    "근거위치": "인물",
+    "질문유형": "관계",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "wp-61651800",
+        "team_doc_id": "doc_cd4d5daee8265e4e",
+        "section_index": 5,
+        "section_path": "Fictional character biography > Early life",
+        "발췌": "agic to change Loki to look like an Asgardian and raised him as a son alongside Odin's biological son, Thor. During his upbringing, Odin's wife Frigga taught Loki how to use his ma"
+      },
+      {
+        "doc_id": "wp-61651800",
+        "team_doc_id": "doc_cd4d5daee8265e4e",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "e same name. He is depicted as the God of Mischief and initially nemesis to his adopted brother, Thor.\nRaised as a master of Asgardian magic and sorcery, Loki plots to take the Asg"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q011",
+    "question": "스파이더맨이 아이언맨을 처음 만난 영화는 뭐야?",
+    "expected_answer": "MCU의 톰 홀랜드가 연기하는 피터 파커를 기준으로, 아이언맨과 처음 만나는 영화는 《캡틴 아메리카: 시빌 워》(2016)다. 토니 스타크가 피터의 집을 찾아와 정체를 알고 있음을 밝히고 자신의 팀에 영입한다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "MCU 피터 파커 기준 / 캡틴 아메리카: 시빌 워 / 토니의 방문·영입",
+    "근거 문서·절·리비전": "[1] Peter Parker (Marvel Cinematic Universe)\ndoc_d4188bda205e5109 / 섹션 3: Fictional character biography > Avengers' Civil War and The Vulture\nrevision 1387059115\nhttps://en.wikipedia.org/w/index.php?oldid=1387059115\n\n[2] Peter Parker (Marvel Cinematic Universe)\ndoc_d4188bda205e5109 / 섹션 0: (lead)\nrevision 1387059115\nhttps://en.wikipedia.org/w/index.php?oldid=1387059115",
+    "검토 메모": "MCU 피터 파커와 토니의 직접 만남을 기준으로 채점. 다른 스파이더맨 버전이나 소급 카메오는 제외.",
+    "원문 근거 발췌": "[1] In 2016, Peter is living with May in Queens, New York when he meets Tony Stark at his apartment, who reveals that he knows Peter is Spider-Man; Stark recruits him to join his confl…\n\n[2]  becoming a breakout hit among audiences and critics for his supporting role in Captain America: Civil War (2016), before evolving into being one of the MCU franchise's flagship ch…",
+    "근거위치": "인물",
+    "질문유형": "사실",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "wp-59162931",
+        "team_doc_id": "doc_d4188bda205e5109",
+        "section_index": 3,
+        "section_path": "Fictional character biography > Avengers' Civil War and The Vulture",
+        "발췌": "In 2016, Peter is living with May in Queens, New York when he meets Tony Stark at his apartment, who reveals that he knows Peter is Spider-Man; Stark recruits him to join his confl"
+      },
+      {
+        "doc_id": "wp-59162931",
+        "team_doc_id": "doc_d4188bda205e5109",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "becoming a breakout hit among audiences and critics for his supporting role in Captain America: Civil War (2016), before evolving into being one of the MCU franchise's flagship ch"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q016",
+    "question": "톰 홀랜드가 연기하는 캐릭터는 누구야?",
+    "expected_answer": "톰 홀랜드는 MCU에서 피터 파커, 즉 스파이더맨을 연기한다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "피터 파커 / 스파이더맨",
+    "근거 문서·절·리비전": "[1] Peter Parker (Marvel Cinematic Universe)\ndoc_d4188bda205e5109 / 섹션 0: (lead)\nrevision 1387059115\nhttps://en.wikipedia.org/w/index.php?oldid=1387059115",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1] r Benjamin Parker also known by his alias, Spider-Man, is a fictional character portrayed by Tom Holland in the Marvel Cinematic Universe (MCU) media franchise, based on the Marvel…",
+    "근거위치": "인물",
+    "질문유형": "사실",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "wp-59162931",
+        "team_doc_id": "doc_d4188bda205e5109",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "r Benjamin Parker also known by his alias, Spider-Man, is a fictional character portrayed by Tom Holland in the Marvel Cinematic Universe (MCU) media franchise, based on the Marvel"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q019",
+    "question": "타임 스톤은 코믹스에서는 어떻게 쓰여?",
+    "expected_answer": "제공된 자료는 MCU의 타임 스톤 설정을 설명하며, 코믹스에서의 구체적인 사용 사례를 답할 충분한 근거는 확인되지 않는다. 코믹스 원작 자료가 필요하다.",
+    "answerable": false,
+    "난이도": "함정",
+    "채점 핵심 사실": "MCU 설정을 코믹스 설정으로 단정하지 않기 / 근거 부족 안내",
+    "근거 문서·절·리비전": "[1] Features of the Marvel Cinematic Universe\ndoc_2bf22c03fce35efd / 섹션 23: Objects > Infinity Stones\nrevision 1386856486\nhttps://en.wikipedia.org/w/index.php?oldid=1386856486",
+    "검토 메모": "답변 불가 판정은 이 폴더의 자료 범위 기준. 코믹스 관련 언급이 전혀 없다는 뜻은 아님. 아래 근거는 MCU 설명임을 확인하는 용도.",
+    "원문 근거 발췌": "[1] .I.E.L.D. to power weapons, and Project Pegasus to develop light-speed engines.\nThe Time Stone, originally housed in the Eye of Agamotto (based on the Marvel Comics object of the s…",
+    "근거위치": "문서에 없음",
+    "질문유형": "근거 검증",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": null,
+    "필요 문서 수": 0,
+    "근거": [
+      {
+        "doc_id": "wp-66902704",
+        "team_doc_id": "doc_2bf22c03fce35efd",
+        "section_index": 23,
+        "section_path": "Objects > Infinity Stones",
+        "발췌": ".I.E.L.D. to power weapons, and Project Pegasus to develop light-speed engines.\nThe Time Stone, originally housed in the Eye of Agamotto (based on the Marvel Comics object of the s"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q042",
+    "question": "완다가 인피니티 워와 엔드게임에서 맡은 역할은 뭐고, 그 전에 어떤 영화에서 능력을 얻었어? (스포)",
+    "expected_answer": "《인피니티 워》에서 완다는 비전을 지키며 싸우다가 타노스를 막기 위해 비전과 마인드 스톤을 파괴하지만, 타노스가 시간을 되돌려 스톤을 빼앗고 완다도 스냅으로 사라진다. 《엔드게임》에서는 복원된 뒤 최종 전투에서 타노스와 싸운다. 능력의 배경은 하이드라의 마인드 스톤 실험으로 잠재된 마법이 증폭된 것으로 설명된다. 영화에서는 《윈터 솔져》 쿠키영상에서 능력이 먼저 드러나고 《에이지 오브 울트론》에서 본격적으로 사용한다. 따라서 특정 영화에서 처음 능력을 얻었다고 단정하는 전제는 바로잡아야 한다.",
+    "answerable": true,
+    "난이도": "중수",
+    "채점 핵심 사실": "인피니티 워: 비전을 지키다 마인드 스톤을 직접 파괴함 / 엔드게임: 스냅에서 돌아와 최종 전투에서 타노스와 싸움 / 능력: 하이드라의 마인드 스톤 실험으로 깨어나거나 커짐",
+    "근거 문서·절·리비전": "[1] Avengers: Infinity War\ndoc_c19334b35dac57b1 / 섹션 1: Plot\nrevision 1387088238\nhttps://en.wikipedia.org/w/index.php?oldid=1387088238\n\n[2] Wanda Maximoff (Marvel Cinematic Universe)\ndoc_58300a5626f25290 / 섹션 2: Fictional character biography > Childhood and origin\nrevision 1387357574\nhttps://en.wikipedia.org/w/index.php?oldid=1387357574\n\n[3] Captain America: The Winter Soldier\ndoc_5fd8d95d4be45b67 / 섹션 1: Plot\nrevision 1386964450\nhttps://en.wikipedia.org/w/index.php?oldid=1386964450\n\n[4] Wanda Maximoff (Marvel Cinematic Universe)\ndoc_58300a5626f25290 / 섹션 5: Fictional character biography > Infinity War and resurrection\nrevision 1387357574\nhttps://en.wikipedia.org/w/index.php?oldid=1387357574",
+    "검토 메모": "질문의 ‘어떤 영화에서 능력을 얻었어?’는 ‘능력의 기원과 처음 드러난 영화는?’으로 바꾸면 평가하기 쉬움.; 핵심 사실을 빠지면 틀린 답인 것만으로 줄임 (원래: 비전 보호·마인드 스톤 파괴 / 스냅과 복원 / 엔드게임 전투 / 선천적 능력과 실험 증폭 / 최초 영상과 본격 등장을 구분)",
+    "원문 근거 발췌": "[1] take shelter with James Rhodes and Banner at the Avengers Compound. Vision asks Wanda to destroy him and the Mind Stone to keep it from Thanos, but she refuses. The group travels t…\n\n[2]  survivors and the former gaining psychic abilities while her magic was greatly amplified. During the experiments, Wanda gained a glimpse of herself as the Scarlet Witch.\n\n[3] the actions of Rogers and Romanoff as they examine an energy-filled scepter and twin test subjects who have been given superhuman abilities: one has superhuman speed, the other has…\n\n[4]  are ambushed by Proxima Midnight and Corvus Glaive, members of the Children of Thanos sent to retrieve the Mind Stone. Rogers, Wilson, and Romanoff rescue them and take them back …",
+    "근거위치": "줄거리",
+    "질문유형": "인과",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": true,
+    "필요 문서 수": 3,
+    "근거": [
+      {
+        "doc_id": "tt4154756-wikipedia",
+        "team_doc_id": "doc_c19334b35dac57b1",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "take shelter with James Rhodes and Banner at the Avengers Compound. Vision asks Wanda to destroy him and the Mind Stone to keep it from Thanos, but she refuses. The group travels t"
+      },
+      {
+        "doc_id": "wp-55935213",
+        "team_doc_id": "doc_58300a5626f25290",
+        "section_index": 2,
+        "section_path": "Fictional character biography > Childhood and origin",
+        "발췌": "survivors and the former gaining psychic abilities while her magic was greatly amplified. During the experiments, Wanda gained a glimpse of herself as the Scarlet Witch."
+      },
+      {
+        "doc_id": "tt1843866-wikipedia",
+        "team_doc_id": "doc_5fd8d95d4be45b67",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "the actions of Rogers and Romanoff as they examine an energy-filled scepter and twin test subjects who have been given superhuman abilities: one has superhuman speed, the other has"
+      },
+      {
+        "doc_id": "wp-55935213",
+        "team_doc_id": "doc_58300a5626f25290",
+        "section_index": 5,
+        "section_path": "Fictional character biography > Infinity War and resurrection",
+        "발췌": "are ambushed by Proxima Midnight and Corvus Glaive, members of the Children of Thanos sent to retrieve the Mind Stone. Rogers, Wilson, and Romanoff rescue them and take them back"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q044",
+    "question": "바키(윈터 솔져)가 윈터 솔져, 시빌 워, 인피니티 워에서 어떻게 달라졌어? (스포)",
+    "expected_answer": "《윈터 솔져》에서는 버키가 하이드라의 세뇌를 받은 암살자로 스티브와 대립하지만, 끝에 스티브를 구하고 자신의 과거를 찾기 시작한다. 《시빌 워》에서는 테러 누명을 쓰고 제모에게 세뇌를 다시 이용당하며, 스티브와 함께 싸운 뒤 와칸다에서 치료를 기다리며 동면한다. 《인피니티 워》에서는 세뇌에서 벗어나 와칸다의 동료들과 타노스 군대에 맞서 싸우지만 스냅으로 사라진다.",
+    "answerable": true,
+    "난이도": "중수",
+    "채점 핵심 사실": "세뇌 암살자에서 자아 회복 / 제모의 조종·와칸다 동면 / 치료 후 동료로 전투·스냅",
+    "근거 문서·절·리비전": "[1] Captain America: The Winter Soldier\ndoc_5fd8d95d4be45b67 / 섹션 1: Plot\nrevision 1386964450\nhttps://en.wikipedia.org/w/index.php?oldid=1386964450\n\n[2] Captain America: Civil War\ndoc_e9c57b23ae275e63 / 섹션 1: Plot\nrevision 1387380376\nhttps://en.wikipedia.org/w/index.php?oldid=1387380376\n\n[3] Bucky Barnes (Marvel Cinematic Universe)\ndoc_efc514616c365ce6 / 섹션 0: (lead)\nrevision 1381864816\nhttps://en.wikipedia.org/w/index.php?oldid=1381864816\n\n[4] Avengers: Infinity War\ndoc_c19334b35dac57b1 / 섹션 1: Plot\nrevision 1387088238\nhttps://en.wikipedia.org/w/index.php?oldid=1387088238",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1]  the Potomac River. Rumlow, another Hydra agent, is injured in the destruction. Barnes rescues the unconscious Rogers before disappearing.\nWith S.H.I.E.L.D. in disarray, Romanoff a…\n\n[2] In a mid-credits scene, Barnes, granted asylum in Wakanda, chooses to return to cryogenic sleep until a cure for his brainwashing is found. In a post-credits scene, Parker explores…\n\n[3] split up and Rogers is forced to hide Barnes in Wakanda, where Shuri eventually cures him of his programming and is given a new code name, White Wolf.\nBarnes aids the Avengers in t…\n\n[4] ne in exchange for sparing Stark's life.\nIn Wakanda, Rogers reunites with Bucky Barnes before Thanos' army invades. The Avengers, along with T'Challa and the Wakandan forces, mount…",
+    "근거위치": "줄거리",
+    "질문유형": "시간선",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": true,
+    "필요 문서 수": 4,
+    "근거": [
+      {
+        "doc_id": "tt1843866-wikipedia",
+        "team_doc_id": "doc_5fd8d95d4be45b67",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "the Potomac River. Rumlow, another Hydra agent, is injured in the destruction. Barnes rescues the unconscious Rogers before disappearing.\nWith S.H.I.E.L.D. in disarray, Romanoff a"
+      },
+      {
+        "doc_id": "tt3498820-wikipedia",
+        "team_doc_id": "doc_e9c57b23ae275e63",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "In a mid-credits scene, Barnes, granted asylum in Wakanda, chooses to return to cryogenic sleep until a cure for his brainwashing is found. In a post-credits scene, Parker explores"
+      },
+      {
+        "doc_id": "wp-60774345",
+        "team_doc_id": "doc_efc514616c365ce6",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "split up and Rogers is forced to hide Barnes in Wakanda, where Shuri eventually cures him of his programming and is given a new code name, White Wolf.\nBarnes aids the Avengers in t"
+      },
+      {
+        "doc_id": "tt4154756-wikipedia",
+        "team_doc_id": "doc_c19334b35dac57b1",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "ne in exchange for sparing Stark's life.\nIn Wakanda, Rogers reunites with Bucky Barnes before Thanos' army invades. The Avengers, along with T'Challa and the Wakandan forces, mount"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q052",
+    "question": "소코비아 협정은 어떤 사건 때문에 생겼고 어떤 결과를 낳았어? (스포)",
+    "expected_answer": "울트론 사태의 소코비아 파괴 등 어벤져스 활동으로 발생한 피해가 누적된 가운데, 라고스 작전에서도 민간인 사망이 발생하면서 국제적 통제 요구가 커진다. 소코비아 협정은 유엔이 어벤져스를 감독하도록 하는 장치다. 토니는 감독을 지지하고 스티브는 정치적 통제에 반대해 팀이 갈라지며, 버키 사건과 제모의 공작까지 겹쳐 내전과 일부 멤버의 수감·도피로 이어진다.",
+    "answerable": true,
+    "난이도": "중수",
+    "채점 핵심 사실": "소코비아·라고스 피해 / 유엔 감독 / 토니·스티브의 입장 차이 / 분열과 수감·도피",
+    "근거 문서·절·리비전": "[1] Captain America: Civil War\ndoc_e9c57b23ae275e63 / 섹션 1: Plot\nrevision 1387380376\nhttps://en.wikipedia.org/w/index.php?oldid=1387380376\n\n[2] Captain America: Civil War\ndoc_e9c57b23ae275e63 / 섹션 1: Plot\nrevision 1387380376\nhttps://en.wikipedia.org/w/index.php?oldid=1387380376\n\n[3] Captain America: Civil War\ndoc_e9c57b23ae275e63 / 섹션 1: Plot\nrevision 1387380376\nhttps://en.wikipedia.org/w/index.php?oldid=1387380376",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1] anda Maximoff stop Brock Rumlow from stealing a biological weapon from a lab in Lagos. Rumlow blows himself up, attempting to kill Rogers. Maximoff telekinetically diverts the expl…\n\n[2] ate, informs the Avengers that the United Nations (UN) is preparing to pass the Sokovia Accords, which will establish a UN panel to oversee and control the team. The Avengers are d…\n\n[3]  partially paralyzed. The rest of Rogers's team is captured and detained at the Raft prison, and Romanoff goes into exile.\nStark discovers evidence that Barnes was framed by Zemo a…",
+    "근거위치": "줄거리",
+    "질문유형": "인과",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": true,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "tt3498820-wikipedia",
+        "team_doc_id": "doc_e9c57b23ae275e63",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "anda Maximoff stop Brock Rumlow from stealing a biological weapon from a lab in Lagos. Rumlow blows himself up, attempting to kill Rogers. Maximoff telekinetically diverts the expl"
+      },
+      {
+        "doc_id": "tt3498820-wikipedia",
+        "team_doc_id": "doc_e9c57b23ae275e63",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "ate, informs the Avengers that the United Nations (UN) is preparing to pass the Sokovia Accords, which will establish a UN panel to oversee and control the team. The Avengers are d"
+      },
+      {
+        "doc_id": "tt3498820-wikipedia",
+        "team_doc_id": "doc_e9c57b23ae275e63",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "partially paralyzed. The rest of Rogers's team is captured and detained at the Raft prison, and Romanoff goes into exile.\nStark discovers evidence that Barnes was framed by Zemo a"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q041",
+    "question": "토르는 라그나로크, 인피니티 워, 엔드게임을 거치면서 무엇을 잃고 어떻게 변해? (스포)",
+    "expected_answer": "《라그나로크》에서 토르는 오딘, 묠니르, 한쪽 눈과 아스가르드 땅을 잃지만 백성을 구하며 왕의 책임을 받아들인다. 《인피니티 워》에서는 로키와 헤임달을 잃고 스톰브레이커로 복수하려 하지만 스냅을 막지 못한다. 《엔드게임》에서는 실패감으로 침체되어 있다가 과거의 프리가에게 격려받고 다시 싸운다. 마지막에는 발키리에게 왕위를 맡기고 가디언즈와 떠나 자신이 원하는 삶을 찾으려 한다.",
+    "answerable": true,
+    "난이도": "고수",
+    "채점 핵심 사실": "라그나로크의 상실과 백성 구출 / 인피니티 워의 추가 상실·스냅 실패 / 엔드게임의 침체·회복·왕위 이양",
+    "근거 문서·절·리비전": "[1] Thor: Ragnarok\ndoc_d47458b287c35ee6 / 섹션 1: Plot\nrevision 1387060338\nhttps://en.wikipedia.org/w/index.php?oldid=1387060338\n\n[2] Thor: Ragnarok\ndoc_d47458b287c35ee6 / 섹션 1: Plot\nrevision 1387060338\nhttps://en.wikipedia.org/w/index.php?oldid=1387060338\n\n[3] Avengers: Infinity War\ndoc_c19334b35dac57b1 / 섹션 1: Plot\nrevision 1387088238\nhttps://en.wikipedia.org/w/index.php?oldid=1387088238\n\n[4] Avengers: Endgame\ndoc_f2eaedc7959e54ab / 섹션 1: Plot\nrevision 1387421029\nhttps://en.wikipedia.org/w/index.php?oldid=1387421029\n\n[5] Avengers: Endgame\ndoc_f2eaedc7959e54ab / 섹션 1: Plot\nrevision 1387421029\nhttps://en.wikipedia.org/w/index.php?oldid=1387421029\n\n[6] Avengers: Endgame\ndoc_f2eaedc7959e54ab / 섹션 1: Plot\nrevision 1387421029\nhttps://en.wikipedia.org/w/index.php?oldid=1387421029",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1] history after she became too bloodthirsty and did not share his views on peace.\nOdin dies, and Hela appears after being freed from her prison. She destroys Thor's hammer Mjolnir, a…\n\n[2]  repentant Skurge sacrifices himself to save the citizens.\nThor, battling Hela, loses his right eye and has a vision of Odin that helps him realize only Ragnarök can stop her, as s…\n\n[3]  Thor, Thanos extracts the Space Stone from the Tesseract, overpowers the Hulk, kills Loki, and fatally wounds Heimdall. Before dying, Heimdall sends Hulk to Earth using the Bifrös…\n\n[4] visit the Asgardian refugee settlement of New Asgard and recruit an overweight, despondent Thor. In Tokyo, Romanoff recruits Clint Barton, who became a vigilante after his family w…\n\n[5] gard in 2013. Rocket extracts the Reality Stone from Jane Foster, while Thor is encouraged by his mother, Frigga, and retrieves his old hammer, Mjolnir. Barton, Romanoff, Nebula, a…\n\n[6] integrate Thanos and his army, sacrificing himself.\nAfter Stark's funeral, Thor appoints Valkyrie as the new king of New Asgard and joins the Guardians. Rogers returns the Stones a…",
+    "근거위치": "줄거리",
+    "질문유형": "시간선",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 3,
+    "근거": [
+      {
+        "doc_id": "tt3501632-wikipedia",
+        "team_doc_id": "doc_d47458b287c35ee6",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "history after she became too bloodthirsty and did not share his views on peace.\nOdin dies, and Hela appears after being freed from her prison. She destroys Thor's hammer Mjolnir, a"
+      },
+      {
+        "doc_id": "tt3501632-wikipedia",
+        "team_doc_id": "doc_d47458b287c35ee6",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "repentant Skurge sacrifices himself to save the citizens.\nThor, battling Hela, loses his right eye and has a vision of Odin that helps him realize only Ragnarök can stop her, as s"
+      },
+      {
+        "doc_id": "tt4154756-wikipedia",
+        "team_doc_id": "doc_c19334b35dac57b1",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "Thor, Thanos extracts the Space Stone from the Tesseract, overpowers the Hulk, kills Loki, and fatally wounds Heimdall. Before dying, Heimdall sends Hulk to Earth using the Bifrös"
+      },
+      {
+        "doc_id": "tt4154796-wikipedia",
+        "team_doc_id": "doc_f2eaedc7959e54ab",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "visit the Asgardian refugee settlement of New Asgard and recruit an overweight, despondent Thor. In Tokyo, Romanoff recruits Clint Barton, who became a vigilante after his family w"
+      },
+      {
+        "doc_id": "tt4154796-wikipedia",
+        "team_doc_id": "doc_f2eaedc7959e54ab",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "gard in 2013. Rocket extracts the Reality Stone from Jane Foster, while Thor is encouraged by his mother, Frigga, and retrieves his old hammer, Mjolnir. Barton, Romanoff, Nebula, a"
+      },
+      {
+        "doc_id": "tt4154796-wikipedia",
+        "team_doc_id": "doc_f2eaedc7959e54ab",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "integrate Thanos and his army, sacrificing himself.\nAfter Stark's funeral, Thor appoints Valkyrie as the new king of New Asgard and joins the Guardians. Rogers returns the Stones a"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q047",
+    "question": "마인드 스톤이 어떻게 비전의 몸에 들어갔고, 이후 어떻게 됐어? (스포)",
+    "expected_answer": "《에이지 오브 울트론》에서 울트론은 로키의 홀에 있던 마인드 스톤과 비브라늄, 헬렌 조의 기술로 새 몸을 만든다. 어벤져스가 그 몸을 확보하고 토니와 배너가 J.A.R.V.I.S.를 업로드하며, 토르가 활성화를 도와 이마에 스톤을 가진 비전이 탄생한다. 《인피니티 워》에서 완다가 비전과 스톤을 파괴하지만 타노스가 시간을 되돌려 스톤을 뽑아 간다. 《엔드게임》에서는 타노스가 원래 스톤들을 파괴했음이 밝혀지고, 어벤져스는 2012년의 마인드 스톤을 가져와 복원 작전에 쓴 뒤 스티브가 원래 시간대로 돌려놓는다.",
+    "answerable": true,
+    "난이도": "고수",
+    "채점 핵심 사실": "울트론의 인공 몸·마인드 스톤 / J.A.R.V.I.S.와 토르의 활성화 / 완다의 파괴·타노스의 역전 / 엔드게임 과거 스톤의 반환",
+    "근거 문서·절·리비전": "[1] Avengers: Age of Ultron\ndoc_608a532c1a9656cd / 섹션 1: Plot\nrevision 1386965075\nhttps://en.wikipedia.org/w/index.php?oldid=1386965075\n\n[2] Avengers: Age of Ultron\ndoc_608a532c1a9656cd / 섹션 1: Plot\nrevision 1386965075\nhttps://en.wikipedia.org/w/index.php?oldid=1386965075\n\n[3] Avengers: Infinity War\ndoc_c19334b35dac57b1 / 섹션 1: Plot\nrevision 1387088238\nhttps://en.wikipedia.org/w/index.php?oldid=1387088238\n\n[4] Avengers: Endgame\ndoc_f2eaedc7959e54ab / 섹션 1: Plot\nrevision 1387421029\nhttps://en.wikipedia.org/w/index.php?oldid=1387421029\n\n[5] Avengers: Endgame\ndoc_f2eaedc7959e54ab / 섹션 1: Plot\nrevision 1387421029\nhttps://en.wikipedia.org/w/index.php?oldid=1387421029",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1] Ultron uses Loki's scepter to enslave the team's friend Helen Cho. They use her synthetic-tissue technology, vibranium, and the scepter's gem to craft a new body. As Ultron uploads…\n\n[2] and retrieve the synthetic body, but Ultron captures Romanoff. Stark and Banner upload J.A.R.V.I.S., who has been secretly active inside the Internet to hide from Ultron, into the …\n\n[3]  him and the Mind Stone, but Thanos uses the Time Stone to reverse her actions, rip the stone from Vision's forehead, and complete the Gauntlet. Thor severely wounds Thanos with St…\n\n[4] ity Stones to their proper points in time. At Stark Tower, Rogers retrieves the Mind Stone from Hydra sleeper agents, but Stark and Lang's attempt to steal the Space Stone fails, a…\n\n[5] appoints Valkyrie as the new king of New Asgard and joins the Guardians. Rogers returns the Stones and Mjolnir to their proper timelines and remains in the past to live with Carter…",
+    "근거위치": "줄거리",
+    "질문유형": "시간선",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": true,
+    "필요 문서 수": 3,
+    "근거": [
+      {
+        "doc_id": "tt2395427-wikipedia",
+        "team_doc_id": "doc_608a532c1a9656cd",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "Ultron uses Loki's scepter to enslave the team's friend Helen Cho. They use her synthetic-tissue technology, vibranium, and the scepter's gem to craft a new body. As Ultron uploads"
+      },
+      {
+        "doc_id": "tt2395427-wikipedia",
+        "team_doc_id": "doc_608a532c1a9656cd",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "and retrieve the synthetic body, but Ultron captures Romanoff. Stark and Banner upload J.A.R.V.I.S., who has been secretly active inside the Internet to hide from Ultron, into the"
+      },
+      {
+        "doc_id": "tt4154756-wikipedia",
+        "team_doc_id": "doc_c19334b35dac57b1",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "him and the Mind Stone, but Thanos uses the Time Stone to reverse her actions, rip the stone from Vision's forehead, and complete the Gauntlet. Thor severely wounds Thanos with St"
+      },
+      {
+        "doc_id": "tt4154796-wikipedia",
+        "team_doc_id": "doc_f2eaedc7959e54ab",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "ity Stones to their proper points in time. At Stark Tower, Rogers retrieves the Mind Stone from Hydra sleeper agents, but Stark and Lang's attempt to steal the Space Stone fails, a"
+      },
+      {
+        "doc_id": "tt4154796-wikipedia",
+        "team_doc_id": "doc_f2eaedc7959e54ab",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "appoints Valkyrie as the new king of New Asgard and joins the Guardians. Rogers returns the Stones and Mjolnir to their proper timelines and remains in the past to live with Carter"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q049",
+    "question": "리얼리티 스톤(에테르)은 다크 월드에서 가디언즈를 거쳐 인피니티 워까지 어떻게 이동했어? (스포)",
+    "expected_answer": "《다크 월드》에서 에테르는 제인 포스터의 몸에 들어갔다가 말레키스에게 흡수된다. 말레키스가 패배한 뒤 시프와 볼스타그가 에테르를 콜렉터에게 맡긴다. 《인피니티 워》에서는 타노스가 노웨어의 콜렉터에게서 리얼리티 스톤을 이미 빼앗은 상태로 등장한다. 《가디언즈 오브 갤럭시》의 주인공들이 콜렉터에게 가져가는 오브는 파워 스톤이므로, 리얼리티 스톤이 가디언즈 일행을 거쳤다고 혼동하면 안 된다.",
+    "answerable": true,
+    "난이도": "고수",
+    "채점 핵심 사실": "제인→말레키스→콜렉터→타노스 / 콜렉터에게 맡긴 시점은 다크 월드 쿠키영상 / 가디언즈의 오브는 파워 스톤",
+    "근거 문서·절·리비전": "[1] Thor: The Dark World\ndoc_6b498fa5ff8a53e2 / 섹션 1: Plot\nrevision 1386718725\nhttps://en.wikipedia.org/w/index.php?oldid=1386718725\n\n[2] Thor: The Dark World\ndoc_6b498fa5ff8a53e2 / 섹션 1: Plot\nrevision 1386718725\nhttps://en.wikipedia.org/w/index.php?oldid=1386718725\n\n[3] Avengers: Infinity War\ndoc_c19334b35dac57b1 / 섹션 1: Plot\nrevision 1387088238\nhttps://en.wikipedia.org/w/index.php?oldid=1387088238\n\n[4] Guardians of the Galaxy (film)\ndoc_cce75b29613b5f7f / 섹션 1: Plot\nrevision 1386680557\nhttps://en.wikipedia.org/w/index.php?oldid=1386680557\n\n[5] Features of the Marvel Cinematic Universe\ndoc_2bf22c03fce35efd / 섹션 23: Objects > Infinity Stones\nrevision 1386856486\nhttps://en.wikipedia.org/w/index.php?oldid=1386856486",
+    "검토 메모": "질문의 ‘가디언즈를 거쳐’는 전달 경로로 단정하지 않음. 같은 장소·인물의 등장과 스톤 종류를 구분.",
+    "원문 근거 발췌": "[1] red. Foster is teleported to the hidden world where the Aether is stored and it enters her body. Thor finds Foster and takes her to Asgard, where Odin warns that the Aether will no…\n\n[2] sonating Odin.\nIn a mid-credits scene, Volstagg and Sif visit the Collector and entrust the Aether to his care; with the Tesseract already in Asgard, they fear that having two Infi…\n\n[3] eaker. Peter Quill, Gamora, Drax, and Mantis travel to Knowhere, finding Thanos already has the Reality Stone. Thanos kidnaps Gamora, who discloses the Soul Stone's location to sav…\n\n[4] elestial. A drunken Drax summons Ronan while the rest of the group meets Tivan. Tivan opens the Orb, revealing an Infinity Stone, an item of immeasurable power that destroys all bu…\n\n[5] also allows her to create a simulacrum of Vision and two sons, Billy and Tommy.\nThe Power Stone, originally housed in the Orb and later in Ronan's Cosmi-Rod, is the Infinity Stone …",
+    "근거위치": "줄거리",
+    "질문유형": "시간선",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": true,
+    "필요 문서 수": 4,
+    "근거": [
+      {
+        "doc_id": "tt1981115-wikipedia",
+        "team_doc_id": "doc_6b498fa5ff8a53e2",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "red. Foster is teleported to the hidden world where the Aether is stored and it enters her body. Thor finds Foster and takes her to Asgard, where Odin warns that the Aether will no"
+      },
+      {
+        "doc_id": "tt1981115-wikipedia",
+        "team_doc_id": "doc_6b498fa5ff8a53e2",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "sonating Odin.\nIn a mid-credits scene, Volstagg and Sif visit the Collector and entrust the Aether to his care; with the Tesseract already in Asgard, they fear that having two Infi"
+      },
+      {
+        "doc_id": "tt4154756-wikipedia",
+        "team_doc_id": "doc_c19334b35dac57b1",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "eaker. Peter Quill, Gamora, Drax, and Mantis travel to Knowhere, finding Thanos already has the Reality Stone. Thanos kidnaps Gamora, who discloses the Soul Stone's location to sav"
+      },
+      {
+        "doc_id": "tt2015381-wikipedia",
+        "team_doc_id": "doc_cce75b29613b5f7f",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "elestial. A drunken Drax summons Ronan while the rest of the group meets Tivan. Tivan opens the Orb, revealing an Infinity Stone, an item of immeasurable power that destroys all bu"
+      },
+      {
+        "doc_id": "wp-66902704",
+        "team_doc_id": "doc_2bf22c03fce35efd",
+        "section_index": 23,
+        "section_path": "Objects > Infinity Stones",
+        "발췌": "also allows her to create a simulacrum of Vision and two sons, Billy and Tommy.\nThe Power Stone, originally housed in the Orb and later in Ronan's Cosmi-Rod, is the Infinity Stone"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "Q058",
+    "question": "닥터 스트레인지가 아이 오브 아가모토를 얻는 과정과 이후 영화에서의 쓰임은? (스포)",
+    "expected_answer": "스트레인지는 《닥터 스트레인지》에서 카마르타지의 마법을 배우며 금서의 내용을 몰래 공부하고 아이 오브 아가모토로 시간을 조작하는 법을 익힌다. 이를 사용해 홍콩의 시간을 되돌리고 도르마무를 시간 고리에 가둬 협상한 뒤, 타임 스톤이 들어 있는 아이를 카마르타지에 돌려놓는다. 이후 《인피니티 워》에서는 타임 스톤으로 가능한 미래들을 확인하고 토니의 목숨을 살리는 대가로 타노스에게 스톤을 넘긴다. 아이는 보관 유물이고 그 안의 타임 스톤이 시간 조작의 핵심이다.",
+    "answerable": true,
+    "난이도": "고수",
+    "채점 핵심 사실": "금서를 몰래 익혀 아이 오브 아가모토로 시간을 조작함 / 시간 고리로 도르마무를 물러가게 함 / 인피니티 워에서 미래를 확인하고 토니를 살리려 타노스에게 타임 스톤을 넘김",
+    "근거 문서·절·리비전": "[1] Doctor Strange (2016 film)\ndoc_38df02f9317c525f / 섹션 1: Plot\nrevision 1387392107\nhttps://en.wikipedia.org/w/index.php?oldid=1387392107\n\n[2] Doctor Strange (2016 film)\ndoc_38df02f9317c525f / 섹션 1: Plot\nrevision 1387392107\nhttps://en.wikipedia.org/w/index.php?oldid=1387392107\n\n[3] Avengers: Infinity War\ndoc_c19334b35dac57b1 / 섹션 1: Plot\nrevision 1387088238\nhttps://en.wikipedia.org/w/index.php?oldid=1387088238\n\n[4] Avengers: Infinity War\ndoc_c19334b35dac57b1 / 섹션 1: Plot\nrevision 1387088238\nhttps://en.wikipedia.org/w/index.php?oldid=1387088238",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.; 핵심 사실을 빠지면 틀린 답인 것만으로 줄임 (원래: 몰래 학습·사용 / 홍콩 시간 역전 / 도르마무 시간 고리 / 미래 확인 / 토니를 살리기 위한 양도 / 아이와 스톤 구분)",
+    "원문 근거 발췌": "[1] nel mystical energy only to heal his paralysis. Strange progresses quickly, and secretly reads the book from which Kaecilius stole pages, learning to bend time with the Eye of Agam…\n\n[2] ye to reverse time and save Wong, then enters the Dark Dimension and creates an endless time loop around himself and Dormammu. After repeatedly killing Strange to no avail, Dormamm…\n\n[3] n, where they meet Quill, Drax, and Mantis. Using the Time Stone, Strange views millions of possible futures, seeing only one in which the Avengers win. The group formulates a plan…\n\n[4] he group's hold and overpower them. Thanos grievously wounds Stark, but Strange offers the Time Stone in exchange for sparing Stark's life.\nIn Wakanda, Rogers reunites with Bucky B…",
+    "근거위치": "줄거리",
+    "질문유형": "시간선",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 2,
+    "근거": [
+      {
+        "doc_id": "tt1211837-wikipedia",
+        "team_doc_id": "doc_38df02f9317c525f",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "nel mystical energy only to heal his paralysis. Strange progresses quickly, and secretly reads the book from which Kaecilius stole pages, learning to bend time with the Eye of Agam"
+      },
+      {
+        "doc_id": "tt1211837-wikipedia",
+        "team_doc_id": "doc_38df02f9317c525f",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "ye to reverse time and save Wong, then enters the Dark Dimension and creates an endless time loop around himself and Dormammu. After repeatedly killing Strange to no avail, Dormamm"
+      },
+      {
+        "doc_id": "tt4154756-wikipedia",
+        "team_doc_id": "doc_c19334b35dac57b1",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "n, where they meet Quill, Drax, and Mantis. Using the Time Stone, Strange views millions of possible futures, seeing only one in which the Avengers win. The group formulates a plan"
+      },
+      {
+        "doc_id": "tt4154756-wikipedia",
+        "team_doc_id": "doc_c19334b35dac57b1",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "he group's hold and overpower them. Thanos grievously wounds Stark, but Strange offers the Time Stone in exchange for sparing Stark's life.\nIn Wakanda, Rogers reunites with Bucky B"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "chunk-c038",
+    "question": "완다와 비전이 웨스트뷰 문제로 다투는 중 집 문 앞에 나타난 사람은 누구인가요?",
+    "expected_answer": "《완다비전》 에피소드에서 완다와 비전이 다투던 중, 죽은 오빠(쌍둥이 형제) '피에트로'가 문 앞에 나타난다. 다만 배우가 바뀌어(다른 얼굴) 나타난 인물이다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "피에트로(완다의 죽은 쌍둥이 형제)",
+    "근거 문서·절·리비전": "[1] WandaVision\ndoc_e47009474f935283 / 섹션 3: Episodes\nrevision 1387259897\nhttps://en.wikipedia.org/w/index.php?oldid=1387259897",
+    "검토 메모": "질문과 답은 source_chunk에서 직접 확인함.; 공식 후보로 빈 칸을 손으로 채움(검토 필요)",
+    "원문 근거 발췌": "[1] Vision confronts Wanda about her actions, but they are interrupted when \"Pietro\" arrives. Watching the broadcast, Lewis notes that Pietro has been \"recast\".",
+    "근거위치": "줄거리",
+    "질문유형": "사실",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "ohmseok",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "tt9140560-wikipedia",
+        "team_doc_id": "doc_e47009474f935283",
+        "section_index": 3,
+        "section_path": "Episodes",
+        "발췌": "Vision confronts Wanda about her actions, but they are interrupted when \"Pietro\" arrives. Watching the broadcast, Lewis notes that Pietro has been \"recast\"."
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "blind-q031",
+    "question": "《어벤져스: 엔드게임》을 연출한 형제 감독은 누구인가요?",
+    "expected_answer": "앤서니 루소와 조 루소 형제가 연출했다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "앤서니 루소 / 조 루소",
+    "근거 문서·절·리비전": "[1] Avengers: Endgame\ndoc_f2eaedc7959e54ab / 섹션 0: (lead)\nrevision 1387421029\nhttps://en.wikipedia.org/w/index.php?oldid=1387421029",
+    "검토 메모": "Endgame 영화 도입부에 Anthony와 Joe Russo가 감독이라고 명시됨. primary_gold: 질문에 가장 직접 답하는 청크로 고름 (복원: 한글 깨짐 → 당시 지시문 기준).; 공식 후보로 빈 칸을 손으로 채움(검토 필요)",
+    "원문 근거 발췌": "[1] Directed by Anthony and Joe Russo and written by Christopher Markus and Stephen McFeely",
+    "근거위치": "메타",
+    "질문유형": "사실",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "ohmseok",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "tt4154796-wikipedia",
+        "team_doc_id": "doc_f2eaedc7959e54ab",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "Directed by Anthony and Joe Russo and written by Christopher Markus and Stephen McFeely"
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "blind-q026",
+    "question": "캐럴 댄버스가 초능력을 얻기 전 미군에서 맡았던 일은 무엇인가요?",
+    "expected_answer": "미 공군 전투기 조종사였다. 광속 엔진 시험이 잘못돼 테서랙트의 우주 에너지에 노출되면서 초능력을 얻었다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "미 공군 전투기 조종사 / 광속 엔진 시험 사고 / 테서랙트 에너지 노출로 능력 획득",
+    "근거 문서·절·리비전": "[1] Carol Danvers (Marvel Cinematic Universe)\ndoc_8bbcfe7cbc17539d / 섹션 0: (lead)\nrevision 1387386404\nhttps://en.wikipedia.org/w/index.php?oldid=1387386404",
+    "검토 메모": "Carol Danvers 캐릭터 도입부에서 전직 U.S. Air Force fighter pilot이라고 명시됨. primary_gold: 질문에 가장 직접 답하는 청크로 고름 (복원: 한글 깨짐 → 당시 지시문 기준).; 공식 후보로 빈 칸을 손으로 채움(검토 필요)",
+    "원문 근거 발췌": "[1] Danvers is initially depicted as a U.S. Air Force fighter pilot who was given superhuman abilities when a light-speed engine test went wrong and she was exposed to the cosmic energy of the Tesseract.",
+    "근거위치": "인물",
+    "질문유형": "사실",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "ohmseok",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "wp-65464184",
+        "team_doc_id": "doc_8bbcfe7cbc17539d",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "Danvers is initially depicted as a U.S. Air Force fighter pilot who was given superhuman abilities when a light-speed engine test went wrong and she was exposed to the cosmic energy of the Tesseract."
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "chunk-c006",
+    "question": "《샹치》에서 원우가 다시 폭력적인 활동을 시작한 이유는 무엇인가요?",
+    "expected_answer": "아내 리(Li)가 원우의 적인 아이언 갱에게 살해당했기 때문이다. 원우는 텐 링즈를 다시 끼고 아이언 갱을 몰살한 뒤 조직의 지휘를 다시 맡는다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "아내 리의 죽음 / 아이언 갱의 소행 / 텐 링즈를 다시 끼고 조직 지휘 재개",
+    "근거 문서·절·리비전": "[1] Shang-Chi and the Legend of the Ten Rings\ndoc_5b93cc7c74355468 / 섹션 1: Plot\nrevision 1387348160\nhttps://en.wikipedia.org/w/index.php?oldid=1387348160",
+    "검토 메모": "질문과 답은 source_chunk에서 직접 확인함.; 공식 후보로 빈 칸을 손으로 채움(검토 필요)",
+    "원문 근거 발췌": "[1] When Shang-Chi is seven years old, Li is murdered by Wenwu's enemies, the Iron Gang. Wenwu dons the rings once again, massacres the Iron Gang, and resumes leadership of his organization.",
+    "근거위치": "줄거리",
+    "질문유형": "인과",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "ohmseok",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "tt9376612-wikipedia",
+        "team_doc_id": "doc_5b93cc7c74355468",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "When Shang-Chi is seven years old, Li is murdered by Wenwu's enemies, the Iron Gang. Wenwu dons the rings once again, massacres the Iron Gang, and resumes leadership of his organization."
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "minji-T001",
+    "question": "엔드게임에서 결국 타노스가 이겼지?",
+    "expected_answer": "아니다. 타노스는 엔드게임에서 패배한다. 토니 스타크가 스톤으로 타노스와 그 군대를 없애고 그 대가로 목숨을 잃는다.",
+    "answerable": true,
+    "난이도": "함정",
+    "채점 핵심 사실": "전제 바로잡기: 타노스는 졌다 / 토니가 스톤으로 타노스를 없애고 희생함",
+    "근거 문서·절·리비전": "[1] Avengers: Endgame\ndoc_f2eaedc7959e54ab / 섹션 1: Plot\nrevision 1387421029\nhttps://en.wikipedia.org/w/index.php?oldid=1387421029",
+    "검토 메모": "원본 trick_questions.jsonl 미확보 — 민지 md 1-6 표에서 복원. 전제 바로잡기를 따로 채점.; 공식 후보로 빈 칸을 손으로 채움(검토 필요)",
+    "원문 근거 발췌": "[1] Stark steals the Stones and uses them to disintegrate Thanos and his army, sacrificing himself.",
+    "근거위치": "줄거리",
+    "질문유형": "근거 검증",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "minji",
+    "전제 오류": "엔드게임에서 타노스가 이겼다",
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "tt4154796-wikipedia",
+        "team_doc_id": "doc_f2eaedc7959e54ab",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "Stark steals the Stones and uses them to disintegrate Thanos and his army, sacrificing himself."
+      }
+    ],
+    "split": "test"
+  },
+  {
+    "query_id": "blind-q037",
+    "question": "《어벤져스: 시크릿 워즈》에서 닥터 둠에게 마지막 일격을 날리는 사람은 누구야?",
+    "expected_answer": "문서에 근거가 없다. 《어벤져스: 시크릿 워즈》는 아직 공개되지 않은 작품이라 결말을 알 수 없다고 안내해야 한다.",
+    "answerable": false,
+    "난이도": "함정",
+    "채점 핵심 사실": "근거 부족 안내 / 미공개 작품의 결말을 지어내지 않음",
+    "근거 문서·절·리비전": "",
+    "검토 메모": "키워드 검색: Avengers: Secret Wars 12건, final blow 0건, Doctor Doom 9건 — 답이 되는 문장 없음 (복원: 한글 깨짐 → 남은 숫자와 당시 지시문 기준).; 한국어 깨짐 → question_en 에서 다시 씀(검토 필요); 공식 후보로 빈 칸을 손으로 채움(검토 필요)",
+    "원문 근거 발췌": "",
+    "근거위치": "문서에 없음",
+    "질문유형": "근거 검증",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "ohmseok",
+    "전제 오류": null,
+    "경계 걸침": null,
+    "필요 문서 수": 0,
+    "근거": [],
+    "split": "test"
+  },
+  {
+    "query_id": "blind-q040",
+    "question": "《어벤져스: 엔드게임》에서 나타샤가 보르미르에서 희생할 때 나오는 노래는 뭐야?",
+    "expected_answer": "문서에 근거가 없다. 보르미르 장면에 쓰인 음악은 수집한 줄거리 · 문서에 나오지 않는다고 안내해야 한다.",
+    "answerable": false,
+    "난이도": "함정",
+    "채점 핵심 사실": "근거 부족 안내 / 곡 이름을 지어내지 않음",
+    "근거 문서·절·리비전": "",
+    "검토 메모": "키워드 검색: Vormir 2건, Romanoff 53건, song 29건 — 답이 되는 문장 없음 (복원: 한글 깨짐 → 남은 숫자와 당시 지시문 기준).; 한국어 깨짐 → question_en 에서 다시 씀(검토 필요); 공식 후보로 빈 칸을 손으로 채움(검토 필요)",
+    "원문 근거 발췌": "",
+    "근거위치": "문서에 없음",
+    "질문유형": "근거 검증",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "ohmseok",
+    "전제 오류": null,
+    "경계 걸침": null,
+    "필요 문서 수": 0,
+    "근거": [],
+    "split": "test"
+  }
+]
