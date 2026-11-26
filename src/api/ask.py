@@ -75,6 +75,19 @@ class AskData(BaseModel):
 
 
 BRACKETS = re.compile(r"\[([^\[\]]+)\]")
+# 팀 프롬프트의 마지막 줄 "COVERAGE: full/partial" 이 답 끝에 붙어 남으면 번역돼 "범위: 전체" 로 보인다
+COVERAGE_TAIL = re.compile(
+    r"\s*(?:COVERAGE|범위|커버리지|적용 범위)\s*[:：]\s*(full|partial|전체|부분|일부)\s*[.。]?\s*$",
+    re.IGNORECASE,
+)
+
+
+def strip_coverage(answer: str) -> tuple[str, bool]:
+    """답 끝의 COVERAGE 표시를 지운다. partial(일부만 확인)이었으면 True 도 돌려준다."""
+    m = COVERAGE_TAIL.search(answer)
+    if not m:
+        return answer, False
+    return answer[: m.start()].rstrip(), m.group(1).lower() in {"partial", "부분", "일부"}
 
 
 def number_citations(answer: str, chunk_ids: list[str]) -> str:
@@ -232,14 +245,15 @@ async def ask(req: AskRequest, request: Request) -> APIResponse[AskData]:
             errors={"request_id": request_id},
         )
     citations = result.get("citations") or []
+    text, tail_partial = strip_coverage(result["answer_ko"])
     return APIResponse.ok(
         AskData(
             request_id=request_id,
             question=question,
-            answer=number_citations(result["answer_ko"], [c["chunk_id"] for c in citations]),
+            answer=number_citations(text, [c["chunk_id"] for c in citations]),
             status=status,
             search_query=result.get("search_query") or question,
-            partial=bool(result.get("partial")),
+            partial=bool(result.get("partial")) or tail_partial,
             sources=[
                 Source(n=n, **{k: c.get(k) for k in Source.model_fields if k != "n"})
                 for n, c in enumerate(citations, start=1)

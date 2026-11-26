@@ -480,3 +480,24 @@ def test_board_sorts_days_and_stats(db: str) -> None:
     assert len(client.get("/api/posts?days=7").json()["data"]["items"]) == 2
     stats = client.get("/api/board/stats").json()["data"]
     assert stats == {"today_posts": 2, "open_debates": 0, "week_participation": 3}
+
+
+@pytest.mark.parametrize(
+    ("raw", "text", "partial"),
+    [
+        ("타노스는 균형을 원한다. [1] 범위: 전체", "타노스는 균형을 원한다. [1]", False),
+        ("일부만 확인돼요. [1]\nCOVERAGE: partial", "일부만 확인돼요. [1]", True),
+        ("범위가 넓은 이야기예요.", "범위가 넓은 이야기예요.", False),  # 본문 속 '범위' 는 그대로
+    ],
+)
+def test_strip_coverage_tail(raw: str, text: str, partial: bool) -> None:
+    assert ask.strip_coverage(raw) == (text, partial)
+
+
+def test_ask_hides_coverage_tail(fake_answer: dict[str, Any]) -> None:
+    fake_answer["result"] = {
+        **fake_answer["result"],
+        "answer_ko": "답이에요 [tt0000001-wikipedia-plot-p03]. 범위: 부분",
+    }
+    data = client.post("/api/ask", json={"question": "q"}).json()["data"]
+    assert data["answer"] == "답이에요 [1]." and data["partial"] is True
