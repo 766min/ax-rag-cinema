@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 140">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.45" stop-color="#e6e1ff"/>
+      <stop offset="1" stop-color="#8f7cf2"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a4c8f"/>
+      <stop offset="1" stop-color="#0a1030"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5ee7ff"/>
+      <stop offset="0.5" stop-color="#a78bfa"/>
+      <stop offset="1" stop-color="#f0abfc"/>
+    </linearGradient>
+    <linearGradient id="trail" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#5ee7ff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#5ee7ff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="lamp">
+      <stop offset="0" stop-color="#fff7d6"/>
+      <stop offset="0.4" stop-color="#ffd27a" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffb86b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="wheel">
+      <stop offset="0.35" stop-color="#c9c3ff"/>
+      <stop offset="0.45" stop-color="#2a2550"/>
+      <stop offset="1" stop-color="#0c0a1c"/>
+    </radialGradient>
+  </defs>
+  <!-- 뒤쪽 궤도 고리 -->
+  <path d="M28 96 A96 26 0 0 1 216 52" fill="none" stroke="url(#ring)" stroke-width="3" opacity="0.55" transform="rotate(-12 120 74)"/>
+  <!-- 속도선 -->
+  <rect x="0" y="62" width="42" height="3" rx="1.5" fill="url(#trail)"/>
+  <rect x="8" y="76" width="30" height="2.5" rx="1.25" fill="url(#trail)"/>
+  <rect x="2" y="90" width="38" height="3" rx="1.5" fill="url(#trail)"/>
+  <!-- 차체 -->
+  <rect x="40" y="38" width="164" height="66" rx="20" fill="url(#body)"/>
+  <rect x="52" y="30" width="120" height="12" rx="6" fill="#f4f1ff"/>
+  <rect x="40" y="86" width="164" height="7" fill="#7c5cf0" opacity="0.85"/>
+  <rect x="40" y="93" width="164" height="3" fill="#5ee7ff" opacity="0.8"/>
+  <!-- 창문 -->
+  <rect x="52" y="48" width="28" height="26" rx="6" fill="url(#glass)"/>
+  <rect x="86" y="48" width="28" height="26" rx="6" fill="url(#glass)"/>
+  <rect x="120" y="48" width="28" height="26" rx="6" fill="url(#glass)"/>
+  <rect x="156" y="48" width="36" height="30" rx="8" fill="url(#glass)"/>
+  <path d="M56 51 L66 51 L58 70 L56 70 Z M90 51 L100 51 L92 70 L90 70 Z M124 51 L134 51 L126 70 L124 70 Z M160 52 L172 52 L162 74 L160 74 Z" fill="#9fe9ff" opacity="0.45"/>
+  <!-- 차체 하이라이트 -->
+  <rect x="48" y="40" width="148" height="4" rx="2" fill="#ffffff" opacity="0.9"/>
+  <!-- 바퀴 -->
+  <circle cx="78" cy="104" r="14" fill="url(#wheel)"/>
+  <circle cx="166" cy="104" r="14" fill="url(#wheel)"/>
+  <!-- 헤드라이트 -->
+  <circle cx="204" cy="84" r="22" fill="url(#lamp)"/>
+  <circle cx="200" cy="84" r="4" fill="#fffbe8"/>
+  <!-- 앞쪽 궤도 고리 -->
+  <path d="M216 52 A96 26 0 0 1 28 96" fill="none" stroke="url(#ring)" stroke-width="3.5" transform="rotate(-12 120 74)"/>
+</svg>
