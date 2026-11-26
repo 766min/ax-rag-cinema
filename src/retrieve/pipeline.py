@@ -46,6 +46,25 @@ def mode_name(mode: RetrievalMode) -> str:
     return next(name for name, value in MODES.items() if value == mode)
 
 
+# 같은 검색 방식에 영문 리라이트를 더한 구성 (A → A+ · B → B+ · C → C+)
+_WITH_REWRITE = {
+    RetrievalMode.VECTOR: RetrievalMode.VECTOR_REWRITE,
+    RetrievalMode.HYBRID: RetrievalMode.HYBRID_REWRITE,
+    RetrievalMode.HYBRID_RERANK: RetrievalMode.HYBRID_RERANK_REWRITE,
+}
+
+
+def with_rewrite(mode: RetrievalMode) -> RetrievalMode:
+    """같은 검색 방식에 리라이트를 더한 구성. 이미 리라이트 구성이거나 짝이 없으면 그대로."""
+    return _WITH_REWRITE.get(mode, mode)
+
+
+def effective_mode(name: str, rewrite: bool = True) -> str:
+    """실제로 돌릴 구성 이름. 리라이트가 켜져 있으면(기본) A · B · C 를 A+ · B+ · C+ 로 바꾼다."""
+    mode = mode_of(name)
+    return mode_name(with_rewrite(mode)) if rewrite else name
+
+
 @dataclass(frozen=True)
 class SearchConfig:
     """검색 설정. params() 를 실행 기록에 남겨 어떤 설정으로 돌렸는지 추적한다."""

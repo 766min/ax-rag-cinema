@@ -8,7 +8,7 @@ from build.chunks import Dataset, Recipe, parent_sources
 from evals.items import to_items
 from evals.recorder import Recorder
 from evals.run import RunMeta, input_text, run_questions
-from retrieve.pipeline import MODES, REWRITE_MODES, Retriever, SearchConfig
+from retrieve.pipeline import MODES, Retriever, SearchConfig, with_rewrite
 from service.answer import make_generate_en
 from shared.core.models import Alias, Document, SourceId, Work
 
@@ -141,10 +141,10 @@ def test_six_modes_branch_and_trace_citations(tmp_path: Path) -> None:
             )
         )  # fmt: skip
 
-        # 리라이트 · 재정렬 분기
-        assert len(rewrites) - before == (1 if mode in REWRITE_MODES else 0), name
-        assert rec.trace.query_en == ("How does Iron Man escape?" if mode in REWRITE_MODES else "")
-        assert rec.trace.retrieval_mode == mode
+        # 리라이트(기본으로 모든 구성) · 재정렬 분기. 기록에는 실제로 돈 구성(A → A+ …)이 남는다
+        assert len(rewrites) - before == 1, name
+        assert rec.trace.query_en == "How does Iron Man escape?"
+        assert rec.trace.retrieval_mode == with_rewrite(mode)
         reranked = len(reranker.inputs) - before_rerank
         assert reranked == (1 if name in ("C", "C+") else 0), name
         if reranked:
@@ -165,3 +165,18 @@ def test_six_modes_branch_and_trace_citations(tmp_path: Path) -> None:
         assert items[0].hit_at(rec, 5) in (True, False)  # 색인 버전이 맞아 Hit@k 를 잴 수 있다
 
     assert len({f.name for f in tmp_path.iterdir()}) == len(MODES)
+
+    # 리라이트를 끄면(비교 실험) 리라이트를 부르지 않고 원질문으로 검색하며, 기록에도 A 로 남는다
+    before = len(rewrites)
+    [plain] = asyncio.run(
+        run_questions(
+            items, mode_name="A", retriever=retriever, generate_en=make_generate_en(LLM()),
+            aliases=aliases, config=SearchConfig(top_k=5, pool=20),
+            recorder=Recorder("it-A-norewrite-try1", results_dir=tmp_path),
+            meta=RunMeta(index_version(chunks), "e", "m", "p3-gather", "a"),
+            query_translator=rewrite, answer_translator=echo, rewrite=False,
+        )
+    )  # fmt: skip
+    assert len(rewrites) == before
+    assert plain.trace.query_en == "" and plain.trace.retrieval_mode == MODES["A"]
+    assert plain.params["mode"] == "A" and plain.params["rewrite"] is False

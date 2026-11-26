@@ -46,8 +46,10 @@ def test_run_questions_writes_valid_run_records(tmp_path: Path) -> None:
     path = tmp_path / "2026-11-26-gather-test-A-try1.jsonl"
     lines = path.read_text(encoding="utf-8").splitlines()
     first = RunRecord.model_validate_json(lines[0])
-    assert first.trace.query_en == "" and first.trace.web_called is False
-    assert first.params["mode"] == "A" and first.params["bm25_zero"] is None
+    # 리라이트는 기본으로 켜져 있어 A 를 요청해도 A+ 로 돌고, 기록에도 그렇게 남는다
+    assert first.trace.retrieval_mode == "vector_rewrite" and first.trace.web_called is False
+    assert first.params["mode"] == "A+" and first.params["rewrite"] is True
+    assert first.params["query_source"] == "llm" and first.params["bm25_zero"] is None
     assert first.params["read"][0]["ids"] == [CHUNKS[1].chunk_id]
     assert "Q900" not in json.dumps(first.params)  # 정답표 값이 실행 기록 params 에 새지 않는다
     text = input_text(first.params["read"], {c.chunk_id: c for c in CHUNKS})
