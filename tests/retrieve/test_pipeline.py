@@ -102,12 +102,19 @@ def test_c_and_b_share_first_stage_candidates() -> None:
 
 
 def test_pool_and_rrf_k_are_parameters() -> None:
-    """pool=1 · rrf_k=10 이 결과에 반영된다."""
+    """pool=1 · rrf_k=10 이 결과에 반영되고, 합친 목록(최대 2×pool)은 자르지 않는다."""
     b = retriever().search("armor", MODES["B"], SearchConfig(pool=1, rrf_k=10))
 
     # 벡터 1위 V1 과 BM25 1위 BOTH 가 1/11 로 같고, 동점은 벡터 순위표가 먼저다
-    assert [x.chunk_id for x in b] == [V1.chunk_id]
-    assert b[0].rrf_score == round(1 / 11, 6)
+    assert [x.chunk_id for x in b] == [V1.chunk_id, BOTH.chunk_id]
+    assert b[0].rrf_score == b[1].rrf_score == round(1 / 11, 6)
+
+
+def test_search_config_defaults() -> None:
+    """생성에는 8개, 평가는 Hit@5, 검색기마다 40개 (2026-11-26 dev 실측으로 정한 값)."""
+    cfg = SearchConfig()
+    assert (cfg.top_k, cfg.generate_k, cfg.pool) == (5, 8, 40)
+    assert cfg.params()["generate_k"] == 8
 
 
 def test_rerank_modes_need_a_reranker() -> None:

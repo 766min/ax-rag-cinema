@@ -2,7 +2,7 @@
 
     PYTHONPATH=src uv run --locked python scripts/ask.py "아이언맨은 어떻게 탈출해?" --mode A
     HF_HUB_OFFLINE=1 PYTHONPATH=src uv run --locked --with sentence-transformers==5.2.0 \\
-        python scripts/ask.py "타임 스톤이 뭐야?" --mode C+ --context parent
+        python scripts/ask.py "타임 스톤이 뭐야?" --mode C+
 
 화면에 원 질문 · 치환 · 검색어 · 상태 · 답변과 '후보 → 모델이 읽은 범위 → 인용' · 출처를 찍는다.
 
@@ -28,9 +28,14 @@ async def main() -> None:
     parser = argparse.ArgumentParser(description="질문 한 건")
     parser.add_argument("question")
     parser.add_argument("--mode", default="C", choices=list(MODES))
-    parser.add_argument("--context", default="chunk", choices=("chunk", "parent"))
-    parser.add_argument("--top-k", type=int, default=5)
-    parser.add_argument("--pool", type=int, default=20, help="결합 후보 깊이 (임시값 20)")
+    parser.add_argument(
+        "--context",
+        default="parent",
+        choices=("chunk", "parent"),
+        help="생성에 넘길 문맥 (기본: 부모 문맥)",
+    )
+    parser.add_argument("--generate-k", type=int, default=8, help="생성 모델에 넘기는 후보 수")
+    parser.add_argument("--pool", type=int, default=40, help="각 검색기에서 가져오는 수")
     parser.add_argument("--rrf-k", type=int, default=60, help="RRF 상수 (임시값 60)")
     parser.add_argument("--query-en", default=None, help="저장한 영문 검색어 (LLM 리라이트 대신)")
     parser.add_argument(
@@ -44,7 +49,7 @@ async def main() -> None:
     name = effective_mode(args.mode, rewrite=not args.no_rewrite)
 
     rt = open_runtime([name], context=args.context)  # C 계열이면 재정렬 모델도 여기서 로드
-    config = SearchConfig(top_k=args.top_k, pool=args.pool, rrf_k=args.rrf_k)
+    config = SearchConfig(generate_k=args.generate_k, pool=args.pool, rrf_k=args.rrf_k)
     web: Any = None
     if args.web:
         # dev websearch 의 '질문 → 저장분 확인 → Brave → 적재' 경로를 그대로 쓴다
@@ -61,7 +66,7 @@ async def main() -> None:
         generate_en=rt.generate_en,
         aliases=rt.aliases,
         mode=MODES[name],
-        top_k=args.top_k,
+        top_k=args.generate_k,
         web=web,
         query_en=args.query_en,
         rewrite=not args.no_rewrite,
@@ -86,7 +91,7 @@ async def main() -> None:
     print("검색 후보 → 모델이 읽은 범위 → 인용")
     print(
         "  후보:",
-        [c.chunk_id for c in result["candidates"][: args.top_k]],
+        [c.chunk_id for c in result["candidates"][: args.generate_k]],
         f"(전체 {len(result['candidates'])})",
     )
     print("  읽음:", [(b["ids"], b["span"], b["chars"]) for b in result["read"]])

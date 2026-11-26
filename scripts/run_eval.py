@@ -35,10 +35,16 @@ def main() -> None:
     )
     parser.add_argument("--ids", default="", help="이 문항만 (쉼표, 스모크용)")
     parser.add_argument("--queries", default=None, help="저장한 영문 검색어 파일")
-    parser.add_argument("--context", default="chunk", choices=("chunk", "parent"))
+    parser.add_argument(
+        "--context",
+        default="parent",
+        choices=("chunk", "parent"),
+        help="생성에 넘길 문맥 (기본: 부모 문맥)",
+    )
     parser.add_argument("--parent-chars", type=int, default=3000)
-    parser.add_argument("--top-k", type=int, default=5)
-    parser.add_argument("--pool", type=int, default=20)
+    parser.add_argument("--top-k", type=int, default=5, help="평가 Hit@k 의 k")
+    parser.add_argument("--generate-k", type=int, default=8, help="생성 모델에 넘기는 후보 수")
+    parser.add_argument("--pool", type=int, default=40, help="각 검색기에서 가져오는 수")
     parser.add_argument("--rrf-k", type=int, default=60)
     parser.add_argument("--results", default="results")
     parser.add_argument(
@@ -74,7 +80,9 @@ def main() -> None:
     run_kind = (
         "dev-exploration" if Path(args.questions).name == "question_set.jsonl" else "official"
     )
-    config = SearchConfig(top_k=args.top_k, pool=args.pool, rrf_k=args.rrf_k)
+    config = SearchConfig(
+        top_k=args.top_k, generate_k=args.generate_k, pool=args.pool, rrf_k=args.rrf_k
+    )
     meta = RunMeta(
         index_version=rt.index_version,
         alias_version=alias_version(rt.aliases),

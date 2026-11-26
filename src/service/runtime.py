@@ -28,7 +28,7 @@ class Runtime:
 
 
 def open_runtime(
-    modes: list[str], *, context: str = "chunk", parent_chars: int = 3000,
+    modes: list[str], *, context: str = "parent", parent_chars: int = 3000,
     collection: str | None = None, dataset: str | None = None, reranker_model: str | None = None,
 ) -> Runtime:  # fmt: skip
     """DB 에서 색인을 읽어 검색기 · 생성기 · 실행 정보를 한 번에 만든다."""

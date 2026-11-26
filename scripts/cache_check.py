@@ -41,7 +41,7 @@ async def main() -> None:
             result = await answer_movie_question(
                 row["question"], retrieve=make_retrieve(rt.retriever, MODES[args.mode], config),
                 generate_en=rt.generate_en, aliases=rt.aliases, mode=MODES[args.mode],
-                top_k=config.top_k, cache=use,
+                top_k=config.generate_k, cache=use,
             )  # fmt: skip
             print(json.dumps({"id": row.get("query_id"), "step": label, "cache_hit": result["cache_hit"],
                               "status": str(result["status"])}, ensure_ascii=False))  # fmt: skip
