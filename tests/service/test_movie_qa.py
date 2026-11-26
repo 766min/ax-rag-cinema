@@ -27,7 +27,8 @@ def test_service_orders_english_search_draft_and_korean_translation() -> None:
 
     async def generate_en(query: str, evidence: list[Evidence]) -> EnglishDraft:
         calls.append("generate_en")
-        assert query == "Who is Iron Man?"
+        # 생성에는 검색어가 아니라 원래 한국어 질문을 넘긴다 (프롬프트 [5])
+        assert query == "아이언맨은 누구야?"
         assert evidence == [EVIDENCE]
         return EnglishDraft(
             answer_en="Iron Man is Tony Stark. [tt0371746-wikipedia-plot-p01]",
@@ -36,7 +37,7 @@ def test_service_orders_english_search_draft_and_korean_translation() -> None:
 
     async def answer_translator(_system: str, text: str) -> str:
         calls.append("translate_answer")
-        # References are protected before names, so the chunk ID takes TERM_0.
+        # 인용을 이름보다 먼저 보호하므로 청크 ID 가 TERM_0 이 된다
         assert text == "[[TERM_1]] is [[TERM_2]]. [[[TERM_0]]]"
         return "[[TERM_1]]은 [[TERM_2]]입니다. [[[TERM_0]]]"
 
