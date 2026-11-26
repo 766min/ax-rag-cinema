@@ -1,8 +1,3 @@
-# ══════════════════════════════════════════════════════════════════════════════
-# [학습 안내] tests/evals/test_judge.py — 채점기 테스트
-#
-# gather/tests/evals/test_gather_evals.py 에서 judge 관련 테스트를 분리한 파일이다.
-# ══════════════════════════════════════════════════════════════════════════════
 import json
 from types import SimpleNamespace
 from typing import Any
@@ -50,10 +45,7 @@ class ScriptedLLM:
         return SimpleNamespace(
             content=json.dumps(
                 {
-                    "facts": [
-                        {"n": i, "verdict": verdict}
-                        for i in range(1, n + 1)
-                    ],
+                    "facts": [{"n": i, "verdict": verdict} for i in range(1, n + 1)],
                     "contradiction": False,
                 }
             )

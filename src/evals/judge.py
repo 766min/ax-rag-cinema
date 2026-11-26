@@ -1,51 +1,9 @@
-# ══════════════════════════════════════════════════════════════════════════════
-# [학습 안내] src/evals/judge.py — 답변이 '핵심 사실' 을 충족했는지 LLM 으로 채점하는 파일 (자동 판정)
-#
-# 이 파일의 목적
-#   검색 지표(Hit@5)는 '근거를 찾았나' 만 잰다. 답이 맞는지는 따로 재야 한다.
-#   문항마다 핵심 사실(예: '총 6개 / 여섯 이름') 목록이 있고, 채점 모델이 사실마다 met · partial · missing 을 낸다.
-#     정답 충족(엄격) = 모든 사실 met + 기준 답안과 모순 없음 / 사실 충족률 = met 1 · partial 0.5 의 평균
-#
-# 채점기를 믿기 전에 '채점기 자체' 를 검사한다 (calibrate)
-#   - 기준 답안을 채점하면 통과해야 하고
-#   - 다른 문항의 기준 답안을 채점하면 떨어져야 한다
-#   이 기록이 없으면 정답 충족 값은 참고값으로만 적는다.
-#
-# LLM 호출이 드는 파일이라 이번 취합에서는 실행하지 않았다 (테스트는 가짜 모델로 돈다).
-# ══════════════════════════════════════════════════════════════════════════════
-"""핵심 사실 채점기 — 사용자가 보는 한국어 답변이 문항의 핵심 사실(EvalItem.key_facts)을 충족하는가.
-
-출처: 영민 `origin/exp/youngmin:test/youngmin/index/judge.py` (SYSTEM · parse_verdict · score · calibrate, 수정 이식:
-경로 상수를 없애고 llm 을 인자로 받는다. 채점 모델을 답변 모델과 다르게 줄 수 있다).
-서인 src/evals/grading.py 는 수동 채점 CSV 뿐이고, 학용 evaluate_openai_answers.py 는 생성 프롬프트에 기준 답안을
-넣고 같은 호출에서 스스로 채점해 쓰지 않는다 (docs/shared-insignts.md ②).
-
-결과는 '자동 판정' 이다. 채점기 검사(calibrate: 기준 답안 통과 · 다른 문항 답안 탈락)를 같은 채점 모델로
-먼저 돌린 기록이 없으면 정답 충족 값은 참고값으로만 적는다.
-"""
-
-# ── 표준 라이브러리 ──
-# 채점 모델의 JSON 답을 읽는다
 import json
-
-# 답 속에서 JSON 부분만 찾는다 (모델이 앞뒤에 말을 붙여도 되게)
 import re
-
-# 타입 힌트
 from collections.abc import Mapping, Sequence
-
-# 채점 결과 dict · LLM 객체
 from typing import Any
-
-# ── 외부 라이브러리 ──
-# LangChain 메시지 (채점 규칙 · 채점할 내용)
 from langchain_core.messages import HumanMessage, SystemMessage
-
-# ── 팀 공통 ──
-# 평가 문항(기준 답안 · 핵심 사실) · 실행 기록(채점할 답)
 from shared.core.models import EvalItem, RunRecord
-
-# 채점 단계 시간 ('judge')
 from shared.core.timing import measure_time
 
 # 채점기 판 (규칙이 바뀌면 올린다)

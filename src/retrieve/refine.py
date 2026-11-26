@@ -1,45 +1,6 @@
-# ══════════════════════════════════════════════════════════════════════════════
-# [학습 안내] src/retrieve/refine.py — 재정렬(Re-ranking): C · C+ 구성의 마지막 단계
-#
-# 이 파일의 목적
-#   벡터 · BM25 · RRF 는 질문과 청크를 '따로' 보고 점수를 낸다. 작품 이름만 겹쳐도 위로 올라올 수 있다.
-#   Cross-Encoder 는 (질문, 청크) 한 쌍을 함께 읽고 '이 청크가 질문에 답하는가' 를 점수로 낸다 → 더 정확하지만 느리다.
-#   그래서 색인 전체가 아니라 결합 후보 20개에만 쓰고, 그중 상위 5개를 생성 모델에 넘긴다.
-#
-# 전체 흐름
-#   결합 후보(B 의 결과) → reranker.score(질문, 각 후보 글) → 점수 순으로 다시 정렬 → 이전 순위도 기록
-#
-# 설계 포인트
-#   - Reranker 는 Protocol(모양만 정한 약속)이다. score() 만 있으면 진짜 모델이든 테스트용 가짜든 끼울 수 있다.
-#   - sentence-transformers · torch 는 무거워서 팀 의존성에 없다. 실제 모델을 만들 때만 불러온다 (지연 import).
-#   - 한국어 질문 + 영어 문서를 함께 읽어야 하므로 다국어 모델이 필요하다 (영어 전용 MS MARCO 모델은 쓰지 않는다).
-#
-# 누가 쓰나: retrieve/pipeline.py(Retriever) · service/runtime.py(C 계열일 때 모델 로드)
-# ══════════════════════════════════════════════════════════════════════════════
-"""재정렬 (C · C+, architecture.md §5).
-
-출처: 서인 `origin/exp/journey:src/retrieval/refine.py` (Reranker Protocol · rerank, 원본 이식) +
-영민 `retrieval.Reranker` (기본 모델 · 없을 때의 안내 문구). 학용 `evaluate_cross_encoder.py` 는 영어 전용
-MS MARCO 모델이라 C 에 쓰지 않는다 (한국어 질문 + 영어 문서).
-
-- 모델 이름은 설정값이다: 인자 > RERANKER_MODEL 환경변수 > 임시값 Dongjin-kr/ko-reranker
-  (로컬 캐시에 있는 다국어 XLM-RoBERTa Cross-Encoder, 이용 조건 미확인. 팀 기본 모델은 팀 결정 사항)
-- sentence-transformers · torch 는 팀 의존성에 없다. 쓸 때만 불러온다:
-      HF_HUB_OFFLINE=1 uv run --with sentence-transformers==5.2.0 ...
-"""
-
-# ── 표준 라이브러리 ──
-# 환경변수: RERANKER_MODEL(모델 바꾸기) · HF_HUB_OFFLINE(인터넷 없이 로컬 캐시만 쓰기)
 import os
-
-# Hugging Face 캐시 경로에서 모델 판(스냅샷 해시)을 꺼낼 때
 from pathlib import Path
-
-# Protocol: '이 메서드만 있으면 된다' 는 모양 약속 / Any: 외부 라이브러리 객체
 from typing import Any, Protocol
-
-# ── 팀 공통 모델 ──
-# 재정렬 전후 순위 · 재정렬 점수를 Candidate 칸(rank_before_rerank · rerank_score)에 담는다
 from shared.core.models import Candidate
 
 # 임시 기본 모델 (로컬 캐시에 있음, 이용 조건 미확인 — 팀 결정 사항)

@@ -1,8 +1,3 @@
-# ══════════════════════════════════════════════════════════════════════════════
-# [학습 안내] tests/retrieve/test_refine.py — 재정렬 테스트
-#
-# gather/tests/retrieve/test_pipeline.py 에서 재정렬 관련 테스트를 분리한 파일이다.
-# ══════════════════════════════════════════════════════════════════════════════
 import pytest
 
 from retrieve.refine import rerank
