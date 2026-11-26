@@ -1,4 +1,7 @@
-"""서비스 경로(movie_qa)의 구성별 분기 · 인용 출처 · 근거 없음과 장애 구분 · 웹 보강 (API 없음)."""
+"""서비스 경로(movie_qa)의 구성별 분기 · 인용 출처 · 근거 없음과 장애 구분 · 웹 보강 · 답변 캐시.
+
+검색 · 생성 · 번역 · 웹 검색은 가짜 함수로 바꿔 끼워 실제 API 없이 돌린다.
+"""
 
 import asyncio
 from types import SimpleNamespace
@@ -8,6 +11,7 @@ import pytest
 from service_fakes import POOL, Calls, Q, ask, chunk, ports, web_outcome
 
 from retrieve.pipeline import MODES
+from service.answer_cache import AnswerCache
 from service.movie_qa import EnglishDraft, answer_movie_question
 from shared.core.models import SourceId
 from shared.core.schemas import AnswerStatus, Section
@@ -181,3 +185,25 @@ def test_web_failure_keeps_no_evidence() -> None:
 
     assert out["status"] == AnswerStatus.NO_EVIDENCE
     assert out["web_failed"] is True
+
+
+def test_answer_cache_hit_skips_search_and_generation() -> None:
+    """미적중 → 적중(검색 · 생성 없음) → 색인 버전이 바뀌면 다시 미적중. 구성이 다르면 키도 다르다."""
+    versions = {"index_version": "v1", "llm_model": "m", "prompt_version": "p3-gather"}
+    cache = AnswerCache(versions, {"top_k": 5})
+    calls = Calls()
+
+    first = ask(calls, "C", cache=cache)
+    second = ask(calls, "C", cache=cache)
+
+    assert first["cache_hit"] is False
+    assert second["cache_hit"] is True
+    assert len(calls.search) == 1
+    assert len(calls.generated_with) == 1
+
+    changed = AnswerCache({**versions, "index_version": "v2"}, {"top_k": 5})
+    third = ask(calls, "C", cache=changed)
+
+    assert third["cache_hit"] is False
+    assert len(calls.generated_with) == 2
+    assert cache.key("q", "hybrid") != cache.key("q", "vector")
