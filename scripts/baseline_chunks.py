@@ -59,6 +59,14 @@ def build(max_chars: int = 800, sections_path: Path = DATA / "sections.jsonl") -
         for line in f:
             s = json.loads(line)
             out += chunk_section(s["doc_id"], s["section_index"], s.get("text") or "", max_chars)
+            # 'Episodes' 절의 회차 요약은 회차 경계를 넘지 않게 회차마다 따로 자른다
+            for n, ep in enumerate(s.get("episode_entries") or [], start=1):
+                pieces = chunk_section(
+                    s["doc_id"], s["section_index"], ep.get("summary") or "", max_chars
+                )
+                for k, c in enumerate(pieces, start=1):
+                    c["chunk_id"] = f"{s['doc_id']}#{s['section_index']}-e{n:02d}-c{k:02d}"
+                    out.append(c)
     return out
 
 

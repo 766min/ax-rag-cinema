@@ -52,7 +52,7 @@ from pathlib import Path
 from attach_chunks import ChunkIndex  # 같은 scripts/ 폴더
 from baseline_chunks import build as build_baseline
 from check_eval_gen import Corpus as DataCorpus
-from check_eval_gen import render_text
+from check_eval_gen import render_text, section_text
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data" / "cineverse-dataset-schema"
@@ -221,7 +221,7 @@ def team_rows(path: Path, corpus) -> list[dict]:
             sec = sections.get((e["doc_id"], e["section_index"]))
             ex = excerpts.get(i, "")
             e["발췌"] = ex
-            e["발췌_확인"] = bool(sec and ex and ex[:60] in sec["text"])
+            e["발췌_확인"] = bool(sec and ex and ex[:60] in section_text(sec))
         works = {e["doc_id"] for e in evid}
         obj = {1: "초보", 2: "중수"}.get(len(works), "고수") if r["answerable"] else "함정"
         loc = TEAM_LOC.get(qid) or (
@@ -786,7 +786,9 @@ def official_section(official: list[dict], diag: list[dict]) -> list[str]:
         "확장 진단셋에서 빠진 것 (문항 수): "
         + (" · ".join(f"{k} {v}" for k, v in need.most_common()) or "없음"),
         "- '정답 문장(자동 선택 · 검토)' = 실험 세트에서 기준 답과 단어가 가장 많이 겹치는 문장을 자동으로 고른 것",
-        "- '경계 걸침' 은 기준선 청킹(최대 800자 · 문장 경계 · 무겹침, scripts/baseline_chunks.py)에서 정답 발췌가 청크 두 개 이상에 걸치는지다.",
+        "- '경계 걸침' 은 기준선 청킹(최대 800자 · 문장 경계 · 무겹침, scripts/baseline_chunks.py)에서 정답 발췌가 청크 두 개 이상에 걸치는지다."
+        " **참고값**이다 — 최종 청킹(src/build/chunks.py 의 s800 등)은 문단부터 묶는 등 자르는 법이 달라 결과가 다를 수 있다."
+        " 최종 청킹이 정해지면 그 청킹으로 다시 잰다.",
         "",
     ]
     return lines
@@ -960,11 +962,13 @@ OFFICIAL_FILL = {
         "expected_answer": "《완다비전》 에피소드에서 완다와 비전이 다투던 중, 죽은 오빠(쌍둥이 형제) '피에트로'가 문 앞에 나타난다. 다만 배우가 바뀌어(다른 얼굴) 나타난 인물이다.",
         # 질문이 "누가 나타났나" 라 피에트로면 정답. '다른 배우로 바뀜' 은 기준 답에만 두고 채점에서 뺀다
         "채점 핵심 사실": "피에트로(완다의 죽은 쌍둥이 형제)",
+        # 근거는 시리즈 문서 'Episodes' 절의 5화 요약 (팀 색인 범위는 개별 에피소드 문서를 넣지 않고
+        # 시리즈 · 시즌 문서의 회차 요약을 줄거리 청크로 만든다). 같은 장면이 에피소드 문서 wp-66628751 #1 Plot 에도 있다
         "근거": [
             (
-                "wp-66628751",
-                1,
-                'They are interrupted again when her dead brother "Pietro" arrives at the front door. Watching the broadcast, Darcy Lewis notes that Pietro has been "recast".',
+                "tt9140560-wikipedia",
+                3,
+                'Vision confronts Wanda about her actions, but they are interrupted when "Pietro" arrives. Watching the broadcast, Lewis notes that Pietro has been "recast".',
             )
         ],
     },
@@ -1040,6 +1044,15 @@ OFFICIAL_FILL = {
         ],
     },
 }
+# 팀 문항 중 핵심 사실이 너무 많아 '모두 충족' 채점에서 거의 오답이 되는 것을 줄인다 (PR #22 리뷰).
+# 기준: 빠지면 틀린 답인 사실만. 루트 question_set.jsonl 원본은 고치지 않고 평가셋에서만 바꾼다
+TEAM_FACTS = {
+    "Q042": "인피니티 워: 비전을 지키다 마인드 스톤을 직접 파괴함 / 엔드게임: 스냅에서 돌아와 최종 전투에서 타노스와 싸움"
+    " / 능력: 하이드라의 마인드 스톤 실험으로 깨어나거나 커짐",
+    "Q058": "금서를 몰래 익혀 아이 오브 아가모토로 시간을 조작함 / 시간 고리로 도르마무를 물러가게 함"
+    " / 인피니티 워에서 미래를 확인하고 토니를 살리려 타노스에게 타임 스톤을 넘김",
+}
+
 # 함정 · 일반화 문항의 '전제 오류' (원래 값이 없는 것만)
 PREMISE = {
     "bae-A10": "닥터 스트레인지가 모든 미래를 볼 수 있다는 것은 일반화다. 인피니티 워에서는 14,000,605개의 가능한 미래를 살펴봤다.",
@@ -1068,6 +1081,19 @@ def apply_fills(rows: list[dict], dc: DataCorpus) -> None:
         r["검토 메모"] = "; ".join(
             x for x in (r.get("검토 메모"), "공식 후보로 빈 칸을 손으로 채움(검토 필요)") if x
         )
+    for qid, facts in TEAM_FACTS.items():
+        r = by_id.get(qid)
+        if r:
+            before = r["채점 핵심 사실"]
+            r["채점 핵심 사실"] = facts
+            r["검토 메모"] = "; ".join(
+                x
+                for x in (
+                    r.get("검토 메모"),
+                    f"핵심 사실을 빠지면 틀린 답인 것만으로 줄임 (원래: {before})",
+                )
+                if x
+            )
     for qid, text in PREMISE.items():
         if qid in by_id and not by_id[qid].get("전제 오류"):
             by_id[qid]["전제 오류"] = text

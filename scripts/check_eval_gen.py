@@ -68,6 +68,14 @@ def ws(s: str) -> str:
     return re.sub(r"\s+", " ", s or "").strip()
 
 
+def section_text(s: dict) -> str:
+    """절 본문 + 에피소드 요약. 시리즈 · 시즌 문서의 'Episodes' 절은 text 가 비어 있고
+    회차 요약이 episode_entries[].summary 에만 있다 (최종 색인은 이것을 줄거리 청크로 만든다)."""
+    parts = [s.get("text") or ""]
+    parts += [e.get("summary") or "" for e in s.get("episode_entries") or []]
+    return "\n".join(p for p in parts if p)
+
+
 # ---------------------------------------------------------------- 코퍼스
 
 
@@ -79,7 +87,7 @@ class Corpus:
         self.sections = {
             (s["doc_id"], s["section_index"]): s for s in read_jsonl(DATA / "sections.jsonl")
         }
-        self.sec_ws = {k: ws(s["text"]) for k, s in self.sections.items()}
+        self.sec_ws = {k: ws(section_text(s)) for k, s in self.sections.items()}
         self.works = {w["work_id"]: w for w in read_jsonl(DATA / "works.jsonl")}
 
     def title(self, doc_id: str) -> str:
@@ -209,8 +217,11 @@ def render_text(r: dict, corpus: Corpus) -> None:
         else:
             d = corpus.docs[e["doc_id"]]
             sec = corpus.sections[(e["doc_id"], e["section_index"])]
+            # 팀 question_set.jsonl 과 같게 팀 문서 ID(doc_…)를 쓴다. 팀 평가 코드(src/evals/items.py)는
+            # 이 글에서 doc_… 만 읽는다. 데이터셋 ID(wp-… · tt…-wikipedia)는 구조화된 '근거' 칸에 있다
+            shown = e.get("team_doc_id") or corpus.team_doc_id(e["doc_id"]) or e["doc_id"]
             refs.append(
-                f"[{i}] {corpus.title(e['doc_id'])}\n{e['doc_id']} / 섹션 {e['section_index']}: "
+                f"[{i}] {corpus.title(e['doc_id'])}\n{shown} / 섹션 {e['section_index']}: "
                 f"{' > '.join(sec['section_path'])}\nrevision {d.get('revid')}\n{d.get('source_url')}"
             )
         exs.append(f"[{i}] {e.get('발췌', '')}")

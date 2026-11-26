@@ -82,6 +82,39 @@ def test_every_row_has_question_facts_and_evidence(split: str) -> None:
             assert r["전제 오류"], r["query_id"]
 
 
+@pytest.mark.parametrize("split", ["dev", "test"])
+def test_key_facts_at_most_four(split: str) -> None:
+    """정답 충족은 핵심 사실을 모두 맞혀야 1 이다. 사실이 많으면 맞는 답도 거의 오답이 된다"""
+    for r in load(split):
+        facts = [f for f in r["채점 핵심 사실"].split("/") if f.strip()]
+        assert len(facts) <= 4, (r["query_id"], len(facts))
+
+
+# 팀 평가 코드(src/evals/items.py)가 평가셋 글 칸을 읽는 규칙. 이 규칙으로 근거가 다 읽혀야
+# 정답 청크(gold_chunk_ids)가 붙는다. 팀 문서 ID(doc_…)만 읽으므로 데이터셋 ID 를 쓰면 근거 0개가 된다
+TEAM_EVIDENCE = re.compile(r"\[(\d+)\] .+?\n(doc_[0-9a-f]+) / 섹션 (\d+): .+?\nrevision (\d+)")
+TEAM_EXCERPT = re.compile(r"\[(\d+)\] (.+?)(?=\n\n\[\d+\] |\Z)", re.DOTALL)
+
+
+@pytest.mark.parametrize("split", ["dev", "test"])
+def test_evidence_text_readable_by_team_eval_code(split: str) -> None:
+    for r in load(split):
+        if not r["answerable"]:
+            continue
+        found = TEAM_EVIDENCE.findall(r["근거 문서·절·리비전"])
+        excerpts = dict(TEAM_EXCERPT.findall(r["원문 근거 발췌"]))
+        assert len(found) == len(r["근거"]), r["query_id"]
+        for (n, doc, section, _), e in zip(found, r["근거"], strict=True):
+            assert (doc, int(section)) == (e["team_doc_id"], e["section_index"]), r["query_id"]
+            assert excerpts.get(n), r["query_id"]
+
+
+def section_text(s: dict) -> str:
+    """절 본문 + 회차 요약 ('Episodes' 절은 text 가 비고 episode_entries[].summary 에 요약이 있다)"""
+    parts = [s.get("text") or ""] + [e.get("summary") or "" for e in s.get("episode_entries") or []]
+    return "\n".join(p for p in parts if p)
+
+
 @pytest.mark.skipif(not SECTIONS.exists(), reason="공통 데이터셋(data/)이 없음")
 def test_excerpts_exist_in_sections() -> None:
     def ws(s: str) -> str:
@@ -91,7 +124,7 @@ def test_excerpts_exist_in_sections() -> None:
     with SECTIONS.open(encoding="utf-8") as f:
         for line in f:
             s = json.loads(line)
-            texts[(s["doc_id"], s["section_index"])] = ws(s.get("text") or "")
+            texts[(s["doc_id"], s["section_index"])] = ws(section_text(s))
     for split in ("dev", "test"):
         for r in load(split):
             for e in r["근거"]:
