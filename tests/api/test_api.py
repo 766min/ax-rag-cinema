@@ -432,3 +432,51 @@ def test_answer_cache_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
     for k in "abc":
         cache.put(k, {"v": k})
     assert list(cache._store) == ["b", "c"]  # 가장 오래된 답부터 버린다
+
+
+VS = {
+    **POST,
+    "category": "vs",
+    "title": "아이언맨의 후계자는?",
+    "choice_a": "스파이더맨",
+    "choice_b": "샘 윌슨",
+}
+
+
+def test_board_vs_vote_and_change(db: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(board, "votes", RateLimit(100, 60, "too many"))
+    post = _post(**{k: v for k, v in VS.items() if k not in POST or VS[k] != POST[k]})
+    assert post["choice_a"] == "스파이더맨" and post["votes_a"] == 0
+    pid = post["id"]
+    first = client.post(f"/api/posts/{pid}/vote", json={"side": "a"}).json()["data"]
+    again = client.post(f"/api/posts/{pid}/vote", json={"side": "a"}).json()["data"]
+    assert first == again == {"votes_a": 1, "votes_b": 0, "my_vote": "a"}  # 같은 쪽 두 번은 한 표
+    changed = client.post(f"/api/posts/{pid}/vote", json={"side": "b"}).json()["data"]
+    assert changed == {"votes_a": 0, "votes_b": 1, "my_vote": "b"}  # 바꾸면 옮겨 간다
+    listed = client.get("/api/posts?category=vs").json()["data"]["items"][0]
+    assert listed["my_vote"] == "b" and listed["votes_b"] == 1
+    assert client.get(f"/api/posts/{pid}").json()["data"]["my_vote"] == "b"
+    assert client.post(f"/api/posts/{pid}/vote", json={"side": "c"}).status_code == 422
+
+
+def test_board_vs_rules(db: str) -> None:
+    assert (
+        client.post("/api/posts", json={**POST, "category": "vs"}).status_code == 422
+    )  # 선택지 없음
+    plain = _post(choice_a="버려짐", choice_b="버려짐")
+    assert plain["choice_a"] is None  # VS 가 아닌 글은 선택지를 버린다
+    r = client.post(f"/api/posts/{plain['id']}/vote", json={"side": "a"})
+    assert r.status_code == 400 and r.json()["code"] == "NOT_VS"
+
+
+def test_board_sorts_days_and_stats(db: str) -> None:
+    a = _post(title="댓글 많은 글")
+    _post(title="새 글")
+    client.post(
+        f"/api/posts/{a['id']}/comments", json={"body": "c", "nickname": "n", "password": "abcd"}
+    )
+    by_comments = client.get("/api/posts?sort=comments").json()["data"]["items"]
+    assert by_comments[0]["title"] == "댓글 많은 글"
+    assert len(client.get("/api/posts?days=7").json()["data"]["items"]) == 2
+    stats = client.get("/api/board/stats").json()["data"]
+    assert stats == {"today_posts": 2, "open_debates": 0, "week_participation": 3}

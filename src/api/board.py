@@ -1,4 +1,6 @@
-"""커뮤니티 게시판 (Cosmic Feed). 로그인 없이 닉네임 + 삭제용 비밀번호로 쓴다.
+"""커뮤니티 게시판 (멀티버스 아레나). 로그인 없이 닉네임 + 삭제용 비밀번호로 쓴다.
+
+VS 토론 글(category=vs)은 두 선택지에 한 사람(IP)당 한 표씩 던질 수 있고, 표는 바꿀 수 있다.
 
 표는 RAG 색인과 같은 Postgres 의 board 스키마에 둔다 (처음 요청 때 없으면 만든다).
 글은 화면에서 텍스트로만 보여 준다 (HTML 을 해석하지 않음).
@@ -18,7 +20,7 @@ from typing import Annotated, Any, Literal
 import psycopg
 from fastapi import APIRouter, Header, Query, Request, status
 from psycopg.rows import dict_row
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 from api.limits import RateLimit, client_ip
 from shared.core.exceptions import NotFoundException, SharedException
@@ -26,7 +28,8 @@ from shared.core.schemas import APIResponse
 
 router = APIRouter(tags=["board"])
 
-Category = Literal["lore", "post_credits", "watch_order", "theory", "free"]
+Category = Literal["vs", "lore", "post_credits", "watch_order", "theory", "free"]
+Side = Literal["a", "b"]
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 PAGE = 20
 
@@ -38,6 +41,11 @@ password_tries = RateLimit(
 )
 # 좋아요 중복 막기용 비밀값. 없으면 서버마다 임의 값 (고정 기본값이면 해시에서 IP 를 되찾을 수 있다)
 SECRET = os.getenv("BOARD_SECRET") or secrets.token_hex(32)
+votes = RateLimit(
+    int(os.getenv("BOARD_VOTES_PER_MINUTE", "30")),
+    60,
+    "투표를 너무 자주 했어요. 잠시 후 다시 해 주세요.",
+)
 writes = RateLimit(
     int(os.getenv("BOARD_WRITES_PER_MINUTE", "5")),
     60,
@@ -93,6 +101,17 @@ def _ddl(s: str) -> str:
     CREATE TABLE IF NOT EXISTS {s}.post_likes (
         post_id bigint NOT NULL REFERENCES {s}.posts(id) ON DELETE CASCADE,
         voter text NOT NULL,
+        PRIMARY KEY (post_id, voter)
+    );
+    ALTER TABLE {s}.posts ADD COLUMN IF NOT EXISTS choice_a text;
+    ALTER TABLE {s}.posts ADD COLUMN IF NOT EXISTS choice_b text;
+    ALTER TABLE {s}.posts ADD COLUMN IF NOT EXISTS votes_a integer NOT NULL DEFAULT 0;
+    ALTER TABLE {s}.posts ADD COLUMN IF NOT EXISTS votes_b integer NOT NULL DEFAULT 0;
+    CREATE TABLE IF NOT EXISTS {s}.post_votes (
+        post_id bigint NOT NULL REFERENCES {s}.posts(id) ON DELETE CASCADE,
+        voter text NOT NULL,
+        side char(1) NOT NULL CHECK (side IN ('a', 'b')),
+        voted_at timestamptz NOT NULL DEFAULT now(),
         PRIMARY KEY (post_id, voter)
     );
     """
@@ -155,12 +174,27 @@ class PostIn(BaseModel):
     nickname: Annotated[Text, StringConstraints(max_length=20)]
     password: str = Field(min_length=4, max_length=64)
     work_id: str | None = Field(None, max_length=40)
+    choice_a: Annotated[Text, StringConstraints(max_length=40)] | None = None
+    choice_b: Annotated[Text, StringConstraints(max_length=40)] | None = None
+
+    @model_validator(mode="after")
+    def _choices(self) -> "PostIn":
+        """VS 토론 글은 두 선택지가 꼭 있어야 하고, 다른 글은 선택지를 버린다."""
+        if self.category == "vs" and not (self.choice_a and self.choice_b):
+            raise ValueError("VS 토론 글은 선택지 두 개가 필요해요")
+        if self.category != "vs":
+            self.choice_a = self.choice_b = None
+        return self
 
 
 class CommentIn(BaseModel):
     body: Annotated[Text, StringConstraints(max_length=1000)]
     nickname: Annotated[Text, StringConstraints(max_length=20)]
     password: str = Field(min_length=4, max_length=64)
+
+
+class VoteIn(BaseModel):
+    side: Side
 
 
 class PasswordIn(BaseModel):
@@ -177,6 +211,11 @@ class PostOut(BaseModel):
     like_count: int
     comment_count: int
     created_at: datetime
+    choice_a: str | None = None
+    choice_b: str | None = None
+    votes_a: int = 0
+    votes_b: int = 0
+    my_vote: Side | None = Field(None, description="이 사람(IP)이 던진 표")
 
 
 class CommentOut(BaseModel):
@@ -202,7 +241,38 @@ class LikeOut(BaseModel):
     liked: bool = Field(description="이번 요청으로 새로 눌렸나 (이미 눌렀으면 false)")
 
 
-POST_COLS = "id, category, title, body, nickname, work_id, like_count, comment_count, created_at"
+POST_COLS = (
+    "id, category, title, body, nickname, work_id, like_count, comment_count, created_at, "
+    "choice_a, choice_b, votes_a, votes_b"
+)
+
+
+class VoteOut(BaseModel):
+    votes_a: int
+    votes_b: int
+    my_vote: Side
+
+
+class BoardStats(BaseModel):
+    today_posts: int = Field(description="오늘 올라온 글")
+    open_debates: int = Field(description="최근 7일 VS 토론 글")
+    week_participation: int = Field(description="최근 7일 글 · 댓글 · 투표 수")
+
+
+def _with_my_vote(s: str) -> str:
+    """POST_COLS + 이 사람의 표 (SQL 인자 맨 앞에 voter 를 넘긴다)."""
+    return (
+        f"{POST_COLS}, (SELECT v.side FROM {s}.post_votes v "
+        f"WHERE v.post_id = {s}.posts.id AND v.voter = %s) AS my_vote"
+    )
+
+
+ORDERS = {
+    "new": "id DESC",
+    "popular": "like_count DESC, comment_count DESC, id DESC",
+    "comments": "comment_count DESC, id DESC",
+    "votes": "votes_a + votes_b DESC, id DESC",
+}
 
 
 # ---------- 글 ----------
@@ -210,15 +280,20 @@ POST_COLS = "id, category, title, body, nickname, work_id, like_count, comment_c
 
 @router.get("/posts")
 def list_posts(
+    request: Request,
     category: Category | None = None,
-    sort: Literal["new", "popular"] = "new",
+    sort: Literal["new", "popular", "comments", "votes"] = "new",
     q: str = Query("", max_length=100),
+    days: int | None = Query(None, ge=1, le=30, description="최근 며칠 안의 글만"),
     page: int = Query(0, ge=0, le=500),
     limit: int = Query(PAGE, ge=1, le=50),
 ) -> APIResponse[PostPage]:
-    order = "like_count DESC, comment_count DESC, id DESC" if sort == "popular" else "id DESC"
+    order = ORDERS[sort]
     where: list[str] = ["NOT hidden"]
-    args: list[Any] = []
+    args: list[Any] = [_voter(request)]
+    if days:
+        where.append("created_at > now() - make_interval(days => %s)")
+        args.append(days)
     if category:
         where.append("category = %s")
         args.append(category)
@@ -228,7 +303,7 @@ def list_posts(
         args += [like, like]
     with _db() as (cur, s):
         cur.execute(
-            f"SELECT {POST_COLS} FROM {s}.posts WHERE {' AND '.join(where)} "
+            f"SELECT {_with_my_vote(s)} FROM {s}.posts WHERE {' AND '.join(where)} "
             f"ORDER BY {order} LIMIT %s OFFSET %s",
             [*args, limit + 1, page * limit],
         )
@@ -243,8 +318,9 @@ def create_post(body: PostIn, request: Request) -> APIResponse[PostOut]:
     writes.check(client_ip(request))
     with _db() as (cur, s):
         cur.execute(
-            f"INSERT INTO {s}.posts (category, title, body, nickname, password_hash, work_id) "
-            f"VALUES (%s, %s, %s, %s, %s, %s) RETURNING {POST_COLS}",
+            f"INSERT INTO {s}.posts "
+            "(category, title, body, nickname, password_hash, work_id, choice_a, choice_b) "
+            f"VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING {POST_COLS}",
             [
                 body.category,
                 body.title,
@@ -252,6 +328,8 @@ def create_post(body: PostIn, request: Request) -> APIResponse[PostOut]:
                 body.nickname,
                 hash_password(body.password),
                 body.work_id,
+                body.choice_a,
+                body.choice_b,
             ],
         )
         row = cur.fetchone()
@@ -260,9 +338,15 @@ def create_post(body: PostIn, request: Request) -> APIResponse[PostOut]:
 
 
 def _visible_post(
-    cur: psycopg.Cursor[dict[str, Any]], s: str, post_id: int, cols: str
+    cur: psycopg.Cursor[dict[str, Any]],
+    s: str,
+    post_id: int,
+    cols: str,
+    args: list[Any] | None = None,
 ) -> dict[str, Any]:
-    cur.execute(f"SELECT {cols} FROM {s}.posts WHERE id = %s AND NOT hidden", [post_id])
+    cur.execute(
+        f"SELECT {cols} FROM {s}.posts WHERE id = %s AND NOT hidden", [*(args or []), post_id]
+    )
     row = cur.fetchone()
     if row is None:
         raise NotFoundException("글을 찾을 수 없어요.")
@@ -270,9 +354,9 @@ def _visible_post(
 
 
 @router.get("/posts/{post_id}")
-def get_post(post_id: int) -> APIResponse[PostDetail]:
+def get_post(post_id: int, request: Request) -> APIResponse[PostDetail]:
     with _db() as (cur, s):
-        post = _visible_post(cur, s, post_id, POST_COLS)
+        post = _visible_post(cur, s, post_id, _with_my_vote(s), [_voter(request)])
         cur.execute(
             f"SELECT id, post_id, nickname, body, created_at FROM {s}.comments "
             "WHERE post_id = %s AND NOT hidden ORDER BY id",
@@ -312,6 +396,54 @@ def like_post(post_id: int, request: Request) -> APIResponse[LikeOut]:
         row = cur.fetchone()
     assert row is not None
     return APIResponse.ok(LikeOut(like_count=row["like_count"], liked=liked))
+
+
+@router.post("/posts/{post_id}/vote")
+def vote(post_id: int, body: VoteIn, request: Request) -> APIResponse[VoteOut]:
+    """VS 토론에 한 표. 이미 던졌으면 다른 쪽으로 바꾼다 (같은 쪽이면 그대로)."""
+    votes.check(client_ip(request))
+    voter = _voter(request)
+    with _db() as (cur, s):
+        post = _visible_post(cur, s, post_id, "category")
+        if post["category"] != "vs":
+            raise SharedException("VS 토론 글이 아니에요.", status_code=400, error_code="NOT_VS")
+        cur.execute(
+            f"INSERT INTO {s}.post_votes (post_id, voter, side) VALUES (%s, %s, %s) "
+            "ON CONFLICT (post_id, voter) DO UPDATE SET side = EXCLUDED.side, voted_at = now() "
+            f"WHERE {s}.post_votes.side <> EXCLUDED.side",
+            [post_id, voter, body.side],
+        )
+        # 표 수는 표 기록에서 다시 센다 (두 번 연달아 눌러도 한 표로만 남는다)
+        cur.execute(
+            f"UPDATE {s}.posts SET "
+            f"votes_a = (SELECT count(*) FROM {s}.post_votes WHERE post_id = %s AND side = 'a'), "
+            f"votes_b = (SELECT count(*) FROM {s}.post_votes WHERE post_id = %s AND side = 'b') "
+            "WHERE id = %s",
+            [post_id, post_id, post_id],
+        )
+        cur.execute(f"SELECT votes_a, votes_b FROM {s}.posts WHERE id = %s", [post_id])
+        row = cur.fetchone()
+    assert row is not None
+    return APIResponse.ok(VoteOut(**row, my_vote=body.side))
+
+
+@router.get("/board/stats")
+def board_stats() -> APIResponse[BoardStats]:
+    week = "now() - interval '7 days'"
+    with _db() as (cur, s):
+        cur.execute(
+            f"""SELECT
+              (SELECT count(*) FROM {s}.posts
+                 WHERE NOT hidden AND created_at >= date_trunc('day', now())) AS today_posts,
+              (SELECT count(*) FROM {s}.posts
+                 WHERE NOT hidden AND category = 'vs' AND created_at > {week}) AS open_debates,
+              (SELECT count(*) FROM {s}.posts WHERE created_at > {week})
+              + (SELECT count(*) FROM {s}.comments WHERE created_at > {week})
+              + (SELECT count(*) FROM {s}.post_votes WHERE voted_at > {week}) AS week_participation"""
+        )
+        row = cur.fetchone()
+    assert row is not None
+    return APIResponse.ok(BoardStats(**row))
 
 
 # ---------- 댓글 ----------
