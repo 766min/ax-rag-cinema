@@ -130,7 +130,7 @@ function Community() {
 
       {/* 배너: 경로 · 제목 · 설명 · 통계 · 분류를 유리 덩어리 하나에 */}
       <header className="frost absolute top-[150px] right-[120px] left-[120px] z-10 overflow-hidden rounded-[26px] px-10 pt-[34px]">
-        <div className="pointer-events-none absolute -top-[140px] -right-[60px] size-[560px] rounded-full bg-[radial-gradient(circle_at_35%_30%,rgb(184_164_246/0.55),rgb(111_178_255/0.25)_45%,transparent_70%)] opacity-70 blur-[2px] after:absolute after:inset-x-[-14%] after:inset-y-[38%] after:-rotate-[14deg] after:rounded-full after:border-[1.5px] after:border-white/28 after:content-['']" aria-hidden />
+        <div className="pointer-events-none absolute -top-[140px] -right-[60px] size-[560px] rounded-full bg-[radial-gradient(circle_at_35%_30%,rgb(184_164_246/0.55),rgb(111_178_255/0.25)_45%,transparent_70%)] opacity-70 blur-[2px] after:absolute after:inset-x-[-14%] after:inset-y-[38%] after:-rotate-[14deg] after:rounded-[50%] after:border-[1.5px] after:border-white/28 after:content-['']" aria-hidden />
         <nav className="relative flex items-center gap-2 text-[13px] text-low" aria-label="현재 위치">
           <Link href="/" className="flex items-center gap-1 hover:text-hi">
             <IconHome size={14} aria-hidden /> 홈

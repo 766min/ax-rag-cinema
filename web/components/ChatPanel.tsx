@@ -22,6 +22,7 @@ type Chat = {
   work: WorkContext;
   open: (work?: WorkContext) => void;
   close: () => void;
+  toggle: () => void;
   setWork: (work: WorkContext) => void;
   messages: Msg[];
   setMessages: React.Dispatch<React.SetStateAction<Msg[]>>;
@@ -33,6 +34,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setOpen] = useState(false);
   const [work, setWork] = useState<WorkContext>(null);
   const [messages, setMessages] = useState<Msg[]>([]); // 화면을 옮겨도 대화가 남는다 (새로고침하면 사라짐)
+
+  // 열리면 크롬의 제미나이처럼 오른쪽에 붙고 페이지가 옆으로 비켜 준다 (Stage 가 resize 를 받아 다시 맞춘다)
+  useEffect(() => {
+    document.documentElement.dataset.chat = isOpen ? "open" : "";
+    dispatchEvent(new Event("resize"));
+  }, [isOpen]);
   const value: Chat = {
     isOpen,
     work,
@@ -44,6 +51,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       setOpen(true);
     },
     close: () => setOpen(false),
+    toggle: () => setOpen((o) => !o),
   };
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }
@@ -78,21 +86,9 @@ export default function ChatPanel() {
     bottom.current?.scrollIntoView({ block: "end" }); // 요즘 브라우저는 Promise 를 돌려줘서 정리 함수로 넘기면 안 된다
   }, [messages, busy]);
   useEffect(() => {
+    // 옆 패널(페이지와 나란히)이라 포커스를 가두지 않는다. 패널 안에서 Esc 를 누르면 닫는다
     const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-      if (e.key !== "Tab" || !panel.current) return;
-      // 포커스 가두기: Tab 이 창 밖(뒤쪽 화면)으로 나가지 않고 창 안에서 돈다
-      const items = [...panel.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), textarea, input")];
-      const first = items[0];
-      const last = items.at(-1);
-      const inside = panel.current.contains(document.activeElement);
-      if (e.shiftKey && (document.activeElement === first || !inside)) {
-        e.preventDefault();
-        last?.focus();
-      } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
-        e.preventDefault();
-        first?.focus();
-      }
+      if (e.key === "Escape" && panel.current?.contains(document.activeElement)) close();
     };
     addEventListener("keydown", esc);
     return () => removeEventListener("keydown", esc);
@@ -117,15 +113,10 @@ export default function ChatPanel() {
   if (!isOpen) return null;
   return (
     <>
-      <div className="absolute inset-0 z-40 bg-[linear-gradient(90deg,rgb(7_7_11/0.05)_35%,rgb(7_7_11/0.7))] backdrop-blur-[4px] backdrop-brightness-[0.55]" onClick={close} />
-      <div className="glow z-40" style={{ left: 1240, top: 140, width: 520, height: 420, background: "#6a4fd6" }} />
-      <div className="glow z-40" style={{ left: 1500, top: 600, width: 460, height: 380, background: "#2f7fd8" }} />
       <aside
         ref={panel}
-        role="dialog"
-        aria-modal="true"
         aria-label="로어 AI 그루트"
-        className="frost absolute top-[28px] right-[48px] bottom-[28px] z-50 flex w-[600px] flex-col overflow-hidden rounded-[28px] bg-white/6 backdrop-blur-[26px] shadow-[inset_0_1px_0_rgb(255_255_255/0.16),0_40px_100px_rgb(0_0_0/0.6)]"
+        className="fixed top-0 right-0 bottom-0 z-50 flex w-[var(--chat-w)] flex-col overflow-hidden border-l border-white/10 bg-[radial-gradient(520px_420px_at_70%_8%,rgb(106_79_214/0.28),transparent_70%),radial-gradient(460px_380px_at_90%_80%,rgb(47_127_216/0.2),transparent_70%),#0b0d15] shadow-[-24px_0_60px_rgb(0_0_0/0.5)]"
       >
         <header className="flex items-center gap-4 px-[30px] pt-[26px] pb-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}

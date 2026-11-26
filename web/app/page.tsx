@@ -41,7 +41,7 @@ export default function Home() {
 
       {/* 지평선 행성: 중심 (1200, 1400). 코스믹 블루 바탕에 골드 · 딥 레드 띠, 왼쪽 위에서 빛을 받는다 */}
       <div
-        className="absolute top-[600px] left-[50px] z-[3] h-[1600px] w-[2300px] overflow-hidden rounded-full saturate-[0.85] shadow-[inset_0_3px_0_rgb(200_222_255/0.5),0_-10px_40px_rgb(80_150_220/0.22),0_-40px_120px_rgb(214_168_92/0.07)]"
+        className="absolute top-[600px] left-[50px] z-[3] h-[1600px] w-[2300px] overflow-hidden rounded-[50%] saturate-[0.85] shadow-[inset_0_3px_0_rgb(200_222_255/0.5),0_-10px_40px_rgb(80_150_220/0.22),0_-40px_120px_rgb(214_168_92/0.07)]"
         style={{
           background:
             "radial-gradient(ellipse 30% 7% at 30% 3%, rgb(70 140 210 / 0.42), transparent 70%), radial-gradient(ellipse 26% 6% at 52% 1.5%, rgb(70 165 190 / 0.28), transparent 70%), radial-gradient(ellipse 20% 5% at 70% 3.5%, rgb(214 168 92 / 0.3), transparent 70%), radial-gradient(ellipse 16% 4% at 42% 7%, rgb(150 40 40 / 0.22), transparent 70%), radial-gradient(ellipse at 38% 0%, #1d2746 0%, #10162b 16%, #0a0d18 36%, #06070c 66%)",
@@ -61,7 +61,7 @@ export default function Home() {
       <button
         type="button"
         onClick={() => chat.open()}
-        className="group absolute top-[263px] left-[1292px] z-[14] h-[420px] w-[216px] cursor-pointer before:absolute before:top-[calc(84.5%-8px)] before:right-[12%] before:left-[12%] before:-z-10 before:h-4 before:rounded-full before:bg-[radial-gradient(closest-side,rgb(0_0_0/0.75),transparent)] before:blur-[3px] before:content-[''] after:pointer-events-none after:absolute after:top-[calc(84.5%-3px)] after:-right-[6%] after:-left-[6%] after:h-1.5 after:rounded-full after:bg-[radial-gradient(closest-side,rgb(200_225_255/0.55),rgb(130_185_255/0.18)_60%,transparent)] after:blur-[2px] after:content-['']"
+        className="group absolute top-[263px] left-[1292px] z-[14] h-[420px] w-[216px] cursor-pointer before:absolute before:top-[calc(84.5%-8px)] before:right-[12%] before:left-[12%] before:-z-10 before:h-4 before:rounded-[50%] before:bg-[radial-gradient(closest-side,rgb(0_0_0/0.75),transparent)] before:blur-[3px] before:content-[''] after:pointer-events-none after:absolute after:top-[calc(84.5%-3px)] after:-right-[6%] after:-left-[6%] after:h-1.5 after:rounded-[50%] after:bg-[radial-gradient(closest-side,rgb(200_225_255/0.55),rgb(130_185_255/0.18)_60%,transparent)] after:blur-[2px] after:content-['']"
         data-depth="8"
         aria-label="로어 AI 그루트에게 물어보기"
       >

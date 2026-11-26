@@ -61,7 +61,7 @@ export default function Nav() {
             className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-dim"
           />
         </form>
-        <button type="button" onClick={() => chat.open()} aria-label="로어 AI 열기" className="icon-btn">
+        <button type="button" onClick={() => chat.toggle()} aria-label={chat.isOpen ? "로어 AI 닫기" : "로어 AI 열기"} aria-pressed={chat.isOpen} className="icon-btn aria-pressed:bg-white/12">
           <IconSparkles size={20} />
         </button>
       </div>

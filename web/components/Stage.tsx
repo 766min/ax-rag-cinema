@@ -10,7 +10,8 @@ export default function Stage({ children }: { children: React.ReactNode }) {
   const stars = useRef<HTMLCanvasElement>(null);
   const path = usePathname();
 
-  // 페이지마다 무대 높이가 달라서(홈 · 커뮤니티는 세로 스크롤) 페이지가 바뀌면 다시 맞춘다
+  // 페이지마다 무대 높이가 달라서(홈 · 커뮤니티는 세로 스크롤) 페이지가 바뀌면 다시 맞춘다.
+  // 챗봇을 열고 닫을 때도 ChatProvider 가 resize 를 보내 여기서 다시 맞춘다
   useEffect(() => {
     const fit = () => fitStage(path);
     fit();

@@ -31,12 +31,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             {children}
             <Nav />
           </Stage>
-          {/* 챗봇은 스크롤과 상관없이 화면에 붙어 있는 층 */}
-          <div className="overlay">
-            <div className="overlay-stage">
-              <ChatPanel />
-            </div>
-          </div>
+          {/* 챗봇은 오른쪽에 붙는 패널 (스크롤과 상관없이 화면 높이 그대로) */}
+          <ChatPanel />
         </ChatProvider>
       </body>
     </html>
