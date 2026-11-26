@@ -1,4 +1,4 @@
-"""Codex 가 만든 평가 문항을 검증하고 정답 청크를 붙인다 (평가셋 확장 4단계).
+"""Codex 가 만든 평가 문항을 검증한다 (평가셋 확장 4단계). 청킹 결과 없이 공통 데이터셋만 본다.
 
     uv run python scripts/check_eval_gen.py tmp/eval_gen_*.jsonl
     uv run python scripts/check_eval_gen.py tmp/eval_gen_plot.jsonl --out tmp/eval_gen_plot_passed.jsonl
@@ -11,14 +11,14 @@
           근거 doc_id · section_index 가 실제로 있음, section_path 일치
           발췌가 그 절 text 에 그대로 있음 (공백만 정리해서 비교) · works.jsonl 근거는 값이 일치
           query_id 중복 · 기존 문항과 거의 같은 질문 · variant_of 등 참조 문항이 없음
-    경고  발췌 길이 40~300자 밖 · 검색 색인 밖 절(team_section 없음) · 근거 문서 수와 난이도가 안 맞음
+    경고  발췌 길이 40~300자 밖 · 팀 섹션(team_section) 밖 절 · 근거 문서 수와 난이도가 안 맞음
           기존 문항과 비슷한 질문
 
 통과한 문항에는 아래를 채운다.
+    근거          표준 모양 {doc_id, team_doc_id, section_index, section_path, doc_type, team_section, 발췌}
     근거 문서·절·리비전 · 원문 근거 발췌   팀 question_set.jsonl 과 같은 글 형식
-    primary_gold   인용한 절에서 발췌를 담은 청크 (tmp/chunks_dryrun.jsonl)
-    gold           primary_gold + 다른 문서에서 같은 발췌를 담은 청크
     qid · question_ko · category            scripts/eval_retrieval.py 호환 칸
+정답 청크(gold · primary_gold)는 붙이지 않는다. 청킹마다 scripts/attach_chunks.py 로 붙인다.
 
 출력
     --out     (기본 tmp/eval_gen_passed.jsonl)  통과 문항 → build_eval_set.py --extra 로 합친다
@@ -44,9 +44,18 @@ LEVELS = ["초보", "중수", "고수", "함정"]
 TYPES = ["사실", "관계", "인과", "시간선", "비교·가치관", "추천", "근거 검증"]
 ANSWER_ONLY = {"추천", "비교·가치관"}
 METHODS = {"①", "②", "③", "④", "⑤"}
-REQUIRED = ["query_id", "question", "expected_answer", "answerable", "난이도", "채점 핵심 사실",
-            "근거위치", "질문유형", "eval_track", "근거"]
-PIECE_MIN = 25          # 발췌를 줄 단위로 나눠 청크에서 찾을 때 최소 길이
+REQUIRED = [
+    "query_id",
+    "question",
+    "expected_answer",
+    "answerable",
+    "난이도",
+    "채점 핵심 사실",
+    "근거위치",
+    "질문유형",
+    "eval_track",
+    "근거",
+]
 DUP_ERR, DUP_WARN = 0.6, 0.45
 
 
@@ -61,52 +70,42 @@ def ws(s: str) -> str:
 
 # ---------------------------------------------------------------- 코퍼스
 
+
 class Corpus:
+    """공통 데이터셋만 읽는다. 청킹 결과는 읽지 않는다 (청크는 attach_chunks.py 가 붙인다)."""
+
     def __init__(self):
         self.docs = {d["doc_id"]: d for d in read_jsonl(DATA / "documents.jsonl")}
-        self.sections = {(s["doc_id"], s["section_index"]): s for s in read_jsonl(DATA / "sections.jsonl")}
+        self.sections = {
+            (s["doc_id"], s["section_index"]): s for s in read_jsonl(DATA / "sections.jsonl")
+        }
         self.sec_ws = {k: ws(s["text"]) for k, s in self.sections.items()}
         self.works = {w["work_id"]: w for w in read_jsonl(DATA / "works.jsonl")}
-        self.chunks = read_jsonl(ROOT / "tmp" / "chunks_dryrun.jsonl")
-        for c in self.chunks:
-            c["_ws"] = ws(c["text"])
 
     def title(self, doc_id: str) -> str:
         url = self.docs[doc_id].get("source_ids", {}).get("article_url") or ""
         return unquote(url.rsplit("/", 1)[-1]).replace("_", " ") or doc_id
 
+    def team_doc_id(self, doc_id: str) -> str | None:
+        return (self.docs.get(doc_id) or {}).get("source_ids", {}).get("team_document_id")
 
-def excerpt_pieces(excerpt: str) -> list[str]:
-    """발췌가 문단 경계를 넘으면 청크 둘에 걸칠 수 있어 줄 단위로 나눈다."""
-    parts = [ws(p) for p in re.split(r"\n+", excerpt or "")]
-    parts = [p for p in parts if len(p) >= PIECE_MIN]
-    return parts or ([ws(excerpt)] if ws(excerpt) else [])
-
-
-def attach_gold(row: dict, corpus: Corpus) -> None:
-    """근거 발췌를 담은 청크를 찾아 primary_gold · gold 를 채운다. 근거 항목에 청크 목록도 남긴다."""
-    primary, gold = [], []
-    for e in row.get("근거") or []:
-        doc_id, idx = e.get("doc_id"), e.get("section_index")
-        sec = corpus.sections.get((doc_id, idx))
-        found = []
-        if sec and sec.get("team_section"):
-            for piece in excerpt_pieces(e.get("발췌", "")):
-                for c in corpus.chunks:
-                    if c["doc_id"] == doc_id and c["section"] == sec["team_section"] and piece in c["_ws"]:
-                        found.append(c["chunk_id"])
-        e["청크"] = sorted(set(found))
-        primary += e["청크"]
-        # 같은 문장이 다른 문서에도 실린 경우 (영화 줄거리 ↔ 인물 문서 등)
-        for piece in excerpt_pieces(e.get("발췌", "")):
-            if len(piece) < 40:
-                continue
-            gold += [c["chunk_id"] for c in corpus.chunks if piece in c["_ws"]]
-    row["primary_gold"] = list(dict.fromkeys(primary))
-    row["gold"] = list(dict.fromkeys(primary + gold))
+    def evidence(self, doc_id: str, section_index: int, excerpt: str) -> dict:
+        """근거 한 항목의 표준 모양. 본체에는 청크 ID 를 넣지 않는다."""
+        sec = self.sections[(doc_id, section_index)]
+        return {
+            "doc_id": doc_id,
+            "team_doc_id": self.team_doc_id(doc_id),
+            "section_index": section_index,
+            "section_path": " > ".join(sec["section_path"]),
+            "doc_type": self.docs[doc_id]["doc_type"],
+            "team_section": sec.get("team_section"),
+            "발췌": excerpt,
+            "발췌_확인": bool(ws(excerpt)) and ws(excerpt) in self.sec_ws[(doc_id, section_index)],
+        }
 
 
 # ---------------------------------------------------------------- 중복
+
 
 def norm_q(q: str) -> str:
     q = re.sub(r"\((스포|스포일러)\)", "", q or "")
@@ -114,12 +113,13 @@ def norm_q(q: str) -> str:
 
 
 def jaccard(a: str, b: str) -> float:
-    x = {a[i:i + 2] for i in range(len(a) - 1)}
-    y = {b[i:i + 2] for i in range(len(b) - 1)}
+    x = {a[i : i + 2] for i in range(len(a) - 1)}
+    y = {b[i : i + 2] for i in range(len(b) - 1)}
     return len(x & y) / len(x | y) if x and y else 0.0
 
 
 # ---------------------------------------------------------------- 문항 하나 검사
+
 
 def check_row(r: dict, corpus: Corpus) -> tuple[list[str], list[str]]:
     err, warn = [], []
@@ -149,8 +149,8 @@ def check_row(r: dict, corpus: Corpus) -> tuple[list[str], list[str]]:
     if r["난이도"] == "함정" and r.get("answerable", True):
         if not facts or not facts[0].startswith("전제 바로잡기"):
             err.append("함정 문항의 첫 핵심 사실이 '전제 바로잡기:' 로 시작하지 않음")
-        if not r.get("전제오류"):
-            warn.append("함정 문항에 전제오류 칸이 비어 있음")
+        if not r.get("전제 오류"):
+            warn.append("함정 문항에 전제 오류 칸이 비어 있음")
 
     docs_used = set()
     for i, e in enumerate(r.get("근거") or [], start=1):
@@ -161,7 +161,9 @@ def check_row(r: dict, corpus: Corpus) -> tuple[list[str], list[str]]:
             if not w:
                 err.append(f"{tag} works.jsonl 에 work_id 없음: {e.get('work_id')}")
             elif str(w.get(e.get("field"))) != str(ex).strip():
-                err.append(f"{tag} works.jsonl {e.get('work_id')}.{e.get('field')} = {w.get(e.get('field'))!r}, 발췌 {ex!r}")
+                err.append(
+                    f"{tag} works.jsonl {e.get('work_id')}.{e.get('field')} = {w.get(e.get('field'))!r}, 발췌 {ex!r}"
+                )
             docs_used.add(e.get("work_id"))
             continue
         doc_id, idx = e.get("doc_id"), e.get("section_index")
@@ -185,7 +187,9 @@ def check_row(r: dict, corpus: Corpus) -> tuple[list[str], list[str]]:
         if ex and not 40 <= len(ex) <= 300:
             warn.append(f"{tag} 발췌 길이 {len(ex)}자 (40~300 권장)")
         if not sec.get("team_section") and r["eval_track"] == "retrieval":
-            warn.append(f"{tag} 검색 색인 밖 절: {doc_id}#{idx} {path}")
+            warn.append(
+                f"{tag} 팀 섹션(plot/synopsis/intro) 밖 절: {doc_id}#{idx} {path} — 청킹에 따라 못 찾을 수 있음"
+            )
 
     if r["eval_track"] == "retrieval" and r.get("answerable", True) and not (r.get("근거") or []):
         err.append("retrieval 문항인데 근거가 없음")
@@ -205,8 +209,10 @@ def render_text(r: dict, corpus: Corpus) -> None:
         else:
             d = corpus.docs[e["doc_id"]]
             sec = corpus.sections[(e["doc_id"], e["section_index"])]
-            refs.append(f"[{i}] {corpus.title(e['doc_id'])}\n{e['doc_id']} / 섹션 {e['section_index']}: "
-                        f"{' > '.join(sec['section_path'])}\nrevision {d.get('revid')}\n{d.get('source_url')}")
+            refs.append(
+                f"[{i}] {corpus.title(e['doc_id'])}\n{e['doc_id']} / 섹션 {e['section_index']}: "
+                f"{' > '.join(sec['section_path'])}\nrevision {d.get('revid')}\n{d.get('source_url')}"
+            )
         exs.append(f"[{i}] {e.get('발췌', '')}")
     r["근거 문서·절·리비전"] = "\n\n".join(refs)
     r["원문 근거 발췌"] = "\n\n".join(exs)
@@ -214,20 +220,32 @@ def render_text(r: dict, corpus: Corpus) -> None:
 
 # ---------------------------------------------------------------- main
 
+
 def expand(patterns: list[str]) -> list[Path]:
     out = []
     for p in patterns:
         hits = glob.glob(p) if any(ch in p for ch in "*?[") else [p]
         out += [Path(h) for h in sorted(hits)]
     skip = {"eval_gen_passed.jsonl", "eval_gen_failed.jsonl"}
-    return [p for p in out if p.name not in skip and not p.name.endswith("_passed.jsonl")
-            and not p.name.endswith("_failed.jsonl")]
+    return [
+        p
+        for p in out
+        if p.name not in skip
+        and not p.name.endswith("_passed.jsonl")
+        and not p.name.endswith("_failed.jsonl")
+    ]
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("files", nargs="+", help="생성 파일 (glob 가능)")
-    ap.add_argument("--against", default=str(ROOT / "tmp" / "eval_merged.jsonl"), help="기존 문항 (중복·참조 확인)")
+    ap.add_argument(
+        "--against",
+        default=str(ROOT / "tmp" / "eval_merged.jsonl"),
+        help="기존 문항 (중복·참조 확인)",
+    )
     ap.add_argument("--out", default=str(ROOT / "tmp" / "eval_gen_passed.jsonl"))
     ap.add_argument("--failed", default=str(ROOT / "tmp" / "eval_gen_failed.jsonl"))
     args = ap.parse_args()
@@ -244,7 +262,9 @@ def main():
     existing = read_jsonl(Path(args.against)) if Path(args.against).exists() else []
     # 이미 --extra 로 합친 뒤 같은 생성 문항을 다시 검사하는 경우, 자기 자신과 겹친다고 보지 않는다
     current = {r.get("query_id") for r in rows}
-    existing = [r for r in existing if not (r.get("작성자") == "codex" and r["query_id"] in current)]
+    existing = [
+        r for r in existing if not (r.get("작성자") == "codex" and r["query_id"] in current)
+    ]
     known_ids = {r["query_id"] for r in existing}
     seen_q = [(norm_q(r["question"]), r["query_id"]) for r in existing if r.get("question")]
     all_ids = known_ids | {r.get("query_id") for r in rows}
@@ -268,7 +288,9 @@ def main():
             if best[0] >= DUP_ERR:
                 err.append(f"기존 문항 {best[1]} 과 거의 같은 질문 (유사도 {best[0]:.2f})")
             elif best[0] >= DUP_WARN:
-                warn.append(f"기존 문항 {best[1]} 과 비슷함 (유사도 {best[0]:.2f}) — 같은 사실인지 확인")
+                warn.append(
+                    f"기존 문항 {best[1]} 과 비슷함 (유사도 {best[0]:.2f}) — 같은 사실인지 확인"
+                )
 
         src = f"{r.pop('_file')}:{r.pop('_line')}"
         if err:
@@ -276,19 +298,37 @@ def main():
             continue
         if not r.get("variant_of") and r.get("question"):
             seen_q.append((norm_q(r["question"]), qid))
+        # 근거를 표준 모양으로 (청크 ID 는 넣지 않는다. 청크는 attach_chunks.py 가 청킹마다 붙인다)
+        r["근거"] = [
+            e
+            if e.get("doc_id") == "works.jsonl"
+            else corpus.evidence(e["doc_id"], e["section_index"], e.get("발췌", ""))
+            for e in r.get("근거") or []
+        ]
         render_text(r, corpus)
-        attach_gold(r, corpus)
-        if r["eval_track"] == "retrieval" and r.get("근거") and not r["primary_gold"]:
-            warn.append("발췌를 담은 청크를 못 찾음 (색인 밖 절이거나 청크 경계에 걸림) — 검색 지표에서 근거 없음으로 처리됨")
-        r.update({
-            "출처": src.split(":")[0], "원본_id": qid, "작성자": r.get("작성자") or "codex",
-            "분류방식": "생성", "검증경고": warn,
-            "근거확인": {"문서_찾음": True, "발췌_확인": True,
-                       "청킹대상_아닌_근거": [f"{e['doc_id']}#{e.get('section_index')}" for e in r.get("근거") or []
-                                         if e.get("doc_id") != "works.jsonl" and not e.get("청크")]},
-            "qid": qid, "question_ko": r["question"],
-            "category": "unanswerable" if not r.get("answerable", True) else r["근거위치"],
-        })
+        for k in ("gold", "primary_gold"):
+            r.pop(k, None)
+        r.update(
+            {
+                "출처": src.split(":")[0],
+                "원본_id": qid,
+                "작성자": r.get("작성자") or "codex",
+                "분류방식": "생성",
+                "검증경고": warn,
+                "근거확인": {
+                    "문서_찾음": True,
+                    "발췌_확인": True,
+                    "팀섹션_없는_근거": [
+                        f"{e['doc_id']}#{e['section_index']} {e['section_path']}"
+                        for e in r["근거"]
+                        if e.get("doc_id") != "works.jsonl" and not e["team_section"]
+                    ],
+                },
+                "qid": qid,
+                "question_ko": r["question"],
+                "category": "unanswerable" if not r.get("answerable", True) else r["근거위치"],
+            }
+        )
         r.setdefault("question_en", None)
         r.setdefault("variant_of", None)
         passed.append(r)
@@ -305,7 +345,9 @@ def main():
         print("\n탈락 이유")
         for k, v in reasons.most_common():
             print(f"  {v:3d}  {k}")
-    warns = Counter(re.sub(r"[:(].*|\d+자.*|\d+곳.*", "", w).strip() for r in passed for w in r["검증경고"])
+    warns = Counter(
+        re.sub(r"[:(].*|\d+자.*|\d+곳.*", "", w).strip() for r in passed for w in r["검증경고"]
+    )
     if warns:
         print("\n통과했지만 경고")
         for k, v in warns.most_common():
@@ -315,8 +357,7 @@ def main():
         print("\n통과 문항 칸별 (변형 제외)")
         for (loc, lv), v in sorted(cells.items()):
             print(f"  {loc} · {lv}: {v}")
-    no_gold = sum(1 for r in passed if r["eval_track"] == "retrieval" and r.get("근거") and not r["primary_gold"])
-    print(f"\nprimary_gold 를 못 붙인 retrieval 문항: {no_gold}")
+    print("\n청크 ID 는 붙이지 않았다. 채점할 청킹 결과로 scripts/attach_chunks.py 를 돌린다.")
 
 
 if __name__ == "__main__":

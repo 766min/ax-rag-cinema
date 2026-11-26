@@ -1,1 +1,341 @@
-[]
+[
+  {
+    "query_id": "Q001",
+    "question": "타임 스톤이 뭐야?",
+    "expected_answer": "타임 스톤은 시간을 관장하는 인피니티 스톤이다. 시간을 조작하고 가능한 미래를 볼 수 있게 하며, MCU에서는 아이 오브 아가모토 안에 보관되어 닥터 스트레인지 등이 사용한다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "시간을 관장하는 인피니티 스톤 / 시간 조작 / 아이 오브 아가모토",
+    "근거 문서·절·리비전": "[1] Features of the Marvel Cinematic Universe\ndoc_2bf22c03fce35efd / 섹션 23: Objects > Infinity Stones\nrevision 1386856486\nhttps://en.wikipedia.org/w/index.php?oldid=1386856486",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1] .I.E.L.D. to power weapons, and Project Pegasus to develop light-speed engines.\nThe Time Stone, originally housed in the Eye of Agamotto (based on the Marvel Comics object of the s…",
+    "근거위치": "세계관·사물",
+    "질문유형": "사실",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": true,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "wp-66902704",
+        "team_doc_id": "doc_2bf22c03fce35efd",
+        "section_index": 23,
+        "section_path": "Objects > Infinity Stones",
+        "발췌": ".I.E.L.D. to power weapons, and Project Pegasus to develop light-speed engines.\nThe Time Stone, originally housed in the Eye of Agamotto (based on the Marvel Comics object of the s"
+      }
+    ],
+    "split": "dev"
+  },
+  {
+    "query_id": "Q004",
+    "question": "와칸다가 어떤 나라야?",
+    "expected_answer": "와칸다는 MCU에 등장하는 아프리카의 가상 국가다. 비브라늄을 바탕으로 고도로 발전한 기술을 갖췄지만 오랫동안 외부에는 가난한 나라처럼 보이며 고립 정책을 유지했다. 블랙 팬서인 티찰라가 왕위를 이어받는 나라다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "아프리카의 가상 국가 / 비브라늄 기반 기술 / 고립 정책 / 블랙 팬서와 연결",
+    "근거 문서·절·리비전": "[1] Black Panther (film)\ndoc_d8c2e3f762be5839 / 섹션 1: Plot\nrevision 1387295112\nhttps://en.wikipedia.org/w/index.php?oldid=1387295112\n\n[2] Black Panther (film)\ndoc_d8c2e3f762be5839 / 섹션 0: (lead)\nrevision 1387295112\nhttps://en.wikipedia.org/w/index.php?oldid=1387295112",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1] ack Panther\". He unites all but the Jabari Tribe to form the nation of Wakanda. Over centuries, the Wakandans use vibranium to develop advanced technologies and isolate themselves …\n\n[2]  Forest Whitaker, and Andy Serkis. In the film, T'Challa is crowned king of the African nation Wakanda following his father's death, but he is soon challenged for the throne by Kil…",
+    "근거위치": "줄거리",
+    "질문유형": "사실",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": true,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "tt1825683-wikipedia",
+        "team_doc_id": "doc_d8c2e3f762be5839",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "ack Panther\". He unites all but the Jabari Tribe to form the nation of Wakanda. Over centuries, the Wakandans use vibranium to develop advanced technologies and isolate themselves"
+      },
+      {
+        "doc_id": "tt1825683-wikipedia",
+        "team_doc_id": "doc_d8c2e3f762be5839",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "Forest Whitaker, and Andy Serkis. In the film, T'Challa is crowned king of the African nation Wakanda following his father's death, but he is soon challenged for the throne by Kil"
+      }
+    ],
+    "split": "dev"
+  },
+  {
+    "query_id": "Q009",
+    "question": "윈터 솔져는 누구야? (스포)",
+    "expected_answer": "윈터 솔져는 스티브 로저스의 어린 시절 친구이자 전우인 제임스 뷰캐넌 ‘버키’ 반스다. 죽은 것으로 알려졌지만 살아남아 하이드라의 세뇌와 개조를 거쳐 금속 팔을 지닌 암살자로 이용됐다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "버키 반스 / 스티브의 친구·전우 / 하이드라 세뇌 / 금속 팔 암살자",
+    "근거 문서·절·리비전": "[1] Bucky Barnes (Marvel Cinematic Universe)\ndoc_efc514616c365ce6 / 섹션 0: (lead)\nrevision 1381864816\nhttps://en.wikipedia.org/w/index.php?oldid=1381864816",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1]  brainwashed and transformed into a super soldier with a metal arm known as the Winter Soldier. In their quest for world domination, Hydra uses a programmed Barnes as an assassin t…",
+    "근거위치": "인물",
+    "질문유형": "관계",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "wp-60774345",
+        "team_doc_id": "doc_efc514616c365ce6",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "brainwashed and transformed into a super soldier with a metal arm known as the Winter Soldier. In their quest for world domination, Hydra uses a programmed Barnes as an assassin t"
+      }
+    ],
+    "split": "dev"
+  },
+  {
+    "query_id": "Q015",
+    "question": "젠데이아는 마블에서 무슨 역이야?",
+    "expected_answer": "젠데이아는 MCU에서 미셸 존스-왓슨, 별명 MJ를 연기한다. 피터 파커의 학교 친구로 등장하며 이후 연인이 되는 인물이다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "미셸 존스-왓슨 / MJ / 피터 파커와의 관계",
+    "근거 문서·절·리비전": "[1] MJ (Marvel Cinematic Universe)\ndoc_ccc5e712e5555310 / 섹션 0: (lead)\nrevision 1384162972\nhttps://en.wikipedia.org/w/index.php?oldid=1384162972",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1] Michelle Jones-Watson, most commonly known as MJ, is a fictional character portrayed by Zendaya in the Marvel Cinematic Universe (MCU) film franchise, an original character within …",
+    "근거위치": "인물",
+    "질문유형": "사실",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "wp-61283242",
+        "team_doc_id": "doc_ccc5e712e5555310",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "Michelle Jones-Watson, most commonly known as MJ, is a fictional character portrayed by Zendaya in the Marvel Cinematic Universe (MCU) film franchise, an original character within"
+      }
+    ],
+    "split": "dev"
+  },
+  {
+    "query_id": "Q040",
+    "question": "토니 스타크가 에이지 오브 울트론에서 울트론을 만들게 된 계기는 뭐고, 그 영향이 시빌 워에서 어떻게 이어져? (스포)",
+    "expected_answer": "토니는 완다가 보여 준 어벤져스의 죽음이라는 환영으로 위협에 대한 두려움이 커진 상태에서, 지구를 지킬 울트론 방어 프로그램을 완성하려고 배너와 함께 로키의 홀 속 인공지능을 이용한다. 그러나 울트론이 인류를 위협하고 소코비아를 파괴한다. 《시빌 워》에서 토니는 그 책임 때문에 어벤져스를 국제적으로 감독하는 소코비아 협정을 지지하며, 스티브와의 대립으로 이어진다.",
+    "answerable": true,
+    "난이도": "중수",
+    "채점 핵심 사실": "완다의 환영·지구 방어 동기 / 울트론의 소코비아 파괴 / 토니의 책임감 / 협정 지지와 대립",
+    "근거 문서·절·리비전": "[1] Tony Stark (Marvel Cinematic Universe)\ndoc_20974a4d1dcc5053 / 섹션 7: Fictional character biography > Creating Ultron\nrevision 1383242265\nhttps://en.wikipedia.org/w/index.php?oldid=1383242265\n\n[2] Captain America: Civil War\ndoc_e9c57b23ae275e63 / 섹션 1: Plot\nrevision 1387380376\nhttps://en.wikipedia.org/w/index.php?oldid=1387380376",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1]  Wanda sneaks up behind him and uses her mind manipulation powers to give him a haunting vision: the death of all the Avengers except him. Stark awakens from the vision and retriev…\n\n[2]  UN panel to oversee and control the team. The Avengers are divided: Tony Stark supports oversight because of his role in Ultron's creation and Sokovia's devastation, while Rogers …",
+    "근거위치": "인물",
+    "질문유형": "인과",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 2,
+    "근거": [
+      {
+        "doc_id": "wp-54537218",
+        "team_doc_id": "doc_20974a4d1dcc5053",
+        "section_index": 7,
+        "section_path": "Fictional character biography > Creating Ultron",
+        "발췌": "Wanda sneaks up behind him and uses her mind manipulation powers to give him a haunting vision: the death of all the Avengers except him. Stark awakens from the vision and retriev"
+      },
+      {
+        "doc_id": "tt3498820-wikipedia",
+        "team_doc_id": "doc_e9c57b23ae275e63",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "UN panel to oversee and control the team. The Avengers are divided: Tony Stark supports oversight because of his role in Ultron's creation and Sokovia's devastation, while Rogers"
+      }
+    ],
+    "split": "dev"
+  },
+  {
+    "query_id": "Q056",
+    "question": "블랙 위도우의 사건은 시간상 어느 영화들 사이에 있어? (스포)",
+    "expected_answer": "《블랙 위도우》의 주요 사건은 2016년 《캡틴 아메리카: 시빌 워》 무렵부터 그 여파 속에서 진행되며, 《어벤져스: 인피니티 워》보다 앞선다. 나타샤가 협정 위반으로 도피하면서 레드룸과 맞서는 이야기다. 다만 도입부는 1995년이고, 쿠키영상은 나타샤의 죽음 이후이므로 영화의 모든 장면이 같은 시기에 있는 것은 아니다.",
+    "answerable": true,
+    "난이도": "중수",
+    "채점 핵심 사실": "본편은 시빌 워 무렵·직후 / 인피니티 워 이전 / 도입부와 쿠키영상 시점 예외",
+    "근거 문서·절·리비전": "[1] Black Widow (2021 film)\ndoc_aace00aa3edf5b08 / 섹션 0: (lead)\nrevision 1387378844\nhttps://en.wikipedia.org/w/index.php?oldid=1387378844\n\n[2] Black Widow (2021 film)\ndoc_aace00aa3edf5b08 / 섹션 1: Plot\nrevision 1387378844\nhttps://en.wikipedia.org/w/index.php?oldid=1387378844\n\n[3] Black Widow (2021 film)\ndoc_aace00aa3edf5b08 / 섹션 1: Plot\nrevision 1387378844\nhttps://en.wikipedia.org/w/index.php?oldid=1387378844",
+    "검토 메모": "개봉 순서가 아닌 극중 사건 순서. 자료 리드는 시빌 워 사건 중이라고 서술하므로 ‘시빌 워가 모두 끝난 뒤’로만 제한하지 않음.",
+    "원문 근거 발췌": "[1] ur, O-T Fagbenle, Olga Kurylenko, William Hurt, Ray Winstone, and Rachel Weisz. Mostly set during the events of Captain America: Civil War (2016), the film sees Romanoff on the run…\n\n[2] Budapest office, which apparently kills Dreykov and his young daughter Antonia.\nIn 2016, Romanoff is a fugitive for violating the Sokovia Accords. She escapes from U.S. Secretary o…\n\n[3] upplies Romanoff with a Quinjet to use in freeing the imprisoned Avengers.\nIn a post-credits scene set after Romanoff's death, Valentina Allegra de Fontaine visits Belova at Romano…",
+    "근거위치": "메타",
+    "질문유형": "시간선",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": true,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "tt3480822-wikipedia",
+        "team_doc_id": "doc_aace00aa3edf5b08",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "ur, O-T Fagbenle, Olga Kurylenko, William Hurt, Ray Winstone, and Rachel Weisz. Mostly set during the events of Captain America: Civil War (2016), the film sees Romanoff on the run"
+      },
+      {
+        "doc_id": "tt3480822-wikipedia",
+        "team_doc_id": "doc_aace00aa3edf5b08",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "Budapest office, which apparently kills Dreykov and his young daughter Antonia.\nIn 2016, Romanoff is a fugitive for violating the Sokovia Accords. She escapes from U.S. Secretary o"
+      },
+      {
+        "doc_id": "tt3480822-wikipedia",
+        "team_doc_id": "doc_aace00aa3edf5b08",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "upplies Romanoff with a Quinjet to use in freeing the imprisoned Avengers.\nIn a post-credits scene set after Romanoff's death, Valentina Allegra de Fontaine visits Belova at Romano"
+      }
+    ],
+    "split": "dev"
+  },
+  {
+    "query_id": "Q045",
+    "question": "네뷸라는 가디언즈, 인피니티 워, 엔드게임에서 가모라, 타노스와 각각 어떤 관계였어? (스포)",
+    "expected_answer": "《가디언즈 오브 갤럭시》에서 네뷸라와 가모라는 타노스가 길러 낸 의자매이자 경쟁자이며, 네뷸라는 가모라와 싸우고 로난 편에서 타노스에게도 등을 돌린다. 《인피니티 워》에서는 네뷸라가 타노스에게 고문당하고, 가모라는 그녀를 구하려 소울 스톤의 위치를 밝힌다. 탈출한 네뷸라는 타노스에 맞서며 가모라가 죽었음을 알아챈다. 《엔드게임》의 현재 네뷸라는 어벤져스 편이지만 2014년 네뷸라는 타노스에게 충성한다. 현재 네뷸라는 2014년 가모라를 설득해 타노스를 배신하게 하고, 자신을 막는 2014년 네뷸라를 죽인다. 이 가모라는 인피니티 워에서 죽은 가모라가 아니라 과거에서 온 인물이다.",
+    "answerable": true,
+    "난이도": "고수",
+    "채점 핵심 사실": "의자매 경쟁·타노스의 학대 / 고문과 가모라의 선택 / 현재·2014년 네뷸라 구분 / 2014년 가모라 구분",
+    "근거 문서·절·리비전": "[1] Nebula (Marvel Cinematic Universe)\ndoc_80d100e865e05e7b / 섹션 2: Fictional character biography > Early life\nrevision 1387058763\nhttps://en.wikipedia.org/w/index.php?oldid=1387058763\n\n[2] Nebula (Marvel Cinematic Universe)\ndoc_80d100e865e05e7b / 섹션 3: Fictional character biography > Pursuing Thanos and Gamora\nrevision 1387058763\nhttps://en.wikipedia.org/w/index.php?oldid=1387058763\n\n[3] Avengers: Infinity War\ndoc_c19334b35dac57b1 / 섹션 1: Plot\nrevision 1387088238\nhttps://en.wikipedia.org/w/index.php?oldid=1387088238\n\n[4] Avengers: Endgame\ndoc_f2eaedc7959e54ab / 섹션 1: Plot\nrevision 1387421029\nhttps://en.wikipedia.org/w/index.php?oldid=1387421029",
+    "검토 메모": "제공된 Wikipedia 수집 본문을 바탕으로 작성한 기준답안 초안. 표현 일치보다 핵심 사실 충족으로 채점.",
+    "원문 근거 발췌": "[1] orcibly adopted by Thanos. After he killed her family, she was raised alongside Gamora and trained to be a warrior. Thanos often forced them to fight and Gamora was always victorio…\n\n[2] betrayed Thanos, intending to destroy the planet Xandar and kill Thanos. Nebula sided with him against her father. However, she confronted Gamora, Peter Quill, Groot, and Drax the …\n\n[3] eality Stone. Thanos kidnaps Gamora, who discloses the Soul Stone's location to save Nebula from torture. On Vormir, the Stone's keeper, Red Skull, tells Thanos that he can only ac…\n\n[4] Thanos and his warship to the present, where he destroys the Avengers Compound. Present-day Nebula convinces 2014-Gamora to betray Thanos, but is unable to convince 2014-Nebula and…",
+    "근거위치": "인물",
+    "질문유형": "관계",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "team",
+    "전제 오류": null,
+    "경계 걸침": true,
+    "필요 문서 수": 3,
+    "근거": [
+      {
+        "doc_id": "wp-67063919",
+        "team_doc_id": "doc_80d100e865e05e7b",
+        "section_index": 2,
+        "section_path": "Fictional character biography > Early life",
+        "발췌": "orcibly adopted by Thanos. After he killed her family, she was raised alongside Gamora and trained to be a warrior. Thanos often forced them to fight and Gamora was always victorio"
+      },
+      {
+        "doc_id": "wp-67063919",
+        "team_doc_id": "doc_80d100e865e05e7b",
+        "section_index": 3,
+        "section_path": "Fictional character biography > Pursuing Thanos and Gamora",
+        "발췌": "betrayed Thanos, intending to destroy the planet Xandar and kill Thanos. Nebula sided with him against her father. However, she confronted Gamora, Peter Quill, Groot, and Drax the"
+      },
+      {
+        "doc_id": "tt4154756-wikipedia",
+        "team_doc_id": "doc_c19334b35dac57b1",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "eality Stone. Thanos kidnaps Gamora, who discloses the Soul Stone's location to save Nebula from torture. On Vormir, the Stone's keeper, Red Skull, tells Thanos that he can only ac"
+      },
+      {
+        "doc_id": "tt4154796-wikipedia",
+        "team_doc_id": "doc_f2eaedc7959e54ab",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "Thanos and his warship to the present, where he destroys the Avengers Compound. Present-day Nebula convinces 2014-Gamora to betray Thanos, but is unable to convince 2014-Nebula and"
+      }
+    ],
+    "split": "dev"
+  },
+  {
+    "query_id": "blind-q018",
+    "question": "클린트 바턴이 크리스마스 무렵 뉴욕에 머무는 동안 그의 동료가 되는 젊은 궁수는 누구인가요?",
+    "expected_answer": "케이트 비숍이다. 클린트 바턴은 크리스마스까지 가족에게 돌아가기 위해 케이트 비숍과 손잡고 과거의 적들과 맞선다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "케이트 비숍 / 클린트 바턴과 함께 활동 / 크리스마스까지 가족에게 돌아가려 함",
+    "근거 문서·절·리비전": "[1] Hawkeye (miniseries)\ntt10160804-wikipedia / 섹션 0: (lead)\nrevision 1387218496\nhttps://en.wikipedia.org/w/index.php?oldid=1387218496",
+    "검토 메모": "Hawkeye 시리즈와 에피소드의 Barton 동료가 Kate Bishop임을 밝히는 청크임. primary_gold? ???? ?? ??????? ?? ??? ???? ???.; 공식 후보로 빈 칸을 손으로 채움(검토 필요)",
+    "원문 근거 발췌": "[1] It sees Clint Barton as he partners with Kate Bishop to confront enemies from his past to be with his family in time for Christmas.",
+    "근거위치": "시놉시스",
+    "질문유형": "관계",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "ohmseok",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "tt10160804-wikipedia",
+        "team_doc_id": "doc_51162d8a468e5d22",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "It sees Clint Barton as he partners with Kate Bishop to confront enemies from his past to be with his family in time for Christmas."
+      }
+    ],
+    "split": "dev"
+  },
+  {
+    "query_id": "chunk-c025",
+    "question": "로키가 테서랙트를 가져간 뒤 TVA가 그에게 맡긴 임무는 무엇인가요?",
+    "expected_answer": "테서랙트를 훔친 로키는 TVA(시간 변동 관리국)로 끌려가, 위험한 또 다른 버전(변종)의 자신을 잡는 일을 돕게 된다.",
+    "answerable": true,
+    "난이도": "초보",
+    "채점 핵심 사실": "TVA 로 끌려감 / 테서랙트를 훔친 뒤 / 위험한 자신의 변종을 잡는 일을 도움",
+    "근거 문서·절·리비전": "[1] Loki season 1\ntt9140554-S1-wikipedia / 섹션 0: (lead)\nrevision 1387125569\nhttps://en.wikipedia.org/w/index.php?oldid=1387125569",
+    "검토 메모": "질문과 답은 source_chunk에서 직접 확인함. partial? ?? ?? ??? ?? ???.; 공식 후보로 빈 칸을 손으로 채움(검토 필요)",
+    "원문 근거 발췌": "[1] sees Loki brought to the mysterious Time Variance Authority (TVA) after stealing the Tesseract during the events of Avengers: Endgame (2019), and is forced to help catch a dangerous variant version of himself.",
+    "근거위치": "시놉시스",
+    "질문유형": "사실",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "ohmseok",
+    "전제 오류": null,
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "tt9140554-S1-wikipedia",
+        "team_doc_id": "doc_780c137ab3195fee",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "sees Loki brought to the mysterious Time Variance Authority (TVA) after stealing the Tesseract during the events of Avengers: Endgame (2019), and is forced to help catch a dangerous variant version of himself."
+      }
+    ],
+    "split": "dev"
+  },
+  {
+    "query_id": "minji-T003",
+    "question": "로키는 오딘의 친아들이지?",
+    "expected_answer": "아니다. 로키는 서리 거인 라우페이의 아들이고 오딘이 입양해 키웠다.",
+    "answerable": true,
+    "난이도": "함정",
+    "채점 핵심 사실": "전제 바로잡기: 친아들이 아니라 입양 / 본래 라우페이의 아들(로키 라우페이슨)",
+    "근거 문서·절·리비전": "[1] Loki (Marvel Cinematic Universe)\nwp-61651800 / 섹션 0: (lead)\nrevision 1386718975\nhttps://en.wikipedia.org/w/index.php?oldid=1386718975",
+    "검토 메모": "원본 trick_questions.jsonl 미확보 — 민지 md 1-6 표에서 복원. 전제 바로잡기를 따로 채점.; 공식 후보로 빈 칸을 손으로 채움(검토 필요)",
+    "원문 근거 발췌": "[1] Loki Laufeyson, later known through adoption as Loki Odinson",
+    "근거위치": "인물",
+    "질문유형": "근거 검증",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "minji",
+    "전제 오류": "로키가 오딘의 친아들이다",
+    "경계 걸침": false,
+    "필요 문서 수": 1,
+    "근거": [
+      {
+        "doc_id": "wp-61651800",
+        "team_doc_id": "doc_cd4d5daee8265e4e",
+        "section_index": 0,
+        "section_path": "(lead)",
+        "발췌": "Loki Laufeyson, later known through adoption as Loki Odinson"
+      }
+    ],
+    "split": "dev"
+  }
+]
