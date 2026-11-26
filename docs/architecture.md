@@ -1,7 +1,7 @@
 # architecture.md — Cineverse (랙랙무비)
 
-> 상태: **초안** (2026-11-24, 같은 날 웹 검색 흐름 §6 · Wikipedia 데이터셋 §4.1 · 증분 적재 §4.2 · 호출 기록 §9 추가). 무엇을 왜 만드는지는 `problem.md`, 이 문서는 **어떻게 만드는지**를 적는다.
-> 기준: 팀 저장소 `main` 의 `659fe8e` (공통 부품 병합 뒤) + 2026-11-23 데이터 구조 설계.
+> 상태: **초안** (2026-11-24, 같은 날 웹 검색 흐름 §6 · Wikipedia 데이터셋 §4.1 · 증분 적재 §4.2 · 호출 기록 §9 추가). **2026-11-25**: 본문 데이터가 공통 데이터셋(`cineverse-dataset-schema`, 영어 Wikipedia 문서 850개)으로 정해져 §1 · §2 · §3 · §4.1 · §8 · §11 · §12 를 맞췄다. 무엇을 왜 만드는지는 `problem.md`, 이 문서는 **어떻게 만드는지**를 적는다.
+> 기준: 팀 저장소 `main` 의 `659fe8e` (공통 부품 병합 뒤) + 2026-11-23 데이터 구조 설계. 데이터 모양은 2026-11-25 `dev` 의 `bcb0943` (`src/shared/core/models.py`) 기준.
 > 표시: ✅ 팀 저장소에 있음 · 🧪 실험 폴더에서 구현·테스트 끝남(아직 PR 전, 테스트 77개 통과) · ⬜ 예정.
 
 ---
@@ -13,8 +13,8 @@
 ```mermaid
 flowchart TB
   S1["IMDb 가공본<br/>공식 순서 문서 2개"] --> W["작품 표"]
-  S2["MCU 팬덤 위키 API"] --> P["원문 파싱"]
-  S3["Wikipedia 데이터셋<br/>영화 38편"] --> C
+  S2["MCU 팬덤 위키 API<br/>(보류)"] -.-> P["원문 파싱"]
+  S3["공통 데이터셋<br/>Wikipedia 문서 850개"] --> C
   W --> C["청크 · 카드 만들기"]
   P --> C
   C --> DB[("PostgreSQL + pgvector")]
@@ -24,21 +24,21 @@ flowchart TB
   R --> G["답변 생성 · 인용 검증"]
   G --> A(["한국어 답변 + 출처"])
 ```
-*그림 1. 위쪽이 색인 흐름(미리 한 번), 질문에서 시작하는 줄이 질의 흐름(질문마다)이다. 두 흐름은 DB 에서만 만난다.*
+*그림 1. 위쪽이 색인 흐름(미리 한 번), 질문에서 시작하는 줄이 질의 흐름(질문마다)이다. 두 흐름은 DB 에서만 만난다. 2026-11-25 기준으로 본문은 공통 데이터셋에서만 오고, 팬덤 위키 수집은 보류다 (§2).*
 
 ## 2. 데이터가 오는 곳
 
 | 출처 | 가져오는 것 | 방식 | 이용 조건 |
 |---|---|---|---|
-| IMDb 가공본 (132행) | 작품 ID(`tconst`) · TMDB ID · 한/영 제목 · 연도 · 유형 | 팀이 정제한 CSV | 재배포 불가 → 저장소에 올리지 않는다 (`data/local/`) |
+| IMDb 가공본 (132행) | 작품 ID(`tconst`) · TMDB ID · 한/영 제목 · 연도 · 유형 | 팀이 정제한 CSV. 공통 데이터셋의 작품 표가 이 목록에서 출발한다 | 재배포 불가 → 저장소에 올리지 않는다 (git 제외 폴더 `data/`) |
 | Marvel.com 「MCU Complete Timeline」 (2026-10-22) | 정식 작품 여부 · 타임라인 순번 (시즌 단위 81행) | 값만 옮긴 CSV | 값 · URL · 기준일만 저장 |
 | Disney+ 「Marvel Movies In Order」 (2026-11-04) | 페이즈 · 사가 · 영화 개봉 순번 (63행) | 값만 옮긴 CSV | 값 · URL · 기준일만 저장 |
-| MCU 팬덤 위키 | 본문(Synopsis · Plot) · 정보 상자(개봉일 · 앞뒤 작품) · 출연진 · 인물 소개 | MediaWiki API `action=parse` (HTML 을 긁지 않는다) | CC BY-SA, 문서마다 URL 과 판 번호 저장 |
-| 영어 Wikipedia | 영화 38편(페이즈 1~6)의 Plot 문단 · 정보 상자(감독 · 각본 · 상영 시간 · 흥행) · 문서 전체 절 | 팀이 만든 데이터셋 `cineverse-wiki/data/dataset` 을 읽어 들인다 (§4.1) | CC BY-SA 4.0 / GFDL, 문서마다 URL 과 판 번호 저장 |
+| **영어 Wikipedia — 공통 데이터셋** (본문의 원천, 2026-11-25) | 문서 850개(작품 · 시즌 · 에피소드 · 인물 · 세계관)의 절별 본문 · 정보 상자 · 링크와, 팀 모델로 짠 작품 표 · 문서 표 · 이름 사전 | 수집 담당이 MediaWiki API 로 판을 고정해 받은 묶음을 팀 모델에 맞춰 다시 짠 `cineverse-dataset-schema` 를 읽어 들인다 (§4.1) | CC BY-SA 4.0. 문서마다 URL · 판 번호 · 수집 시각. 전 레코드가 검토 전(`pending_review`) |
+| MCU 팬덤 위키 ⏸ | (받지 않음) — 본문(Synopsis · Plot) · 정보 상자 · 출연진 · 인물 소개를 받을 계획이었다 | 약관 확인 전이라 **보류**한다. 받게 되면 MediaWiki API `action=parse` 로 받는다 (HTML 을 긁지 않는다). 실험 폴더에 파서가 있다 (§4) | 받게 되면 CC BY-SA, 문서마다 URL 과 판 번호 저장 |
 | 팀의 한글화 작업 | 약칭 · 인물 한국어명 | `data/official/aliases_ko.csv` | — |
 | Brave Search API | 웹 검색 결과의 제목 · URL · 요약 스니펫 | 질문마다 호출 (§6) | **결과 저장에 약관 제한이 있다** — §6 의 "적재의 조건" |
 
-공식 제목과 IMDb ID, 위키 문서 제목을 잇는 대응표가 `data/official/title_map.csv` (86행)다. 정식 작품인지는 이 표에 올랐는지로 정한다.
+공식 제목과 IMDb ID, 위키 문서 제목을 잇는 대응표가 `title_map.csv` (86행)다. 정식 작품인지는 이 표에 올랐는지로 정한다. 공식 순서 문서 추출본 두 개와 이 대응표는 공통 데이터셋의 `extra/` 에 함께 들어 있다.
 
 ## 3. 데이터 구조
 
@@ -55,18 +55,24 @@ erDiagram
 
 | 표 | 한 행 | 주요 칸 |
 |---|---|---|
-| `works` | 작품 또는 시즌 (150행) | `work_id` · `wiki_page` · `title_ko` · `title_original` · `format` · `season` · `release_date` · `status` · `timeline_order` · `phase` · `saga` · `is_canon` (+ `canon_source` · `canon_asof`) · `prev` · `next` · `collect_wave` |
-| `documents` | 수집한 문서 (팬덤 위키 · Wikipedia · 웹 검색 결과) | `doc_id` · `work_id` · **`source_id`** · `source_url` · `license` · `revid` · `fetched_at` · `doc_type` |
-| `chunks` | 검색 단위 | `chunk_id` · `doc_id` · `work_id` · `section` · `position` / `total` · `text` · `entities` · `flags` · `header` · **`content_hash`** |
+| `works` | 작품 또는 시즌 (159행) | `work_id` · `title_ko` · `title_original` · `format` · `year` · `season` · `parent_work_id` · `phase` · `timeline_order` · `is_canon` · `source_ids` |
+| `documents` | 수집한 문서 (Wikipedia · 웹 검색 결과 · 팬덤 위키) | `doc_id` · `work_id` · **`source_id`** · `source_url` · `license` · `revid` · `fetched_at` · `doc_type` · `source_ids` |
+| `chunks` | 검색 단위 | `chunk_id` · `doc_id` · `work_id` · `source_id` · `section` · `position` / `total` · `text` · `header` · `title_ko` · `title_original` · `source_url` · `revid` · `entities` · `flags` · **`content_hash`** · `source_ids` |
 | `characters` | 인물 | `char_id` · `real_name` · `hero_names` · `name_ko` · `actors` (배우별 출연 작품) |
-| `aliases` | 한국어 이름 한 개 | `alias_ko` · `canonical_en` · `kind` (work / character) · `target_id` |
+| `aliases` | 한국어 이름 한 개 | `alias_ko` · `canonical_en` · `kind` (work / character / item) · `target_id` |
+
+표의 칸은 `src/shared/core/models.py` 의 `Work` · `Document` · `Chunk` · `Alias` 와 같다 (2026-11-25 에 코드에 맞춤). 처음 설계에 있던 `works` 의 `wiki_page` · `release_date` · `status` · `saga` · `canon_source` · `canon_asof` · `prev` · `next` · `collect_wave` 는 모델에 칸이 없어서, 공통 데이터셋의 **`extra/works_meta.jsonl`** 에 `work_id` 로 이어 둔다. `characters` 는 아직 모델이 없고 수집된 인물 633행이 `extra/characters.jsonl` 에 있다.
+
+**원본 ID 칸 `source_ids`** (2026-11-25, PR #14) — 수집 데이터셋의 원래 번호를 문자열로 남긴다. 작품은 `imdb_tconst` · `team_content_id`(`cnt_…`) · `wikipedia_document_id`(`doc_…`), 문서는 `team_document_id`(`doc_…`) · `team_content_id` · `pageid` · `wikidata_qid` · `article_url`. 평가셋의 근거가 원본 `doc_…` 번호와 절 번호로 적혀 있어서, 이 칸으로 새 `doc_id` 를 찾는다 (§8). `content_hash` 의 재료는 아니다.
 
 **출처 칸 `source_id`** (2026-11-24 추가) — 문서가 어디서 왔는지를 `fandom` · `wikipedia_en` · `brave` 로 적는다. 같은 영화의 문서가 출처별로 따로 있으므로(팬덤 위키 1 + Wikipedia 1) `doc_type` 은 문서의 종류(`film` · `season` …)만 맡고, 출처는 이 칸이 맡는다. 청크 메타데이터에도 같은 값을 넣어 한 출처만 골라 검색할 수 있게 한다.
 
 **ID 규칙**
-- 영화: `tt4154796`. 타임라인이 시즌별로 적은 시리즈: `tt9140554-S1`. 한 줄로 적은 시리즈(〈완다비전〉 등): `tconst` 그대로. 에피소드 문서: `tt9140554-S1E01`. 인물 문서: `char-Iron_Man`.
-- 청크: `{doc_id}-{section}-p{두 자리}` — 예 `tt4154796-plot-p07`. 이 값이 답변의 인용이자 평가 정답 키다.
-- Wikipedia 문서는 `{work_id}-wikipedia`, 그 청크는 `tt0371746-wikipedia-plot-p01`. 팬덤 위키 쪽 ID(`tt0371746-plot-p01`)와 겹치지 않는다.
+- 영화: `tt4154796`. 타임라인이 시즌별로 적은 시리즈: 시즌마다 `tt9140554-S1`, `parent_work_id` 는 `tt9140554`. 한 줄로 적은 시리즈(〈완다비전〉 등): `tconst` 그대로.
+- 청크: `{doc_id}-{section}-p{두 자리}` — 예 `tt4154796-wikipedia-plot-p07`. 이 값이 답변의 인용이자 평가 정답 키다.
+- Wikipedia 문서는 `{work_id}-wikipedia`, 그 청크는 `tt0371746-wikipedia-plot-p01`. 팬덤 위키 쪽 ID(`tt0371746-plot-p01`)와 겹치지 않는다. **문서 전체가 그 작품(또는 시즌)을 다룰 때만** 이 ID 를 쓴다 — 공통 데이터셋에서 103개.
+- **작품이 없는 Wikipedia 문서**(인물 · 세계관 · 에피소드 · 작품 표에 없는 작품)는 `wp-{pageid}` 를 쓰고 `work_id` 를 비운다 — 공통 데이터셋에서 747개. 작품이 있는 문서에 `wp-` 를 쓰면 같은 글이 두 ID 로 갈리므로 모델이 막는다 (PR #14).
+- 출처마다 문서 ID 의 모양이 정해져 있고(`check_doc_id`), `Document` 와 `Chunk` 를 만들 때 어긋나면 바로 오류가 난다. 처음 설계의 에피소드 ID(`tt9140554-S1E01`)와 인물 ID(`char-Iron_Man`)는 모델에 규칙이 없어 쓰지 않는다 — 둘 다 `wp-{pageid}` 다.
 - 작품 카드 `{work_id}-card`, 연결 카드 `{work_id}-connection`. 두 카드는 `documents` 행이 없으므로 **외래 키를 걸지 않는다.**
 - 웹 검색 결과: 문서 `web-{URL 해시 12자}`, 청크 `web-{URL 해시 12자}-web-p01`. 같은 URL 은 같은 ID 가 되어 다시 받으면 덮어쓴다.
 
@@ -77,15 +83,20 @@ erDiagram
 | `synopsis` | 스포일러 없는 짧은 소개 | 절 전체를 한 청크로 |
 | `plot` | 줄거리 문단 (팬덤 위키 · Wikipedia 각각) | 위키 문단 하나가 한 청크. 150자 미만은 이웃 문단과 합친다. 마지막 본편 문단에 `post_credit`, 다른 판본 소절에 `alt_cut` 표시 |
 | `intro` | 인물 소개 문단 | 두 편 이상 나온 인물만 |
+| `biography` | 인물 서사 문단 (Wikipedia 인물 문서의 작중 행적 절) | 위키 문단 하나가 한 청크. 150자 미만은 이웃 문단과 합친다 (2026-11-25 추가, PR #16) |
+| `lore` | 세계관 문서의 본문 (아이템 · 조직 · 타임라인 · 멀티버스) | 위키 문단 하나가 한 청크. 작품이 없는 문서라 `doc_id` 는 `wp-{pageid}` (2026-11-25 추가, PR #16) |
 | `connection` | 연결 카드 | 개봉 앞뒤 작품 · 타임라인 앞뒤 작품 · 선행작 후보. 줄마다 출처를 괄호로 붙인다 |
 | `card` | 작품 카드 한 줄 | **모든** 작품. 제목 · 연도 · 형식 · 정식 여부와 근거 · 개봉 여부 |
 | `web` | 웹 검색 결과의 요약 스니펫 | 결과 하나가 한 청크. 항상 `unverified` 표시 (§6) |
 
 청크마다 머리말 `[Avengers: Endgame · 2019 film · Phase 3 · timeline #44]` 이 붙고, 임베딩과 BM25 는 `머리말 + 본문` 을 본다. `text` 칸에는 머리말을 넣지 않는다 — 인용으로 보이는 글자는 원문 그대로여야 한다.
 
+**데이터셋의 절과 청크 종류** (2026-11-25) — 공통 데이터셋의 본문은 절 단위(`sections.jsonl`)이고, 절마다 위 값 중 무엇에 해당하는지를 `team_section` 칸에 적어 두었다: 작품 문서의 첫머리 → `synopsis` (449) · Plot · Premise 절 → `plot` (394) · 인물 문서의 첫머리 → `intro` (76). 나머지 11,557개 절은 이 칸이 비어 있다. 데이터셋을 만든 뒤에 `biography` · `lore` 가 `Section` 에 들어왔기 때문에(PR #16), **이 두 종류는 `team_section` 이 아니라 절의 제목과 문서로 고른다** — 인물 문서에서 첫 단계 제목에 biography 가 드는 절 → `biography`, 세계관 문서(작품 속 설정을 다루는 문서)의 본문 절 → `lore`. 평가셋 근거 55건 중 11건(20문항 중 9문항)이 이 두 종류에 있다. 그 밖의 절(작품 문서의 출연진 · 제작 · 평가 등)은 색인하지 않는다.
+
 **색인 규칙**
-- 본문 청크(`synopsis` · `plot` · `intro` · `connection`)는 `is_canon` 이고 `status = released` 이고 `collect_wave = "1"` 인 작품만 넣는다 (71편). 작품 카드는 150행 전부 넣는다. 그래서 정식이 아닌 작품이나 미개봉작을 물으면 카드가 검색된다.
-- Wikipedia 의 Plot 청크도 같은 조건으로 넣는다. 지금 데이터셋으로는 영화 37편이 해당한다 (§4.1).
+- 본문 청크(`synopsis` · `plot` · `intro` · `connection`)는 `is_canon` 이고 `status = released` 이고 `collect_wave = "1"` 인 작품만 넣는다 (71편). 작품 카드는 작품 표의 모든 행에 넣는다. 그래서 정식이 아닌 작품이나 미개봉작을 물으면 카드가 검색된다.
+- **공통 데이터셋에서의 수** (2026-11-25) — 작품 표는 159행이다: 작품 129 + 시즌 21 (처음 설계의 150행) + 시즌 행을 가진 시리즈의 전체 행 9. 위 조건에 드는 행은 시리즈 전체 행을 빼고 71행으로 계획과 같고, 그중 **64행에 Wikipedia 문서가 있다.** 없는 7행은 원샷 3편 · 〈팀 토르 2〉 · 〈팀 대릴〉 · 〈아이 엠 그루트〉 시즌 1 · 2 다. `status` 와 `collect_wave` 는 `extra/works_meta.jsonl` 에서 읽는다.
+- 인물 · 세계관 문서는 작품에 묶이지 않으므로 `extra/documents_meta.jsonl` 의 `scope_status = "mcu"` 로 고른다 (인물 문서 76개 중 63개).
 - 위 청크는 **고정 문서 컬렉션**(`MOVIE_COLLECTION`)에 들어간다. 웹 청크는 구조는 같지만 **웹 컬렉션**(`WEB_COLLECTION`)에 따로 들어간다 (§6).
 
 ## 4. 색인 흐름
@@ -107,8 +118,11 @@ flowchart TB
 ```
 *그림 3. 작품 표가 먼저 서고, 위키 원문이 그 표를 채운 뒤에 청크와 카드가 나온다.*
 
+> **2026-11-25** — 작품 표 · 문서 표 · 본문은 공통 데이터셋에 이미 만들어져 있다 (§4.1). 그림의 `build_works` 는 그 묶음을 만들 때 쓴 규칙이고, `fetch_page` · `parse_infobox` 는 팬덤 위키를 받게 될 때 쓴다. 지금 각자 하는 일은 `sections.jsonl` 의 절을 잘라 `Chunk` 를 만드는 것(`make_chunks`)부터다.
+
 | 단계 | 모듈 | 상태 |
 |---|---|---|
+| 작품 표 · 문서 표 · 본문 (공통 데이터셋) | `data/cineverse-dataset-schema/` — 팀 모델 검사 `validate.py` 포함 (§4.1) | ✅ 공유 (git 밖) |
 | 작품 표 | `src/build/works.py` | 🧪 |
 | 위키 수집 · 파싱 | `src/collect/wiki.py` · `src/collect/wikitext.py` | 🧪 |
 | 청크 · 작품 카드 · 문서 행 | `src/build/chunks.py` | 🧪 |
@@ -122,55 +136,64 @@ flowchart TB
 - 위키 제목이 동음이의 문서나 넘겨주기 문서로 가면(`is_disambiguation` · `redirected_from`) 줄거리로 저장하지 않고 수집 보고서에 "확인 필요"로 남긴다.
 - 인물은 위키 링크가 가리키는 문서 제목으로 묶인다. 같은 인물이 두 이름으로 갈릴 수 있으므로(Ant-Man / Scott Lang) 수집할 때 넘겨주기 정보로 합친다.
 
-### 4.1 Wikipedia 데이터셋 들여오기 (2026-11-24 추가)
+### 4.1 공통 데이터셋 들여오기 (2026-11-25)
 
-IMDb 가공본 · 공식 순서 문서 · 팬덤 위키에 더해 **영어 Wikipedia 를 네 번째 원천**으로 쓴다. 팬덤 위키처럼 API 를 직접 부르지 않고, 팀이 만들어 둔 데이터셋(`cineverse-wiki/data/dataset`)을 읽어 들인다.
+본문의 원천은 **영어 Wikipedia** 다. 수집 담당이 MediaWiki API 로 판을 고정해 받은 묶음(문서 850개)을 **팀 모델에 맞춰 다시 짠 것**이 공통 데이터셋 `cineverse-dataset-schema` 이고, 팀원 모두 이 묶음에서 청킹을 시작한다. git 에 올리지 않고 `data/` 아래에 풀어 쓴다.
 
-**데이터셋의 층**
+**파일**
 
-| 층 | 위치 | 내용 | 규모 |
-|---|---|---|---|
-| 팀 양식 층 | `documents/` · `chunks/` | 영화 38편의 Plot 을 `Document` + `Chunk` 양식으로 만든 것 | 문서 38 · 청크 309 |
-| 영화 상세 층 (v1) | `versions/v1/` (`team_import/` 와 같은 파일) | 문서 전체 절 · 정보 상자 · IMDb ↔ Wikipedia 대응 · 줄거리 원문 · 인물 · 인물–작품 링크 · 인물 서사 | 문서 38 · 줄거리 39 · 대응 38 · 인물 52 · 링크 391 · 서사 37 |
-| 전체 확장 층 (v2) | `versions/v2/` | 영화 44 · 시리즈 43 · 시즌 33 · 에피소드 191 · 단편 7 · 스페셜 3 과 인물 · 세계관 문서 | 작품 333 · 문서 438 · 줄거리 874 · 인물 633 · 링크 2,000 |
-| 작업용 표 | `official/` | 제목 대응 · 순번 · 한국어 제목 | 38행씩 |
-
-**무엇을 어디에 쓰나**
-
-| 데이터 | 들어가는 곳 | 가공 |
+| 파일 | 행 | 모양 |
 |---|---|---|
-| v1 `plots.jsonl` 의 `text` | `chunks` (`plot`), 고정 문서 컬렉션 | 줄 단위 문단 → 150자 병합 → 청크. 팬덤 위키와 **같은 함수**를 쓴다 |
-| v1 `plots.jsonl` 의 `linked_titles` | `chunks.entities` | 문단 글자에 나오는 링크 제목만 그 문단에 붙인다 |
-| v1 `documents.jsonl` 의 판 번호 · `permalink` · 라이선스 | `documents` | `revid` · `source_url` · `license` · `source_id = "wikipedia_en"` |
-| v1 `documents.jsonl` 의 정보 상자 (`director` · `writer` · `runtime` · `gross` …) | 작품 카드 | "Directed by …" 한 줄을 더한다. 감독 · 상영 시간을 묻는 질문의 근거가 생긴다 (팬덤 위키 쪽에서는 이 값이 어느 청크에도 안 들어갔다) |
-| v1 `matches.jsonl` (`tconst` ↔ Wikipedia 문서 제목 · `pageid`) | `title_map.csv` 의 새 칸 `wikipedia_page` | 대응 상태가 38건 모두 `matched_probable` 이라 사람이 한 번 훑는다 |
-| v2 `plots.jsonl` 의 `episode_summary` (583건) | 에피소드 줄거리 — 발표 뒤 | `works` 와 잇는 키가 없다 (아래 주의 3) |
-| 인물 · 변형 · 인물–작품 링크 | 쓰지 않는다 — 발표 뒤 검토 | 전부 검토 전이고, 링크 2,000건은 데이터셋이 스스로 `rag_fact_eligible = false` 로 표시했다 |
-| 인물 서사(`character_arcs`) · `enriched/` | 기본 색인에 넣지 않는다 | LLM 이 해석해 만든 값이다. 쓴다면 D 구성의 별도 색인에서만 |
+| `works.jsonl` | 159 | 팀 `Work`. 작품 129 · 시즌 21 · 시리즈 전체 9 |
+| `documents.jsonl` | 850 | 팀 `Document`. `{work_id}-wikipedia` 103 · `wp-{pageid}` 747 |
+| `aliases.jsonl` | 112 | 팀 `Alias`. 작품의 한국어 제목 → 영어 제목 |
+| `sections.jsonl` | 12,476 | **본문.** 문서의 절 하나가 한 행. 팀 모델에는 본문을 담는 표가 없어서(본문은 `Chunk` 에만 있다) 따로 두고 `doc_id` 로 잇는다 |
+| `extra/works_meta.jsonl` | 159 | 작품마다 `status` · `collect_wave` · `canon_source` · `saga` · `release_order` · `scope_status` 등 (§3) |
+| `extra/documents_meta.jsonl` | 850 | 문서마다 `title` · `scope_status` · `related_work_id` · `categories` · `infobox` 등 |
+| `extra/characters.jsonl` | 633 | 수집된 인물 레코드 + `doc_id` |
+| `extra/*.csv` | — | 공식 순서 문서 추출본 2개와 제목 대응표 (§2) |
+| `validate.py` | — | 이 묶음을 팀 모델로 검사하는 코드 |
 
-**`chunks/chunks.jsonl` 을 그대로 넣지 않고 다시 자르는 이유** — 칸 이름은 우리 양식과 같지만 실측하니 넷이 달랐다.
+앞의 세 파일은 팀 모델이 내보낸 값 그대로라 `Work.model_validate_json(줄)` 로 바로 읽힌다. **청크는 들어 있지 않다** — 청킹은 각자 시험한다.
 
-- **본문에 정제 흔적이 있다.** 309개 중 278개에 `Tony Stark , who` 처럼 문장부호 앞 공백이, 36개에 `Cite error: There are <ref group=lower-alpha> tags …` 라는 Wikipedia 오류 문구가 들어 있다. 같은 줄거리인 v1 `plots.jsonl` 의 본문에는 없다 (39건 중 0건).
-- **짧은 문단을 합치지 않았다.** 150자 미만 청크가 67개다.
-- **`entities` 가 전부 비어 있다.**
-- **머리말이 한국어다** (`[아이언맨 · 2008 · Phase 1]`). 색인은 영어이고 머리말은 `works` 에서 만든다.
+**어떻게 만들었나**
 
-그래서 깨끗한 쪽(v1 `plots.jsonl`)에서 우리 규칙으로 다시 자른다. ID 형식(`tt0371746-wikipedia-plot-p01`)은 그대로 쓴다. 아이언맨은 Wikipedia 5문단, 팬덤 위키 10문단이다.
+1. **수집** — MediaWiki API 로 문서 850개를 판 번호째 받아 원문을 남기고, 각주 · 주석 · 틀을 걷어내 절 단위 본문을 만들었다 (수집 데이터셋 v1.0). IMDb 목록 132편 중 112편이 Wikipedia 문서와 대응됐다.
+2. **글자 되살리기** — 정제하면서 본문 글자를 담은 틀까지 지워진 곳이 있었다 (`{{Visible anchor|Peotor}} is an orangutan` → `is an orangutan`). 같은 판의 원문에서 그런 틀만 글자로 바꾼 뒤 수집 쪽의 정제 함수를 그대로 다시 돌렸다. 항목 이름 846 · 소유격 1,549 · 띄어쓰기 640 · 줄표 47 · 줄임말 235건, 문서 439개 · 절 1,000개가 바뀌었고 주어 없이 시작하던 문단 598개가 모두 고쳐졌다. **새로 쓰거나 LLM 으로 고친 글자는 없다.**
+3. **팀 모델로 짜기** — 작품 표는 §3 의 규칙으로 IMDb 목록과 공식 순서 문서에서 만들었다. `timeline_order` 는 Marvel.com 타임라인 순번(81행), `is_canon` 은 두 공식 문서에 올랐는가(95행), `phase` 는 Disney+ 문서의 값이고 없으면 Wikipedia 분류의 값이다. 문서는 §3 의 ID 규칙을 따르고 원래 번호는 `source_ids` 에 남겼다.
+
+**왜 다시 짰나** — 2026-11-24 에 받은 통합 묶음(handoff)은 팀 모델로 읽히지 않았다. 작품 378행과 문서 850행이 전부 검사에서 떨어진다 — 작품 ID 가 `cnt_…`, 문서 ID 가 `doc_…`, `is_canon` 이 문자열 `"unknown"`, 문서의 `work_id` 가 전부 빈 값이었다. `timeline_order` 에는 타임라인이 아니라 Disney 개봉 순번이 들어 있었다 (아이언맨 1 · 엔드게임 21, Marvel.com 타임라인으로는 5 · 44). 함께 온 청크 초안은 줄거리 절 하나가 통째로 한 청크였고(아이언맨 4,102자) 평가셋 근거 55건 중 35건만 담고 있었다.
+
+**쓰는 법**
+
+```bash
+# data/ 아래에 풀고, 저장소 루트에서 검사한다. "팀 모델과 맞습니다" 가 나오면 정상이다
+PYTHONPATH=src uv run python data/cineverse-dataset-schema/validate.py
+```
+
+- 청크는 `sections.jsonl` 의 절을 잘라 만든다. `team_section` 이 그 절의 종류이고(§3), `doc_id` 를 그대로 쓰면 청크 ID 의 앞부분이 팀원끼리 같아진다 — 예 `tt4154796-wikipedia-plot-p07`.
+- 머리말의 제목 · 연도 · 페이즈 · 타임라인 순번은 `works.jsonl` 에서, 색인할 작품과 문서는 §3 의 색인 규칙대로 `extra/` 의 값으로 고른다.
+- `validate.py` 는 모든 행이 팀 모델로 읽히는지, ID 가 겹치지 않는지, 표 사이 참조가 모두 있는지, `team_section` 이 있는 절 919개로 `Chunk` 를 만들면 ID 검사를 통과하는지 본다. 모델이 바뀌면 다시 돌린다.
 
 **주의할 것**
 
-1. **`official/` 의 표는 순서의 근거가 아니다.** `marvel_timeline.csv` 는 영화 목록 순번이고(아이언맨이 1번 — Marvel.com 타임라인의 1번은 〈아이즈 오브 와칸다〉 다) 출처 칸도 `https://www.marvel.com/` 뿐이다. 데이터셋의 README 도 "팀에서 공식 순서표와 대조해 최종 확정" 이라고 적었다. 타임라인 · 페이즈 · 개봉 순번은 §2 의 `data/official/` 을 쓰고, 이름이 겹치는 `title_map.csv` · `aliases_ko.csv` 는 덮어쓰지 않는다.
-2. **범위가 한 편 어긋난다.** 38편 중 37편이 1차 수집 영화와 겹친다. 남은 한 편 〈스파이더맨: 브랜드 뉴 데이〉 는 우리 작품 표에서 아직 정식 작품이 아니라 색인 규칙에 걸린다 — 근거 URL 과 함께 손으로 등록해야 들어간다. 반대로 원샷 5편과 Team Thor 2편은 Wikipedia 데이터셋에 없다.
-3. **v2 는 `works` 와 이어지지 않는다.** 작품 333행의 IMDb ID 가 비어 있고 Wikidata QID 와 문서 제목만 있다. 시리즈 · 에피소드까지 쓰려면 QID 나 제목으로 대응표를 먼저 만들어야 한다.
-4. **같은 영화의 줄거리가 두 번 들어간다.** 상위 5청크가 같은 장면의 두 서술로 채워질 수 있다. 개발용 문항으로 확인하고, 필요하면 근거 선택에 "한 작품에서 출처마다 최대 몇 청크" 같은 제한을 둔다. `source_id` 로 걸러 한 출처만으로 돌려 비교할 수도 있다.
-5. **한국어 이름 사전은 기존 것을 쓴다.** 데이터셋의 `aliases_ko.csv` 는 영어 이름이 Wikipedia 문서 제목이라(`Iron Man (2008 film)`) 치환에 쓰면 질문에 `(2008 film)` 이 붙는다.
-6. **전부 검토 전이다.** 모든 행이 `review_status = pending_review` · `verification_status = unverified` 다.
-7. **`manifest.json` 에 만든 사람 컴퓨터의 경로가 들어 있다.** 공개 저장소에 올리기 전에 지운다.
+1. **850개가 모두 MCU 문서는 아니다.** 수집 범위 판정(`scope_status`)이 `mcu` 인 문서는 404개다. 작품 표에도 정식이 아닌 작품 64행이 들어 있다 (카드용).
+2. **`team_section` 이 빈 절이 많다** (§3). 인물 서사(`biography`)와 세계관 본문(`lore`)은 이 칸이 비어 있으므로 절의 제목과 문서로 고른다. 그 밖의 빈 절은 색인하지 않는다.
+3. **에피소드 · 시즌 문서의 대부분은 작품 표에 행이 없다.** `work_id` 가 비어 있고, 속한 시리즈를 알 수 있는 84개는 `extra/documents_meta.jsonl` 의 `related_work_id` 에 적혀 있다. 시즌 문서가 작품 행과 이어진 것은 타임라인이 시즌별로 적은 시리즈뿐이다.
+4. **IMDb 대응 33편은 문서가 따로 없다.** 시리즈 문서의 에피소드 줄에만 있는 것 22편, 다른 문서로 넘겨지는 것 8편, 문서의 한 절인 것 3편이다. `Work.source_ids.wikipedia_document_id` 에 대응된 문서가 적혀 있다.
+5. **넷플릭스 시기 시리즈 6편**(데어데블 · 제시카 존스 · 루크 케이지 · 아이언 피스트 · 퍼니셔 · 디펜더스)은 IMDb 목록에 없어 `title_ko` 가 영어 제목이고 `year` 가 비어 있다.
+6. **평가셋의 발췌문은 글자를 되살리기 전 것이다.** 발췌문을 본문에서 그대로 찾으면 아포스트로피가 들어간 곳에서 어긋난다. 영문자와 숫자만 남겨 비교하면 맞는다.
+7. **되살리지 않은 것이 있다.** 단위 변환 틀(`{{convert}}`)의 숫자와 정보 상자의 값은 그대로다.
+8. **전부 검토 전이다.** 모든 레코드가 `pending_review` 이고 사람이 확인한 것은 없다.
+9. **공개 저장소에 올리지 않는다.** IMDb 목록에서 온 값이 들어 있다.
+
+> **앞서 쓰던 묶음** — 2026-11-24 에는 영화 38편의 Plot 을 추린 `cineverse-wiki/data/dataset` 을 읽어 들이는 것으로 적었다. 그 묶음은 위 수집 데이터셋에서 파생된 것이고, 공통 데이터셋이 같은 문서를 모두 담고 있어 더 쓰지 않는다. 그 묶음의 순번 표(`official/`)는 목록 순번이라 순서의 근거가 아니었다.
 
 | 단계 | 모듈 | 상태 |
 |---|---|---|
-| 데이터셋 읽기 · 다시 자르기 · 정보 상자 → 카드 | `src/build/wikipedia.py` | ⬜ |
-| `title_map.csv` 에 `wikipedia_page` 칸 | `data/official/title_map.csv` | ⬜ |
+| 공통 데이터셋 (작품 · 문서 · 본문 · 검사 코드) | `data/cineverse-dataset-schema/` | ✅ 공유 (git 밖) |
+| 데이터셋 읽기 · 청크 만들기 | 각자 브랜치에서 시험 → `src/build/` | ⬜ |
+| 정보 상자 → 작품 카드 (감독 · 상영 시간 등) | `src/build/` | ⬜ |
 
 ### 4.2 증분 적재 — 안 바뀐 청크는 다시 임베딩하지 않는다 (2026-11-24 추가)
 
@@ -409,6 +432,7 @@ Brave Search API 약관 3(b) 사용 제한은 다음을 금지한다.
 - 문항 30개: 개발 10(`eval/dev.json`) · 최종 20(`eval/test.json`, 답변 가능 17 · 근거 없음 3).
 - 정답 키의 근거는 `chunk_id` 로 적는다. 청크가 위키 문단이라 색인을 만들기 전에도 문서를 읽고 문단을 세어 적을 수 있다. 단, 150자 합치기 기준과 시리즈 ID 형식(§3)을 **먼저 고정**해야 번호가 안 밀린다.
 - 같은 사실이 팬덤 위키와 Wikipedia 두 곳에 있으면 **두 출처의 청크를 모두 허용 근거로** 적는다. 한쪽만 적으면 다른 쪽을 찾아온 검색이 Hit@5 에서 0 이 된다.
+- **지금 평가셋(`question_set.jsonl`, 20문항)의 근거는 원본 문서 번호(`doc_…`)와 절 번호로 적혀 있다.** `Document.source_ids.team_document_id` 로 새 `doc_id` 를 찾고, `sections.jsonl` 의 `section_index` 로 절을 찾은 뒤, 그 절에서 나온 자기 청크의 ID 를 `gold_chunk_ids` 에 적는다. 근거 55건의 문서와 절은 공통 데이터셋에 모두 있다. 청킹이 다르면 번호가 다르므로 기준 색인을 `gold_index_version` 에 함께 적는다.
 - 평가는 웹 검색 흐름을 끄고, 고정 문서 컬렉션만 읽고, `work_id` 없이 돌린다.
 - 실행마다 `results/` 에 원본을 남긴다 — 실행 ID · 질문 ID · 구성 · 버전들(색인 = `index_version` · 프롬프트 · 모델 · 이름 사전) · 호출 기록(§9 의 `trace`) · 후보와 점수 · 재정렬 전후 순위 · 원본 답변 · 출처 · 시간 · 상태 · 채점 근거. 실패한 실행도 지우지 않는다.
 
@@ -456,6 +480,8 @@ Brave Search API 약관 3(b) 사용 제한은 다음을 금지한다.
 
 팀 저장소의 `src/shared/core/` 와 이 설계가 어긋나는 곳이다. PR 을 올리기 전에 팀이 정한다.
 
+> **2026-11-25 현황** (`dev` `bcb0943`) — **끝남**: 1 · 2 · 3 · 4 · 7 · 8 · 9 · 12 · 15 · 16 · 17 · 18. **남음**: 5(손잡이 값을 둘 곳) · 6(저장 방식, 적재 코드가 아직 없다) · 10(`pytest` 는 들어왔고 `httpx` 와 재정렬 모델 의존성은 아직) · 11(README 가 아직 Wikidata 를 적는다). **대체됨**: 13 · 14 — `cineverse-wiki` 묶음을 더 쓰지 않는다 (§4.1). 공통 데이터셋에서 새로 생긴 것은 18번부터다.
+
 | # | 어긋나는 곳 | 제안 |
 |---|---|---|
 | 1 | `schemas.py` 가 이미 있다 (`AnswerStatus` · `Section` · `RetrievalMode` · `APIResponse`). 실험 폴더의 `Work` · `Document` · `Chunk` · `Character` · `Alias` 도 같은 경로를 썼다 | 데이터 모델은 `src/shared/core/models.py` 로 옮겨 넣는다 |
@@ -475,13 +501,19 @@ Brave Search API 약관 3(b) 사용 제한은 다음을 금지한다.
 | 15 | 라이선스 문자열이 출처마다 다르다 (`CC-BY-SA` · `CC BY-SA 4.0 / GFDL`) | 출처가 적은 그대로 둔다. 표기 통일보다 원문 조건을 남기는 쪽이 낫다 |
 | 16 | `vector_store.py` 의 설명에 "증분 해시 조회" 가 있으나 해시의 재료가 정해져 있지 않다 | `chunk_id` · 머리말 · 본문으로 만든 `content_hash` 를 청크 메타데이터에 넣는다 (§4.2) |
 | 17 | `APIResponse` 의 `data` 에 호출 기록 자리가 없다 | 답변 응답 모델에 `trace` 를 더한다 (§9). 공통 부품의 틀은 그대로 둔다 |
+| 18 | `Section` 에 인물 서사와 세계관 본문을 담을 값이 없었다. 평가셋 근거 55건 중 11건(20문항 중 9문항)이 이런 절에 있다 | **끝남** — `schemas.py` 의 `Section` 에 `biography` · `lore` 를 더했다 (PR #16). 공통 데이터셋의 `team_section` 에는 아직 이 두 값이 없어 절의 제목과 문서로 고른다 (§3) |
+| 19 | `Work` 에 `status` · `collect_wave` · `saga` · 개봉 순번 · 정식 근거 칸이 없다. 색인 규칙(§3)과 연결 카드가 이 값을 쓴다 | 지금은 `extra/works_meta.jsonl` 에서 읽는다. 적재 코드를 쓸 때 모델에 칸을 더할지 정한다 |
+| 20 | 작품 표가 159행이다 (처음 설계 150행 + 시리즈 전체 9행) | 시즌 행의 `parent_work_id` 와 시리즈 문서의 `work_id` 가 가리킬 행이 필요해 남겼다. 시리즈 전체 행에도 카드를 만들지 정한다 (`extra/works_meta.jsonl` 의 `row_kind = series_parent`) |
+| 21 | 에피소드 문서(194개)와 인물 문서의 ID 모양이 처음 설계와 다르다 | 모델의 규칙대로 `wp-{pageid}` 를 쓴다. 에피소드를 작품으로 받으려면 `check_doc_id` 에 규칙을 먼저 더한다 |
+| 22 | `characters` 표의 모델이 없다 | 인물 소개 청크는 인물 문서에서 바로 만든다. 출연 관계(선행작 후보)를 쓸 때 `extra/characters.jsonl` 을 보고 모델을 정한다 |
+| 23 | 넷플릭스 시기 시리즈 6편의 한국어 제목과 연도가 없다 | 2차 수집분이라 1차 색인에는 영향이 없다. 색인에 넣을 때 손으로 채운다 |
 
 ## 12. 지키는 선
 
 - **비밀** — API 키(`OPENAI_API_KEY` · `BRAVE_API_KEY`)와 `.env` 는 올리지 않는다 (저장소는 공개).
-- **IMDb 가공본** — `data/local/` 에만 두고 `.gitignore` 로 막는다. 다시 만드는 방법만 문서에 적는다.
-- **Wikipedia 원문** — `license = "CC BY-SA 4.0 / GFDL"` 과 문서 URL · 판 번호를 함께 저장한다. LLM 이 만든 층(인물 서사 · `enriched/`)은 기본 색인에 넣지 않는다.
-- **팬덤 위키 원문** — `license = "CC-BY-SA"` 와 문서 URL · 판 번호를 함께 저장한다. 테스트용 고정 자료를 저장소에 올리면 출처와 라이선스를 밝힌다.
+- **IMDb 가공본** — git 제외 폴더 `data/` 에만 두고 `.gitignore` 로 막는다. 다시 만드는 방법만 문서에 적는다. **공통 데이터셋에도 IMDb 목록에서 온 값이 들어 있으므로 저장소에 올리지 않는다.**
+- **Wikipedia 원문** — `license = "CC BY-SA 4.0"` 과 문서 URL · 판 번호를 함께 저장한다. 본문에서 되살린 글자가 무엇인지는 §4.1 에 적었다 (원문 대비 수정 내역). LLM 이 만든 층(인물 서사 · `enriched/`)은 기본 색인에 넣지 않는다.
+- **팬덤 위키 원문** — 약관 확인 전이라 받지 않는다. 받게 되면 `license = "CC-BY-SA"` 와 문서 URL · 판 번호를 함께 저장한다. 테스트용 고정 자료를 저장소에 올리면 출처와 라이선스를 밝힌다.
 - **웹 검색 결과** — 웹 컬렉션에만 넣고 고정 문서 컬렉션에는 넣지 않는다. 적재는 Brave 의 저장 권한을 확인한 뒤에만 켠다 (§6). 결과를 저장소에 올리지 않고, 그 안의 지시문은 신뢰할 수 없는 데이터로 다룬다.
 - **기록** — `results/` 원본과 잠근 `eval/test.json` 은 고치지 않는다.
  
