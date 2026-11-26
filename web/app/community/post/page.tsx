@@ -4,6 +4,7 @@ import { IconArrowLeft, IconHeart, IconTrash } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
+import Debate from "@/components/Debate";
 import { ago, api, CATEGORIES, post, type Comment, type PostDetail } from "@/lib/api";
 
 export default function PostPage() {
@@ -47,18 +48,23 @@ function PostView() {
 
   return (
     <div className="scroll-area absolute top-[150px] bottom-0 left-1/2 z-10 w-[1100px] -translate-x-1/2 pr-3 pb-10">
-      <Link href="/community/" className="flex items-center gap-1.5 text-dim hover:text-ink">
+      <Link href="/community/" className="flex items-center gap-1.5 text-low hover:text-hi">
         <IconArrowLeft size={18} aria-hidden />
-        Cosmic Feed 로
+        멀티버스 아레나로
       </Link>
 
-      <article className="glass mt-5 p-10">
-        <div className="text-[13px] font-semibold text-cyan">{CATEGORIES[data.category]}</div>
+      <article className="frost mt-5 rounded-[26px] p-10">
+        <span className="rounded-full border border-white/12 px-2.5 py-0.5 text-xs text-mid">{CATEGORIES[data.category]}</span>
         <h1 className="mt-3 text-[40px] leading-snug font-extrabold tracking-tight">{data.title}</h1>
-        <p className="mt-3 text-sm text-dim">
+        <p className="mt-3 text-sm text-low">
           {data.nickname} · {ago(data.created_at)}
         </p>
-        <p className="mt-8 text-lg leading-[1.8] whitespace-pre-wrap break-words text-[#e3e6ff]">{data.body}</p>
+        <p className="mt-8 text-lg leading-[1.8] whitespace-pre-wrap break-words text-hi">{data.body}</p>
+        {data.category === "vs" && (
+          <div className="mt-8 rounded-[20px] border border-white/10 bg-black/18 p-7">
+            <Debate key={data.id} debate={data} />
+          </div>
+        )}
 
         <div className="mt-10 flex items-center gap-3">
           <button
@@ -72,7 +78,7 @@ function PostView() {
               })
             }
           >
-            <IconHeart size={18} className="text-magenta" aria-hidden />
+            <IconHeart size={18} className="text-[#ff8fb4]" aria-hidden />
             좋아요 {data.like_count}
           </button>
           <DeleteBox
@@ -92,7 +98,7 @@ function PostView() {
         )}
       </article>
 
-      <section className="glass mt-6 p-8" aria-label="댓글">
+      <section className="frost mt-6 rounded-[26px] p-8" aria-label="댓글">
         <h2 className="text-xl font-bold">댓글 {data.comments.length}</h2>
         <ul className="mt-5 flex flex-col">
           {data.comments.map((c) => (
@@ -109,7 +115,7 @@ function CommentRow({ c, onDelete }: { c: Comment; onDelete: (password: string) 
   return (
     <li className="flex gap-4 border-t border-white/5 py-4 first:border-t-0">
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-dim">
+        <p className="text-sm text-low">
           <b className="text-ink">{c.nickname}</b> · {ago(c.created_at)}
         </p>
         <p className="mt-1.5 leading-relaxed whitespace-pre-wrap break-words">{c.body}</p>
@@ -124,7 +130,7 @@ function DeleteBox({ label, onDelete, small = false }: { label: string; onDelete
   const [open, setOpen] = useState(false);
   if (!open)
     return (
-      <button type="button" onClick={() => setOpen(true)} className={`flex items-center gap-1.5 text-dim hover:text-ink ${small ? "self-start text-sm" : "ml-auto"}`}>
+      <button type="button" onClick={() => setOpen(true)} className={`flex items-center gap-1.5 text-low hover:text-hi ${small ? "self-start text-sm" : "ml-auto"}`}>
         <IconTrash size={16} aria-hidden />
         {label}
       </button>
@@ -141,7 +147,7 @@ function DeleteBox({ label, onDelete, small = false }: { label: string; onDelete
       <button type="submit" className="chip h-10 px-4 hover:bg-white/10">
         지우기
       </button>
-      <button type="button" className="text-sm text-dim hover:text-ink" onClick={() => setOpen(false)}>
+      <button type="button" className="text-sm text-low hover:text-hi" onClick={() => setOpen(false)}>
         취소
       </button>
     </form>

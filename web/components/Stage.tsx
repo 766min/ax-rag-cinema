@@ -1,17 +1,24 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { fitStage } from "@/lib/stage";
 
-// 1920x1080 무대 + 별 · 성운 배경. 마우스에 따라 [data-depth] 요소는 깊이별로, .tilt 카드는 3D 로 기운다
+// 1920px 폭 무대 + 별 · 성운 배경. 마우스에 따라 [data-depth] 요소는 깊이별로, .tilt 카드는 3D 로 기운다
 export default function Stage({ children }: { children: React.ReactNode }) {
   const stage = useRef<HTMLDivElement>(null);
   const stars = useRef<HTMLCanvasElement>(null);
+  const path = usePathname();
 
+  // 페이지마다 무대 높이가 달라서(홈 · 커뮤니티는 세로 스크롤) 페이지가 바뀌면 다시 맞춘다
   useEffect(() => {
-    const fit = () =>
-      document.documentElement.style.setProperty("--s", String(Math.min(innerWidth / 1920, innerHeight / 1080)));
+    const fit = () => fitStage(path);
     fit();
     addEventListener("resize", fit);
+    return () => removeEventListener("resize", fit);
+  }, [path]);
+
+  useEffect(() => {
 
     const ctx = stars.current?.getContext("2d");
     if (ctx) {
@@ -47,17 +54,14 @@ export default function Stage({ children }: { children: React.ReactNode }) {
       }
     };
     el.addEventListener("pointermove", move);
-    return () => {
-      removeEventListener("resize", fit);
-      el.removeEventListener("pointermove", move);
-    };
+    return () => el.removeEventListener("pointermove", move);
   }, []);
 
   return (
     <div className="viewport">
       <div ref={stage} className="stage">
         <div className="space" />
-        <canvas ref={stars} width={1920} height={1080} className="absolute inset-0" data-depth="6" />
+        <canvas ref={stars} width={1920} height={1080} className="absolute inset-x-0 top-0 h-[1080px] opacity-80" data-depth="6" />
         {children}
       </div>
     </div>

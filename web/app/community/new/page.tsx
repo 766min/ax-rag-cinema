@@ -2,14 +2,25 @@
 
 import { IconArrowLeft, IconSend2 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { api, CATEGORIES, post, type Post } from "@/lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { api, CATEGORIES, post, type Category, type Post } from "@/lib/api";
 
 export default function NewPostPage() {
+  return (
+    <Suspense>
+      <NewPost />
+    </Suspense>
+  );
+}
+
+function NewPost() {
   const router = useRouter();
+  const preset = useSearchParams().get("category");
+  const [category, setCategory] = useState<Category>(preset && preset in CATEGORIES ? (preset as Category) : "lore");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const vs = category === "vs";
 
   async function submit(form: HTMLFormElement) {
     const f = Object.fromEntries(new FormData(form)) as Record<string, string>;
@@ -25,17 +36,15 @@ export default function NewPostPage() {
   }
 
   return (
-    <div className="absolute top-[150px] bottom-[40px] left-1/2 z-10 flex w-[1000px] -translate-x-1/2 flex-col">
-      <Link href="/community/" className="flex items-center gap-1.5 text-dim hover:text-ink">
+    <div className="absolute top-[140px] bottom-10 left-1/2 z-10 flex w-[1000px] -translate-x-1/2 flex-col">
+      <Link href="/community/" className="flex items-center gap-1.5 text-low hover:text-hi">
         <IconArrowLeft size={18} aria-hidden />
-        Cosmic Feed 로
+        멀티버스 아레나로
       </Link>
-      <h1 className="mt-4 text-[44px] font-extrabold tracking-tight">
-        <span className="grad">새 글</span> 작성
-      </h1>
+      <h1 className="mt-3 font-display text-[44px] leading-none tracking-[0.05em] text-hi">NEW POST</h1>
 
       <form
-        className="glass mt-6 flex flex-1 flex-col gap-4 p-8"
+        className="frost mt-5 flex flex-1 flex-col gap-4 rounded-[26px] p-8"
         onSubmit={(e) => {
           e.preventDefault();
           submit(e.currentTarget);
@@ -43,8 +52,8 @@ export default function NewPostPage() {
       >
         <div className="flex gap-4">
           <label className="w-[220px]">
-            <span className="mb-1.5 block text-sm text-muted">분류</span>
-            <select name="category" required className="field" defaultValue="lore">
+            <span className="mb-1.5 block text-sm text-mid">분류</span>
+            <select name="category" required className="field" value={category} onChange={(e) => setCategory(e.target.value as Category)}>
               {Object.entries(CATEGORIES).map(([k, v]) => (
                 <option key={k} value={k} className="bg-bg">
                   {v}
@@ -53,21 +62,33 @@ export default function NewPostPage() {
             </select>
           </label>
           <label className="flex-1">
-            <span className="mb-1.5 block text-sm text-muted">제목 (100자까지)</span>
-            <input name="title" required maxLength={100} className="field" placeholder="예: 타노스는 왜 스톤을 반만 썼을까?" />
+            <span className="mb-1.5 block text-sm text-mid">{vs ? "토론 주제 (100자까지)" : "제목 (100자까지)"}</span>
+            <input name="title" required maxLength={100} className="field" placeholder={vs ? "예: 아이언맨의 진정한 후계자는 누구인가?" : "예: 타노스는 왜 스톤을 반만 썼을까?"} />
           </label>
         </div>
+        {vs && (
+          <div className="grid grid-cols-2 gap-4">
+            <label>
+              <span className="mb-1.5 block text-sm text-amber">선택지 A (40자까지)</span>
+              <input name="choice_a" required maxLength={40} className="field" placeholder="예: 스파이더맨 (피터 파커)" />
+            </label>
+            <label>
+              <span className="mb-1.5 block text-sm text-cool">선택지 B (40자까지)</span>
+              <input name="choice_b" required maxLength={40} className="field" placeholder="예: 캡틴 아메리카 (샘 윌슨)" />
+            </label>
+          </div>
+        )}
         <label className="flex flex-1 flex-col">
-          <span className="mb-1.5 block text-sm text-muted">본문 (5,000자까지)</span>
-          <textarea name="body" required maxLength={5000} className="field flex-1 resize-none leading-relaxed" placeholder="이론, 쿠키 영상, 시청 순서 이야기를 자유롭게 적어 주세요." />
+          <span className="mb-1.5 block text-sm text-mid">본문 (5,000자까지)</span>
+          <textarea name="body" required maxLength={5000} className="field flex-1 resize-none leading-relaxed" placeholder={vs ? "왜 이 대결이 궁금한지, 판단 기준을 적어 주세요." : "이론, 쿠키 영상, 시청 순서 이야기를 자유롭게 적어 주세요."} />
         </label>
         <div className="flex items-end gap-4">
           <label className="w-[240px]">
-            <span className="mb-1.5 block text-sm text-muted">닉네임</span>
+            <span className="mb-1.5 block text-sm text-mid">닉네임</span>
             <input name="nickname" required maxLength={20} className="field" autoComplete="nickname" />
           </label>
           <label className="w-[240px]">
-            <span className="mb-1.5 block text-sm text-muted">삭제용 비밀번호 (4자 이상)</span>
+            <span className="mb-1.5 block text-sm text-mid">삭제용 비밀번호 (4자 이상)</span>
             <input name="password" type="password" required minLength={4} maxLength={64} className="field" autoComplete="new-password" />
           </label>
           <button type="submit" disabled={busy} className="btn btn-primary ml-auto">
@@ -80,7 +101,7 @@ export default function NewPostPage() {
             {error}
           </p>
         )}
-        <p className="text-xs text-dim">로그인 없이 쓰는 게시판이에요. 비밀번호는 글을 지울 때만 쓰고, 서버에는 원래 글자 대신 해시로 바꿔 저장해요.</p>
+        <p className="text-xs text-low">로그인 없이 쓰는 게시판이에요. 비밀번호는 글을 지울 때만 쓰고, 서버에는 원래 글자 대신 해시로 바꿔 저장해요.</p>
       </form>
     </div>
   );

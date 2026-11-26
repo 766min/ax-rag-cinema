@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" data-depth="8">
+    <defs>
+      <linearGradient id="ring-c" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1920" y2="0">
+        <stop offset="0" stop-color="#4f8fc0"/><stop offset=".45" stop-color="#9cc4f0"/><stop offset=".75" stop-color="#d6a85c"/><stop offset="1" stop-color="#b8603a"/>
+      </linearGradient>
+      <filter id="ring-glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="8"/></filter>
+      <filter id="ring-soft"><feGaussianBlur stdDeviation="26"/></filter>
+      <mask id="ring-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080">
+        <rect width="1920" height="1080" fill="#fff"/>
+        <ellipse cx="1400" cy="440" rx="150" ry="210" fill="#000" filter="url(#ring-soft)"/>
+      </mask>
+    </defs>
+    <g mask="url(#ring-mask)"><g transform="rotate(-14 1200 1400)" fill="none">
+      <ellipse cx="1200" cy="1400" rx="1500" ry="900" stroke="url(#ring-c)" stroke-width="14" opacity=".35" filter="url(#ring-glow)"/>
+      <ellipse cx="1200" cy="1400" rx="1500" ry="900" stroke="url(#ring-c)" stroke-width="2.5"/>
+      <ellipse cx="1200" cy="1400" rx="1532" ry="926" stroke="url(#ring-c)" stroke-width="1" opacity=".4" stroke-dasharray="2 10"/>
+      <ellipse cx="1200" cy="1400" rx="1466" ry="874" stroke="#ffffff" stroke-width="1" opacity=".18"/>
+    </g></g>
+  </svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 290" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="s-bg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#5a1218"/><stop offset=".48" stop-color="#1a0f1c"/><stop offset=".52" stop-color="#101a33"/><stop offset="1" stop-color="#0b1430"/></linearGradient>
+            <filter id="s-g"><feGaussianBlur stdDeviation="3"/></filter>
+          </defs>
+          <rect width="400" height="290" fill="url(#s-bg)"/>
+          <g transform="translate(400 0)" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width=".8">
+            <circle r="60"/><circle r="110"/><circle r="160"/><circle r="210"/>
+            <path d="M0 0 L-230 30 M0 0 L-220 90 M0 0 L-190 150 M0 0 L-140 200 M0 0 L-80 230 M0 0 L-20 240"/>
+          </g>
+          <g fill="none" stroke="#e8b45a" stroke-linejoin="bevel">
+            <path d="M150 30 L138 64 L156 80 L132 114 L148 130" stroke-width="5" opacity=".35" filter="url(#s-g)"/>
+            <path d="M150 30 L138 64 L156 80 L132 114 L148 130" stroke-width="1.4"/>
+          </g>
+          <g fill="#06070c">
+            <rect x="0" y="222" width="34" height="68"/><rect x="38" y="200" width="22" height="90"/><rect x="64" y="216" width="28" height="74"/><rect x="96" y="190" width="18" height="100"/>
+            <rect x="118" y="210" width="36" height="80"/><rect x="158" y="226" width="26" height="64"/><rect x="188" y="204" width="30" height="86"/><rect x="222" y="220" width="22" height="70"/>
+            <rect x="248" y="196" width="28" height="94"/><rect x="280" y="214" width="34" height="76"/><rect x="318" y="206" width="24" height="84"/><rect x="346" y="224" width="54" height="66"/>
+          </g>
+        </svg>

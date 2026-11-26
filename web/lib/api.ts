@@ -95,6 +95,7 @@ export type AskData = {
 // ---------- 게시판 ----------
 
 export const CATEGORIES = {
+  vs: "VS 토론",
   lore: "세계관 로어",
   post_credits: "쿠키 영상",
   watch_order: "시청 순서",
@@ -113,7 +114,13 @@ export type Post = {
   like_count: number;
   comment_count: number;
   created_at: string;
+  choice_a: string | null;
+  choice_b: string | null;
+  votes_a: number;
+  votes_b: number;
+  my_vote: "a" | "b" | null;
 };
+export type BoardStats = { today_posts: number; open_debates: number; week_participation: number };
 export type Comment = { id: number; post_id: number; nickname: string; body: string; created_at: string };
 export type PostDetail = Post & { comments: Comment[] };
 export type PostPage = { items: Post[]; page: number; has_more: boolean };

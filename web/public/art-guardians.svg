@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 290" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <filter id="g-n"><feGaussianBlur stdDeviation="24"/></filter>
+          </defs>
+          <rect width="400" height="290" fill="#080a14"/>
+          <g filter="url(#g-n)">
+            <ellipse cx="300" cy="90" rx="130" ry="64" fill="#1e5d74" opacity=".55"/>
+            <ellipse cx="110" cy="190" rx="120" ry="60" fill="#8a5a24" opacity=".45"/>
+            <ellipse cx="200" cy="60" rx="70" ry="34" fill="#6a1f2a" opacity=".35"/>
+          </g>
+          <g fill="#fff" opacity=".7"><circle cx="40" cy="40" r="1"/><circle cx="350" cy="30" r=".9"/><circle cx="380" cy="150" r="1.1"/><circle cx="60" cy="210" r=".8"/><circle cx="180" cy="24" r=".9"/><circle cx="330" cy="240" r=".8"/></g>
+          <g transform="translate(70 70)"><circle r="20" fill="#d6a85c" opacity=".85"/><circle r="20" fill="#06070c" opacity=".35" transform="translate(6 6)"/><ellipse rx="36" ry="7" fill="none" stroke="#f0d9a8" stroke-opacity=".6" transform="rotate(-16)"/></g>
+          <g transform="translate(200 132) rotate(-6)" fill="none" stroke="#e8c788">
+            <rect x="-78" y="-48" width="156" height="96" rx="10" stroke-width="1.6"/>
+            <rect x="-62" y="-36" width="124" height="34" rx="4" stroke-width="1" opacity=".7"/>
+            <path d="M-62 -24 H62" stroke-width=".8" opacity=".5"/>
+            <rect x="-46" y="8" width="92" height="28" rx="14" stroke-width="1.2"/>
+            <circle cx="-24" cy="22" r="9" stroke-width="1.4"/><circle cx="24" cy="22" r="9" stroke-width="1.4"/>
+            <path d="M-24 15 V29 M-31 22 H-17 M24 15 V29 M17 22 H31" stroke-width="1"/>
+          </g>
+        </svg>
