@@ -1,0 +1,606 @@
+"""팀원 질문셋 네 출처를 하나의 평가셋 형식으로 합치고, 칸별 빈칸 표를 만든다 (평가셋 확장 1~2단계).
+
+    uv run python scripts/build_eval_set.py
+    uv run python scripts/build_eval_set.py --bae <경로> --minji <경로>
+
+입력
+    question_set.jsonl                       팀 공식 20문항 (형식의 기준)
+    --bae / --chung                          배·정 평가셋 md (두 파일이 같으면 하나만 쓴다)
+    --minji                                  민지 청킹 실험 md 의 함정 문항 T001~T003 (원본 jsonl 이 없어 표에서 복원)
+    tmp/questions_blind_v2.jsonl             문서를 보지 않고 쓴 40문항
+    tmp/questions_from_chunks.jsonl          청크를 보고 쓴 60문항
+    tmp/chunks_dryrun.jsonl                  청크 → 문서·절 찾기용
+    data/cineverse-dataset-schema/           documents · sections (팀 근거 확인용)
+    --extra                                  check_eval_gen.py 를 통과한 Codex 생성 문항 (여러 개 가능)
+
+팀 문항에는 발췌를 담은 청크를 찾아 gold · primary_gold 를 붙인다 (check_eval_gen.attach_gold).
+
+출력
+    tmp/eval_merged.jsonl        남긴 문항 (question_set.jsonl 칸 + 아래 칸)
+    tmp/eval_merged_dupes.jsonl  중복으로 뺀 문항과 어느 문항의 중복인지
+    docs/experiments/eval_set_gaps.md   칸별 현재 개수 · 목표 · 부족분, 검토할 목록
+
+question_set.jsonl 에 더한 칸
+    근거위치    줄거리 | 시놉시스 | 인물 | 세계관·사물 | 메타 | 추천·가치관 | 문서에 없음
+    질문유형    사실 | 관계 | 인과 | 시간선 | 비교·가치관 | 추천 | 근거 검증
+    eval_track  retrieval | answer_only (추천 · 비교·가치관은 answer_only: 검색 지표에서 빼고 루브릭 채점)
+    variant_of  말투만 바꾼 변형이면 원본 query_id, 아니면 null (변형은 문항 수로 세지 않는다)
+    작성자      출처 작성자
+그 밖의 칸
+    출처 · 원본_id · 원래_난이도 · 분류방식(수동|자동) · 전제오류 · 근거(구조화 목록) · 근거확인(검사 결과)
+    question_en · gold · primary_gold · category — scripts/eval_retrieval.py 가 읽는 칸 (실험 세트에만 값이 있음)
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+from collections import Counter, defaultdict
+from datetime import date
+from pathlib import Path
+
+from check_eval_gen import Corpus as GoldCorpus, attach_gold  # 같은 scripts/ 폴더
+
+ROOT = Path(__file__).resolve().parents[1]
+DATA = ROOT / "data" / "cineverse-dataset-schema"
+DOWNLOADS = Path.home() / "Downloads"
+
+LOCS = ["줄거리", "시놉시스", "인물", "세계관·사물", "메타", "추천·가치관", "문서에 없음"]
+LEVELS = ["초보", "중수", "고수", "함정"]
+TYPES = ["사실", "관계", "인과", "시간선", "비교·가치관", "추천", "근거 검증"]
+ANSWER_ONLY = {"추천", "비교·가치관"}
+
+# 합의한 목표 분포 (None = 목표 없음). 칸마다 최소 5문항은 별도 규칙.
+TARGET = {
+    "줄거리": [25, 15, 10, 5],
+    "시놉시스": [15, 5, None, 3],
+    "인물": [20, 10, 10, 4],
+    "세계관·사물": [15, 8, 5, 3],
+    "메타": [10, 5, None, 2],
+    "추천·가치관": [10, 10, 10, None],
+    "문서에 없음": [None, None, None, None],  # 표에 없는 줄. 함정 중 '문서에 없음'만 따로 센다
+}
+MIN_PER_CELL = 5
+
+# 출처 우선순위 (중복이면 앞쪽을 남긴다)
+PRIORITY = ["team", "minji", "bae", "blind", "chunk", "gen"]
+
+
+# ---------------------------------------------------------------- 공통 데이터
+
+def read_jsonl(path: Path) -> list[dict]:
+    with open(path, encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def load_corpus():
+    docs = {d["doc_id"]: d for d in read_jsonl(DATA / "documents.jsonl")}
+    team2wp = {d["source_ids"]["team_document_id"]: d["doc_id"] for d in docs.values()
+               if d.get("source_ids", {}).get("team_document_id")}
+    sections = {(s["doc_id"], s["section_index"]): s for s in read_jsonl(DATA / "sections.jsonl")}
+    chunks = {c["chunk_id"]: c for c in read_jsonl(ROOT / "tmp" / "chunks_dryrun.jsonl")}
+    return docs, team2wp, sections, chunks
+
+
+def loc_of(doc_type: str, team_section: str | None) -> str:
+    """문서 종류 + 팀 섹션 → 근거위치.
+
+    줄거리   = plot 절 (영화·단편·스페셜·시리즈·에피소드)
+    시놉시스 = 에피소드·시즌·시리즈의 lead(synopsis)
+    메타     = 영화·단편·스페셜의 lead (감독·개봉·제작 정보가 주로 여기 있다) + works.jsonl
+    인물     = 인물 문서 전체
+    세계관·사물 = 세계관(universe)·그 밖의 비작품 문서
+    """
+    if doc_type == "character":
+        return "인물"
+    if doc_type in ("film", "short", "special"):
+        return "줄거리" if team_section == "plot" else "메타"
+    if doc_type in ("series", "season", "episode"):
+        return "줄거리" if team_section == "plot" else "시놉시스"
+    return "세계관·사물"
+
+
+def blank(**kw) -> dict:
+    row = {
+        "query_id": None, "question": None, "expected_answer": None, "answerable": True,
+        "난이도": None, "채점 핵심 사실": "", "근거 문서·절·리비전": "", "검토 메모": "", "원문 근거 발췌": "",
+        "근거위치": None, "질문유형": None, "eval_track": None, "variant_of": None, "작성자": None,
+        "출처": None, "원본_id": None, "원래_난이도": None, "분류방식": "수동", "전제오류": None,
+        "근거": [], "근거확인": None,
+        "question_en": None, "gold": [], "primary_gold": [], "category": None,
+    }
+    row.update(kw)
+    return row
+
+
+def finish(row: dict) -> dict:
+    row["eval_track"] = "answer_only" if row["질문유형"] in ANSWER_ONLY else "retrieval"
+    # eval_retrieval.py 호환 칸
+    row["qid"] = row["query_id"]
+    row["question_ko"] = row["question"]
+    if not row["category"]:
+        row["category"] = "unanswerable" if not row["answerable"] else row["근거위치"]
+    assert row["근거위치"] in LOCS, row
+    assert row["난이도"] in LEVELS, row
+    assert row["질문유형"] in TYPES, row
+    return row
+
+
+# ---------------------------------------------------------------- 1. 팀 question_set.jsonl
+
+# 질문유형은 손으로 정했다. 근거위치는 근거 문서에서 자동으로 뽑고, 아래 표가 있으면 덮어쓴다.
+TEAM_TYPE = {
+    "Q001": "사실", "Q002": "사실", "Q003": "인과", "Q004": "사실", "Q007": "관계", "Q009": "관계",
+    "Q011": "사실", "Q015": "사실", "Q016": "사실", "Q019": "근거 검증",
+    "Q040": "인과", "Q042": "인과", "Q044": "시간선", "Q052": "인과", "Q056": "시간선",
+    "Q041": "시간선", "Q045": "관계", "Q047": "시간선", "Q049": "시간선", "Q058": "시간선",
+}
+TEAM_LOC = {
+    "Q019": "문서에 없음",   # 코믹스 설정은 문서 범위 밖
+    "Q056": "메타",          # 작품 배치(시간순)는 works.jsonl timeline_order · 작품 lead
+}
+EVID_RE = re.compile(r"(doc_[0-9a-f]+) / 섹션 (\d+): ([^\n]+)")
+EXCERPT_RE = re.compile(r"\[(\d+)\]\s*(.+?)(?=\n\s*\n\[\d+\]|\Z)", re.S)
+
+
+def team_rows(path: Path, corpus) -> list[dict]:
+    docs, team2wp, sections, _ = corpus
+    out = []
+    for r in read_jsonl(path):
+        qid = r["query_id"]
+        evid = []
+        for m in EVID_RE.finditer(r["근거 문서·절·리비전"]):
+            wp = team2wp.get(m.group(1))
+            sec = sections.get((wp, int(m.group(2)))) if wp else None
+            evid.append({
+                "team_doc_id": m.group(1), "doc_id": wp, "section_index": int(m.group(2)),
+                "section_path": m.group(3).strip(),
+                "doc_type": docs[wp]["doc_type"] if wp else None,
+                "team_section": sec["team_section"] if sec else None,
+                "청킹대상": bool(sec and sec["team_section"]),
+                "절_일치": bool(sec and " > ".join(sec["section_path"]) == m.group(3).strip()),
+            })
+        # 발췌가 그 절 본문에 실제로 있는지 (… 로 잘린 끝은 떼고 앞 60자로 본다)
+        excerpts = {int(n): t.strip().rstrip("…").strip() for n, t in EXCERPT_RE.findall(r["원문 근거 발췌"])}
+        for i, e in enumerate(evid, start=1):
+            sec = sections.get((e["doc_id"], e["section_index"]))
+            ex = excerpts.get(i, "")
+            e["발췌"] = ex
+            e["발췌_확인"] = bool(sec and ex and ex[:60] in sec["text"])
+        works = {e["doc_id"] for e in evid}
+        obj = {1: "초보", 2: "중수"}.get(len(works), "고수") if r["answerable"] else "함정"
+        loc = TEAM_LOC.get(qid) or (loc_of(evid[0]["doc_type"], evid[0]["team_section"]) if evid else "문서에 없음")
+        level = r["난이도"] if r["answerable"] else "함정"
+        row = blank(**{k: r[k] for k in ("query_id", "question", "expected_answer", "answerable",
+                                         "채점 핵심 사실", "근거 문서·절·리비전", "검토 메모", "원문 근거 발췌")})
+        row.update({
+            "난이도": level, "원래_난이도": r["난이도"], "근거위치": loc, "질문유형": TEAM_TYPE[qid],
+            "작성자": "team", "출처": "question_set.jsonl", "원본_id": qid, "근거": evid,
+            "근거확인": {
+                "문서_찾음": all(e["doc_id"] for e in evid),
+                "절_일치": all(e["절_일치"] for e in evid),
+                "발췌_확인": all(e["발췌_확인"] for e in evid),
+                "청킹대상_아닌_근거": [f'{e["doc_id"]}#{e["section_index"]} {e["section_path"]}'
+                                   for e in evid if not e["청킹대상"]],
+                "문서수_기준_난이도": obj,
+            },
+        })
+        out.append(finish(row))
+    return out
+
+
+# ---------------------------------------------------------------- 2. 배·정 md
+
+# (근거위치, 난이도, 질문유형, 메모). 난이도는 합의한 객관 기준으로 다시 붙였다.
+BAE_CLASS = {
+    "B01": ("메타", "초보", "시간선", "개봉순 첫 작품. 근거는 works.jsonl year"),
+    "B02": ("메타", "중수", "시간선", "개봉순과 극중 시간순을 구분. works.jsonl year·timeline_order"),
+    "B03": ("추천·가치관", "고수", "추천", "Phase 1 여러 작품 중 필수·선택 관람 구분"),
+    "B04": ("세계관·사물", "초보", "사실", "'마블 영화는 전부 MCU?' 일반화 바로잡기 포함"),
+    "B05": ("줄거리", "초보", "인과", "Iron Man plot"),
+    "B06": ("줄거리", "중수", "관계", "스포일러 없이 두 작품 연결만 답해야 함"),
+    "B07": ("메타", "중수", "시간선", "작품 3개지만 works.jsonl 한 곳에서 답이 나와 중수로 둠"),
+    "B08": ("추천·가치관", "초보", "추천", "장르 칸이 데이터에 없음 → 줄거리로 판단해야 함"),
+    "B09": ("추천·가치관", "초보", "추천", ""),
+    "B10": ("추천·가치관", "초보", "추천", "관람등급 칸이 데이터에 없음 → 등급 근거는 못 댐"),
+    "A01": ("추천·가치관", "중수", "비교·가치관", "Civil War + Tony·Steve 인물 문서"),
+    "A02": ("줄거리", "중수", "인과", "Age of Ultron → Civil War"),
+    "A03": ("추천·가치관", "고수", "비교·가치관", "Iron Man ~ Endgame 가치관 변화"),
+    "A04": ("줄거리", "중수", "시간선", "IW 의 로키와 2012년 로키 구분"),
+    "A05": ("추천·가치관", "중수", "비교·가치관", "가치관 비교는 해석임을 밝혀야 함"),
+    "A06": ("추천·가치관", "중수", "추천", ""),
+    "A07": ("추천·가치관", "중수", "추천", ""),
+    "A08": ("추천·가치관", "중수", "추천", ""),
+    "A09": ("추천·가치관", "중수", "추천", ""),
+    "A10": ("줄거리", "함정", "근거 검증", "'모든 미래' 일반화 vs IW 의 14,000,605개"),
+}
+MD_ROW = re.compile(r"^\|\s*([AB]\d\d)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*$")
+
+
+def bae_rows(path: Path) -> list[dict]:
+    q, gt = {}, {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = MD_ROW.match(line)
+        if not m:
+            continue
+        qid, a, b, c = m.groups()
+        if qid not in q:
+            q[qid] = (a, b, c)           # 질문 | 평가 유형 | 필요 데이터
+        else:
+            gt[qid] = (a, b)             # 기대 답변 | 근거 문서 후보
+    out = []
+    for qid, (question, kind, need) in q.items():
+        loc, level, qtype, memo = BAE_CLASS[qid]
+        answer, cand = gt.get(qid, ("", ""))
+        row = blank(query_id=f"bae-{qid}", question=question, expected_answer=answer)
+        row.update({
+            "채점 핵심 사실": "",  # 원본은 기대 답변 안에 조건으로 섞여 있다 → 4단계에서 3~4개로 나눈다
+            "근거 문서·절·리비전": f"(후보) {cand}",
+            "검토 메모": "; ".join(x for x in (f"원래 평가 유형: {kind}", f"필요 데이터: {need}", memo) if x),
+            "난이도": level, "원래_난이도": "초보" if qid.startswith("B") else "중급·중고수",
+            "근거위치": loc, "질문유형": qtype, "작성자": "Bae/Chung", "출처": path.name, "원본_id": qid,
+            "근거확인": {"문서_찾음": False, "발췌_확인": False, "메모": "근거 문서·절·발췌 미작성"},
+        })
+        out.append(finish(row))
+    return out
+
+
+# ---------------------------------------------------------------- 3. 민지 함정 문항
+
+MINJI_ROWS = [
+    ("T001", "엔드게임에서 결국 타노스가 이겼지?", "줄거리", "세계관·사물",
+     "아니다. 타노스는 엔드게임에서 패배한다. 토니 스타크가 스톤으로 타노스와 그 군대를 없애고 그 대가로 목숨을 잃는다.",
+     "전제 바로잡기: 타노스는 졌다 / 토니가 스톤으로 타노스와 군대를 없앰 / 토니의 희생",
+     "엔드게임에서 타노스가 이겼다", "Avengers: Endgame Plot"),
+    ("T002", "타임 스톤은 원래 테서랙트 안에 들어 있던 거지?", "세계관·사물", None,
+     "아니다. 테서랙트에 들어 있던 것은 스페이스 스톤이고, 타임 스톤은 아이 오브 아가모토에 보관돼 있었다.",
+     "전제 바로잡기: 테서랙트 = 스페이스 스톤 / 타임 스톤은 아이 오브 아가모토",
+     "타임 스톤이 테서랙트 안에 있었다", "Features of the Marvel Cinematic Universe > Infinity Stones"),
+    ("T003", "로키는 오딘의 친아들이지?", "인물", None,
+     "아니다. 로키는 서리 거인 라우페이의 아들이고 오딘이 입양해 키웠다.",
+     "전제 바로잡기: 입양 / 친아버지는 라우페이(서리 거인)",
+     "로키가 오딘의 친아들이다", "Loki (Marvel Cinematic Universe) > Early life"),
+]
+
+
+def minji_rows(path: Path | None) -> list[dict]:
+    if path is not None and path.exists():
+        text = path.read_text(encoding="utf-8")
+        missing = [t[0] for t in MINJI_ROWS if t[1] not in text]
+        if missing:
+            print(f"  ! 민지 md 에서 질문 문구를 못 찾음: {missing} (표가 바뀌었는지 확인)")
+    out = []
+    for qid, q, loc, _, ans, facts, premise, where in MINJI_ROWS:
+        row = blank(query_id=f"minji-{qid}", question=q, expected_answer=ans)
+        row.update({
+            "채점 핵심 사실": facts, "근거 문서·절·리비전": f"(후보) {where}",
+            "검토 메모": "원본 trick_questions.jsonl 미확보 — 민지 md 1-6 표에서 복원. 전제 바로잡기를 따로 채점.",
+            "난이도": "함정", "원래_난이도": "함정", "근거위치": loc, "질문유형": "근거 검증",
+            "작성자": "minji", "출처": path.name if path else "2026-11-25-minji-chunking.md", "원본_id": qid,
+            "전제오류": premise,
+            "근거확인": {"문서_찾음": False, "발췌_확인": False, "메모": "근거 문서·절·발췌 미작성"},
+        })
+        out.append(finish(row))
+    return out
+
+
+# ---------------------------------------------------------------- 4. 실험 세트 (blind_v2 · from_chunks)
+
+# blind_v2 q035~q040 은 한글이 깨져 있어 영어 질문에서 다시 썼다.
+BLIND_FIX = {
+    "q035": ("《캡틴 아메리카: 시빌 워》에서 빈에서 티찰라 왕을 죽인 폭탄을 설치한 어벤져스 멤버는 누구야?",
+             "어벤져스 멤버가 설치했다는 전제가 틀림. 폭탄은 제모가 설치하고 버키에게 누명을 씌웠다.", "줄거리"),
+    "q036": ("《어벤져스: 인피니티 워》에서 완다는 왜 비전 이마에 박힌 소울 스톤을 파괴했어?",
+             "비전 이마의 스톤은 소울 스톤이 아니라 마인드 스톤이다.", "줄거리"),
+    "q037": ("《어벤져스: 시크릿 워즈》에서 닥터 둠에게 마지막 일격을 날리는 사람은 누구야?", None, "문서에 없음"),
+    "q038": ("《어벤져스: 둠스데이》 마지막 전투에서 희생하는 인물은 누구야?", None, "문서에 없음"),
+    "q039": ("《닥터 스트레인지》에서 교통사고 뒤 스티븐 스트레인지를 처음 치료한 병원은 어디야?", None, "문서에 없음"),
+    "q040": ("《어벤져스: 엔드게임》에서 나타샤가 보르미르에서 희생할 때 나오는 노래는 뭐야?", None, "문서에 없음"),
+}
+QTYPE_MAP = {"who": "사실", "what": "사실", "where": "사실", "why": "인과", "sequence": "시간선"}
+
+
+def guess_type(q_en: str) -> str:
+    s = q_en.lower()
+    if s.startswith("why") or " why " in s:
+        return "인과"
+    if re.search(r"\b(in what order|which came first|precedes?|preceded)\b", s):
+        return "시간선"  # before/after/first 는 '그때 일어난 일'을 묻는 사실 질문에도 흔해서 쓰지 않는다
+    if re.search(r"\b(father|mother|brother|sister|twin|partner|related|relationship|friend|daughter|son)\b", s):
+        return "관계"
+    return "사실"
+
+
+def exp_rows(path: Path, corpus, prefix: str) -> list[dict]:
+    _, _, _, chunks = corpus
+    out = []
+    for r in read_jsonl(path):
+        qid = r["qid"]
+        q_ko = r.get("question_ko")
+        premise = r.get("premise_error")
+        loc_override = None
+        memo = [r.get("label_note") or ""]
+        if qid in BLIND_FIX and prefix == "blind":
+            q_ko, premise, loc_override = BLIND_FIX[qid]
+            memo.append("한국어 깨짐 → question_en 에서 다시 씀(검토 필요)")
+        prim = r.get("primary_gold") or r.get("gold") or []
+        evid = []
+        for cid in prim:
+            c = chunks.get(cid)
+            evid.append({
+                "chunk_id": cid, "doc_id": c["doc_id"] if c else None,
+                "doc_type": c["doc_type"] if c else None, "team_section": c["section"] if c else None,
+                "section_path": " > ".join(c["section_path"]) if c else None, "청킹대상": True,
+            })
+        answerable = bool(r.get("answer_in_corpus", True)) and r.get("category") != "unanswerable"
+        if premise:
+            level = "함정"
+        elif not answerable:
+            level = "함정"
+        else:
+            level = "초보"  # gold/primary_gold 는 '그 청크 하나로 답할 수 있는' 청크라 근거 1곳
+        if loc_override:
+            loc = loc_override
+        elif not answerable and not premise:
+            loc = "문서에 없음"
+        elif r.get("category") == "production":
+            loc = "메타"
+        elif evid and evid[0]["doc_type"]:
+            loc = loc_of(evid[0]["doc_type"], evid[0]["team_section"])
+        else:
+            loc = "문서에 없음"
+        qtype = "근거 검증" if level == "함정" else (QTYPE_MAP.get(r.get("qtype")) or guess_type(r["question_en"]))
+        row = blank(
+            query_id=f"{prefix}-{qid}", question=q_ko,
+            expected_answer=r.get("expected_answer") or r.get("reference_answer"),
+            answerable=answerable,
+        )
+        row.update({
+            "검토 메모": "; ".join(x for x in memo if x),
+            "난이도": level, "원래_난이도": None, "근거위치": loc, "질문유형": qtype,
+            "작성자": "ohmseok", "출처": str(path.relative_to(ROOT)).replace("\\", "/"), "원본_id": qid,
+            "분류방식": "자동", "전제오류": premise, "근거": evid,
+            "근거 문서·절·리비전": "\n".join(f'{e["doc_id"]} / {e["section_path"]} ({e["chunk_id"]})' for e in evid),
+            "근거확인": {"문서_찾음": all(e["doc_id"] for e in evid), "발췌_확인": False,
+                       "메모": "청크 ID 만 있음 → 발췌·핵심 사실 미작성"},
+            "question_en": r["question_en"], "gold": r.get("gold") or [], "primary_gold": r.get("primary_gold") or [],
+            "category": r.get("category"),
+        })
+        out.append(finish(row))
+    return out
+
+
+# ---------------------------------------------------------------- 중복 제거
+
+def norm(q: str) -> str:
+    q = re.sub(r"\((스포|스포일러)\)", "", q or "")
+    q = re.sub(r"[\s《》<>「」『』\"'“”‘’?!.,·:()\-]", "", q)
+    for a, b in (("져", "저"), ("바키", "버키")):
+        q = q.replace(a, b)
+    return q
+
+
+def bigrams(s: str) -> set[str]:
+    return {s[i:i + 2] for i in range(len(s) - 1)}
+
+
+def jaccard(a: str, b: str) -> float:
+    x, y = bigrams(norm(a)), bigrams(norm(b))
+    return len(x & y) / len(x | y) if x and y else 0.0
+
+
+# 손으로 확인한 같은 질문 (뒤쪽이 앞쪽의 중복). 근거 범위가 넓은 쪽을 남긴다.
+MANUAL_DUPES = {
+    "blind-q002": "Q009",         # 윈터 솔저 정체
+    "chunk-c051": "blind-q027",   # 비전 몸의 인피니티 스톤
+    "chunk-c016": "blind-q010",   # 트찰라를 이긴 사람 (킬몽거)
+    "chunk-c010": "blind-q014",   # 사고로 수술을 못 하게 된 의사 (스트레인지)
+}
+# 겹치지만 묻는 범위가 달라 남긴 쌍 — 4단계에서 둘 중 하나를 다른 대상으로 바꿀지 사람이 정한다.
+MANUAL_NEAR = [
+    ("bae-A02", "Q040", "울트론·소코비아 → 시빌 워. Q040 은 토니의 동기까지 포함"),
+    ("bae-A02", "Q052", "소코비아 협정의 원인. Q052 는 결과(분열·수감)까지 포함"),
+]
+
+
+def dedupe(rows: list[dict], auto_th: float):
+    rank = {s: i for i, s in enumerate(PRIORITY)}
+    src = lambda r: "team" if r["작성자"] == "team" else r["query_id"].split("-")[0]
+    rows = sorted(rows, key=lambda r: rank[src(r)])
+    kept, dupes, near = [], [], []
+    seen_exact: dict[str, str] = {}
+    for r in rows:
+        key = norm(r["question"] or r["question_en"] or "")
+        why = None
+        if r["query_id"] in MANUAL_DUPES:
+            why = (MANUAL_DUPES[r["query_id"]], "수동")
+        elif key in seen_exact:
+            why = (seen_exact[key], "문구 같음")
+        else:
+            best = max(((jaccard(r["question"] or "", k["question"] or ""), k) for k in kept),
+                       key=lambda t: t[0], default=(0.0, None))
+            if best[0] >= auto_th:
+                why = (best[1]["query_id"], f"문자 2-gram 유사도 {best[0]:.2f}")
+            elif best[0] >= 0.30:
+                near.append((round(best[0], 2), r["query_id"], best[1]["query_id"], r["question"], best[1]["question"]))
+        if why:
+            dupes.append({**r, "중복_of": why[0], "중복_이유": why[1]})
+        else:
+            kept.append(r)
+            seen_exact[key] = r["query_id"]
+    return kept, dupes, sorted(near, reverse=True)
+
+
+# ---------------------------------------------------------------- 빈칸 표
+
+def gap_table(rows: list[dict]) -> list[str]:
+    base = [r for r in rows if not r["variant_of"]]
+    cnt = Counter((r["근거위치"], r["난이도"]) for r in base)
+    lines = [
+        "| 근거위치 | " + " | ".join(f"{lv} 현재/목표" for lv in LEVELS) + " | 합계 현재/목표 | 부족 합계 |",
+        "|---|" + "---|" * (len(LEVELS) + 2),
+    ]
+    tot_now = tot_tgt = tot_gap = 0
+    for loc in LOCS:
+        cells, now_sum, tgt_sum, gap_sum = [], 0, 0, 0
+        for i, lv in enumerate(LEVELS):
+            n, t = cnt[(loc, lv)], TARGET[loc][i]
+            now_sum += n
+            if t is None:
+                cells.append(f"{n} / –" if n else "–")
+                continue
+            tgt_sum += t
+            gap = max(t - n, 0)
+            gap_sum += gap
+            mark = " ✅" if n >= t else (" ⚠️" if n < min(MIN_PER_CELL, t) else "")
+            cells.append(f"**{n}** / {t}{mark}" if gap else f"{n} / {t}{mark}")
+        tot_now += now_sum; tot_tgt += tgt_sum; tot_gap += gap_sum
+        lines.append(f"| {loc} | " + " | ".join(cells) + f" | {now_sum} / {tgt_sum or '–'} | {gap_sum or '–'} |")
+    lines.append(f"| **합계** | | | | | **{tot_now} / {tot_tgt}** | **{tot_gap}** |")
+    return lines
+
+
+def type_table(rows: list[dict]) -> list[str]:
+    base = [r for r in rows if not r["variant_of"]]
+    cnt = Counter((r["근거위치"], r["질문유형"]) for r in base)
+    lines = ["| 근거위치 | " + " | ".join(TYPES) + " |", "|---|" + "---|" * len(TYPES)]
+    for loc in LOCS:
+        lines.append(f"| {loc} | " + " | ".join(str(cnt[(loc, t)] or "") for t in TYPES) + " |")
+    return lines
+
+
+def write_report(path: Path, kept, dupes, near, sources: dict[str, int], args):
+    by_src = Counter(r["작성자"] for r in kept)
+    lines = [
+        "# 평가셋 빈칸 표 (자동 생성)",
+        "",
+        f"`scripts/build_eval_set.py` 가 {date.today().isoformat()} 에 만든 파일이다. 손으로 고치지 말고 스크립트를 다시 돌린다.",
+        "",
+        "- 통일 jsonl: `tmp/eval_merged.jsonl` · 중복으로 뺀 문항: `tmp/eval_merged_dupes.jsonl`",
+        "- 표는 `variant_of` 가 있는 말투 변형을 세지 않는다.",
+        "- 굵은 숫자 = 목표에 못 미친 칸, ⚠️ = 최소 5문항도 안 되는 칸, ✅ = 목표 달성.",
+        "- '문서에 없음' 줄은 합의한 표에 없던 줄이다. 함정 중 근거가 아예 없는 문항(미공개 작품 · 문서 범위 밖 세부)을 따로 센다.",
+        "  잘못된 전제처럼 바로잡을 근거가 문서에 있는 함정은 그 근거가 있는 줄에 센다.",
+        "",
+        "## 출처별 개수",
+        "",
+        "| 출처 | 읽은 문항 | 남긴 문항 | 분류 방식 |",
+        "|---|---|---|---|",
+    ]
+    names = {"team": "question_set.jsonl (팀)", "Bae/Chung": "배·정 md (두 파일 동일)", "minji": "민지 함정 T001~T003",
+             "ohmseok": "실험 세트 blind_v2 + from_chunks", "codex": "Codex 생성 (check_eval_gen.py 통과분)"}
+    how = {"ohmseok": "자동", "codex": "생성"}
+    for k, n in sources.items():
+        lines.append(f"| {names[k]} | {n} | {by_src[k]} | {how.get(k, '수동')} |")
+    lines.append(f"| **합계** | {sum(sources.values())} | {len(kept)} | |")
+    lines += ["", "## 1. 근거위치 × 난이도", ""] + gap_table(kept)
+    lines += ["", "## 2. 근거위치 × 질문유형 (현재)", ""] + type_table(kept)
+    track = Counter(r["eval_track"] for r in kept)
+    lines += ["", f"eval_track: retrieval {track['retrieval']} · answer_only {track['answer_only']}", ""]
+
+    lines += ["## 3. 중복으로 뺀 문항", "", "| 뺀 문항 | 남긴 문항 | 이유 | 질문 |", "|---|---|---|---|"]
+    for d in dupes:
+        lines.append(f"| {d['query_id']} | {d['중복_of']} | {d['중복_이유']} | {d['question']} |")
+    lines += ["", f"## 4. 비슷하지만 남긴 쌍 (유사도 0.30 이상, 자동 제거 기준 {args.dup_threshold}) — 사람이 확인", "",
+              "| 유사도 | 문항 | 비슷한 문항 | 질문 | 비슷한 질문 |", "|---|---|---|---|---|"]
+    for s, a, b, qa, qb in near:
+        lines.append(f"| {s} | {a} | {b} | {qa} | {qb} |")
+    lines += ["", "손으로 찾아 남긴 쌍:", "", "| 문항 | 비슷한 문항 | 판단 |", "|---|---|---|"]
+    lines += [f"| {a} | {b} | {why} |" for a, b, why in MANUAL_NEAR]
+
+    lines += ["", "## 5. 근거 확인이 필요한 문항", ""]
+    team = [r for r in kept if r["작성자"] == "team"]
+    bad_ex = [r["query_id"] for r in team if not r["근거확인"]["발췌_확인"]]
+    bad_sec = [r["query_id"] for r in team if not r["근거확인"]["절_일치"]]
+    nonchunk = [(r["query_id"], x) for r in team for x in r["근거확인"]["청킹대상_아닌_근거"]]
+    lvl_diff = [(r["query_id"], r["난이도"], r["근거확인"]["문서수_기준_난이도"]) for r in team
+                if r["answerable"] and r["난이도"] != r["근거확인"]["문서수_기준_난이도"]]
+    no_ev = Counter(r["작성자"] for r in kept if not r["근거확인"].get("발췌_확인"))
+    lines += [
+        f"- 팀 문항 중 발췌가 그 절 본문에 그대로 없는 것: {', '.join(bad_ex) or '없음'}",
+        f"- 팀 문항 중 절 번호와 절 경로가 안 맞는 것: {', '.join(bad_sec) or '없음'}",
+        f"- 팀 근거 중 청킹하지 않는 절(검색으로 못 찾음): {len(nonchunk)}곳",
+    ]
+    lines += [f"  - {q}: {x}" for q, x in nonchunk]
+    lines += [
+        "- 팀 난이도와 '근거 문서 수' 기준이 다른 문항 (팀 라벨 유지, 5단계 순위로 다시 판단):",
+    ] + [f"  - {q}: 팀 {a} / 문서 수 기준 {b}" for q, a, b in lvl_diff] + [
+        f"- 발췌·핵심 사실이 아직 없는 문항: " + ", ".join(f"{k} {v}" for k, v in no_ev.items()),
+        "  (4단계에서 문서·절 + 원문 발췌 + 핵심 사실 3~4개로 채운다)",
+        "",
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+# ---------------------------------------------------------------- main
+
+def sha(p: Path) -> str:
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--team", default=str(ROOT / "question_set.jsonl"))
+    ap.add_argument("--bae", default=str(DOWNLOADS / "CineVerse_Evaluation_Dataset_Bae.md"))
+    ap.add_argument("--chung", default=str(DOWNLOADS / "CineVerse_Evaluation_Dataset_Chung.md"))
+    ap.add_argument("--minji", default=str(DOWNLOADS / "2026-11-25-minji-chunking.md"))
+    ap.add_argument("--blind", default=str(ROOT / "tmp" / "questions_blind_v2.jsonl"))
+    ap.add_argument("--chunks-set", default=str(ROOT / "tmp" / "questions_from_chunks.jsonl"))
+    ap.add_argument("--out", default=str(ROOT / "tmp" / "eval_merged.jsonl"))
+    ap.add_argument("--dupes", default=str(ROOT / "tmp" / "eval_merged_dupes.jsonl"))
+    ap.add_argument("--report", default=str(ROOT / "docs" / "experiments" / "eval_set_gaps.md"))
+    ap.add_argument("--dup-threshold", type=float, default=0.6, help="문자 2-gram 유사도가 이 값 이상이면 자동 중복")
+    ap.add_argument("--extra", nargs="*", default=[],
+                    help="check_eval_gen.py 를 통과한 생성 문항 파일 (예: tmp/eval_gen_passed.jsonl)")
+    args = ap.parse_args()
+
+    corpus = load_corpus()
+    rows, sources = [], {}
+
+    team = team_rows(Path(args.team), corpus)
+    gcorpus = GoldCorpus()
+    for r in team:  # 팀 발췌를 담은 청크를 붙여 eval_retrieval.py 로 바로 돌릴 수 있게 한다
+        attach_gold(r, gcorpus)
+    rows += team; sources["team"] = len(team)
+
+    bae, chung = Path(args.bae), Path(args.chung)
+    if chung.exists() and bae.exists() and sha(chung) != sha(bae):
+        raise SystemExit("배·정 md 내용이 다르다. 지금 스크립트는 같은 파일이라고 보고 하나만 읽는다 — BAE_CLASS 를 나눠야 함")
+    b = bae_rows(bae)
+    rows += b; sources["Bae/Chung"] = len(b)
+
+    m = minji_rows(Path(args.minji))
+    rows += m; sources["minji"] = len(m)
+
+    e = exp_rows(Path(args.blind), corpus, "blind") + exp_rows(Path(args.chunks_set), corpus, "chunk")
+    rows += e; sources["ohmseok"] = len(e)
+
+    gen = []
+    for p in args.extra:
+        for r in read_jsonl(Path(p)):
+            if not str(r["query_id"]).startswith("gen-"):
+                raise SystemExit(f"--extra 문항 query_id 는 gen- 으로 시작해야 한다: {r['query_id']}")
+            gen.append(finish({**blank(), **r}))
+    if gen:
+        rows += gen; sources["codex"] = len(gen)
+
+    ids = Counter(r["query_id"] for r in rows)
+    assert all(v == 1 for v in ids.values()), [k for k, v in ids.items() if v > 1]
+
+    kept, dupes, near = dedupe(rows, args.dup_threshold)
+    for path, data in ((args.out, kept), (args.dupes, dupes)):
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            for r in data:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    write_report(Path(args.report), kept, dupes, near, sources, args)
+
+    print(f"읽음 {len(rows)} → 남김 {len(kept)} · 중복 {len(dupes)} · 비슷한 쌍 {len(near)}")
+    print(f"  {args.out}\n  {args.dupes}\n  {args.report}")
+    print("\n".join(gap_table(kept)))
+
+
+if __name__ == "__main__":
+    main()
