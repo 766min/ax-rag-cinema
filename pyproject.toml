@@ -16,7 +16,6 @@ dependencies = [
     "python-dotenv>=1.2.4",
     "ragas>=0.4.4",
     "rank-bm25>=0.2.2",
-    "torch==2.11.0",
     "uvicorn>=0.54.0",
 ]
 
@@ -25,6 +24,17 @@ dev = [
     "mypy>=2.4.1",
     "pytest>=9.2.0",
     "ruff>=0.17.6",
+]
+# 로컬 재정렬기 (C · C+ 구성). 기본 설치 · CI 에는 들어가지 않는다 — 둘 중 하나만 고른다 (README 설치 참고)
+#   rerank       : CPU · macOS(MPS) 용. Linux · Windows 는 PyTorch CPU 저장소, macOS 는 PyPI 에서 torch 를 받는다
+#   rerank-cu128 : NVIDIA GPU 용. Linux · Windows 는 CUDA 12.8 torch, macOS 는 PyPI torch 로 대신한다
+rerank = [
+    "sentence-transformers==5.2.0",
+    "torch==2.11.0",
+]
+rerank-cu128 = [
+    "sentence-transformers==5.2.0",
+    "torch==2.11.0",
 ]
 
 [tool.pytest.ini_options]
@@ -57,9 +67,24 @@ explicit_package_bases = true
 ignore_missing_imports = true
 warn_unused_ignores = true
 
-# CUDA - pytorch 사용 설정 (있는 경우만 작동)
+[tool.uv]
+# 두 재정렬 그룹은 torch 를 서로 다른 저장소에서 받으므로 함께 설치할 수 없다
+conflicts = [
+    [{ group = "rerank" }, { group = "rerank-cu128" }],
+]
+
+# torch 저장소: 그룹마다 따로 고른다. macOS 는 두 그룹 모두 PyPI torch (MPS 지원) 를 쓴다
+#   cu128 저장소에는 macOS 휠이 없으므로 모든 플랫폼 공통 경로로 쓰지 않는다
 [tool.uv.sources]
-torch = { index = "pytorch-cu128" }
+torch = [
+    { index = "pytorch-cpu", group = "rerank", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu128", group = "rerank-cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [[tool.uv.index]]
 name = "pytorch-cu128"

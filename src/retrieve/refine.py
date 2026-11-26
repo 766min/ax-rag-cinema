@@ -59,7 +59,7 @@ def pick_device(torch: Any, requested: str | None = None) -> str:
     """재정렬 장치: 인자 > RERANKER_DEVICE > NVIDIA GPU(cuda) > Apple GPU(mps) > CPU.
 
     CPU 에서는 후보 80개 재정렬이 질문당 약 49초 걸린다 (2026-11-26 실측). GPU 가 있으면 자동으로 쓴다.
-    Windows 의 기본 torch 는 CPU 전용이라, GPU 를 쓰려면 CUDA 용 torch 가 깔려 있어야 한다 (architecture.md §5).
+    GPU 를 쓰려면 CUDA 용 torch 가 깔려 있어야 한다 (`uv sync --locked --group rerank-cu128`, README 시작하기).
     """
     choice = requested or os.getenv("RERANKER_DEVICE")
     if choice:
@@ -89,8 +89,9 @@ class CrossEncoderReranker:
             from sentence_transformers import CrossEncoder
         except ImportError as exc:
             raise RuntimeError(
-                "재정렬에는 sentence-transformers 가 필요합니다 (팀 의존성 밖): "
-                "uv run --with sentence-transformers==5.2.0 ..."
+                "재정렬(C · C+ 구성)에는 선택 설치 그룹이 필요합니다 (기본 설치에는 없음). "
+                "CPU · macOS: uv sync --locked --group rerank / "
+                "NVIDIA GPU: uv sync --locked --group rerank-cu128 (README '시작하기' 참고)"
             ) from exc
         # NVIDIA GPU(cuda) → Apple GPU(mps) → CPU 순으로 고른다. 고른 장치는 info["device"] 로 기록에 남는다
         device = pick_device(torch, device)

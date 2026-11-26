@@ -1,9 +1,10 @@
+import sys
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
-from retrieve.refine import pick_device, rerank
+from retrieve.refine import CrossEncoderReranker, pick_device, rerank
 from shared.core.models import Candidate, Chunk, SourceId
 from shared.core.schemas import Section
 
@@ -92,3 +93,13 @@ def test_pick_device_respects_argument_then_env(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setenv("RERANKER_DEVICE", "cpu")
     assert pick_device(fake_torch(True, False)) == "cpu"
     assert pick_device(fake_torch(True, False), "cuda:1") == "cuda:1"
+
+
+def test_reranker_without_optional_group_explains_install(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """재정렬 그룹을 설치하지 않았으면, 재정렬기를 만들 때만 설치 방법을 알려 준다."""
+    # sys.modules 에 None 을 넣으면 그 모듈 import 가 ImportError 가 된다 (설치 안 된 상태 흉내)
+    monkeypatch.setitem(sys.modules, "sentence_transformers", None)
+    with pytest.raises(RuntimeError, match="--group rerank"):
+        CrossEncoderReranker("any-model")
