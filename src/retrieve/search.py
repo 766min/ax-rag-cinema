@@ -1,9 +1,3 @@
-"""검색 부품: 벡터 검색 · BM25 키워드 검색 · RRF 결합 (architecture.md §5).
-
-결과는 팀 공통 Candidate 라서 실행 기록(RunRecord)에 그대로 들어간다. retrieve/pipeline.py 가 구성별로 조립한다.
-검색 점수는 순위를 정하는 값일 뿐 답이 맞을 확률이 아니다. 근거 부족을 이 점수 하나로 판정하지 않는다.
-"""
-
 import re
 from collections.abc import Iterable
 from typing import Any
