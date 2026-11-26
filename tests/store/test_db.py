@@ -1,7 +1,9 @@
 # 증분 적재(src/store/db.py) 테스트_영민
 
 from typing import Any
+
 import pytest
+
 from build.chunks import index_version, version_of
 from shared.core.models import Chunk, SourceId
 from shared.core.schemas import Section

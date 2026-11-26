@@ -16,7 +16,6 @@ from build.chunks import (
     shown_year,
     work_header,
 )
-
 from shared.core.models import Chunk, Document, SourceId, Work
 from shared.core.schemas import Section
 

@@ -1,6 +1,7 @@
 # 연결 카드 테스트 
 
 from datetime import date
+
 from build.cards import (
     Prerequisite,
     cast_characters,
@@ -9,8 +10,6 @@ from build.cards import (
     make_connection_card,
     prerequisite_candidates,
 )
-
-
 from shared.core.models import Work
 
 # 기준 작품 (아이언맨 2)

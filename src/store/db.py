@@ -7,6 +7,7 @@ from contextlib import closing
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit
+
 from build.chunks import version_of
 from shared.core.logger import get_logger
 from shared.core.models import Chunk
