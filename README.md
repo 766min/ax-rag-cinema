@@ -33,7 +33,27 @@ git clone https://github.com/766min/ax-rag-cinema.git
 cd ax-rag-cinema
 cp .env.example .env   # .env에 본인 키를 입력 (절대 커밋하지 않음)
 ```
-의존성 설치, 색인 생성, 앱 실행 방법은 구현이 진행되면 이 문서에 추가한다.
+
+### 의존성 설치
+아래 셋 중 **하나만** 고른다. 로컬 재정렬기(C · C+ 구성)가 필요 없으면 기본 설치로 충분하다.
+
+| 환경 | 명령 | torch |
+|---|---|---|
+| 기본 (CI 와 같음) | `uv sync --locked` | 설치 안 함 |
+| 재정렬 · CPU / macOS | `uv sync --locked --group rerank` | Linux · Windows: `+cpu` (PyTorch CPU 저장소), macOS: PyPI (Apple GPU `mps` 사용) |
+| 재정렬 · NVIDIA GPU | `uv sync --locked --group rerank-cu128` | Linux · Windows: `+cu128` (CUDA 12.8, RTX 50 계열 포함) |
+
+- 기본 설치에는 torch · sentence-transformers · NVIDIA 런타임이 들어가지 않는다. 재정렬 그룹 없이 C · C+ 를 돌리면 설치 방법을 알려 주는 오류가 난다.
+- `rerank` 와 `rerank-cu128` 은 함께 고를 수 없다 (`tool.uv.conflicts`). macOS 에서 `rerank-cu128` 을 고르면 `rerank` 와 같은 PyPI torch 가 깔린다.
+- Intel Mac(x86_64)은 PyTorch 가 torch 2.11 휠을 내지 않아 재정렬 그룹을 설치할 수 없다. 기본 설치는 된다.
+- **환경 바꾸기:** 다른 명령으로 `uv sync` 를 다시 돌리면 된다. `uv sync` 는 고른 그룹에 없는 패키지를 지운다. 예를 들어 `rerank` → `rerank-cu128` 은 torch 만 바꾸고, 재정렬 그룹 → 기본은 torch · sentence-transformers 등 13개를 지운다.
+- **실행:** `uv run` 은 패키지를 지우지 않지만, 재정렬 그룹이 필요한 명령에는 같은 `--group` 을 붙이는 것이 안전하다.
+  ```bash
+  HF_HUB_OFFLINE=1 PYTHONPATH=src uv run --locked --group rerank-cu128 python scripts/ask.py "타임 스톤이 뭐야?" --mode C+
+  ```
+- GPU 확인: `uv run --locked --group rerank-cu128 python -c "import torch; print(torch.__version__, torch.cuda.is_available())"` 가 `2.11.0+cu128 True` 이면 된다. 재정렬 장치는 실행 기록 `reranker.device` 에 남는다 (`RERANKER_DEVICE` 로 고정 가능).
+
+색인 생성, 앱 실행 방법은 구현이 진행되면 이 문서에 추가한다.
 
 ## 팀
 | 이름 | GitHub | 역할 |

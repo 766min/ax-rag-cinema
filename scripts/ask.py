@@ -1,7 +1,8 @@
 """질문 한 건을 실제 서비스 경로로 돌린다 (일괄 평가와 같은 movie_qa 경로).
 
     PYTHONPATH=src uv run --locked python scripts/ask.py "아이언맨은 어떻게 탈출해?" --mode A
-    HF_HUB_OFFLINE=1 PYTHONPATH=src uv run --locked --with sentence-transformers==5.2.0 \\
+    # C · C+ 는 재정렬 그룹이 필요하다 (README 시작하기. NVIDIA GPU 면 --group rerank-cu128)
+    HF_HUB_OFFLINE=1 PYTHONPATH=src uv run --locked --group rerank \\
         python scripts/ask.py "타임 스톤이 뭐야?" --mode C+
 
 화면에 원 질문 · 치환 · 검색어 · 상태 · 답변과 '후보 → 모델이 읽은 범위 → 인용' · 출처를 찍는다.

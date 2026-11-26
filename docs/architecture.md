@@ -238,8 +238,8 @@ flowchart TB
 | 구성별 실행 | `src/retrieve/pipeline.py` | ⬜ |
 
 - **재정렬 장치 (2026-11-26).** 재정렬 모델은 NVIDIA GPU(cuda) → Apple GPU(mps) → CPU 순으로 자동으로 고르고, 고른 장치는 실행 기록 `reranker.device` 에 남는다. `RERANKER_DEVICE`(예: `cpu` · `cuda:1`)로 고정할 수 있다. CPU 에서는 후보 20개 재정렬이 질문당 약 10초, 80개는 약 49초였다 (실측). GPU 에서는 1~2초 안팎으로 추정한다 (아직 실측 전).
-  - **GPU PC 에서 주의:** `uv run --with sentence-transformers` 가 받는 Windows 용 torch 는 CPU 전용(`+cpu`)이라 GPU 가 있어도 CPU 로 돈다. CUDA 용 torch 를 PyTorch 저장소에서 받아야 한다. 예: `uv run --locked --with sentence-transformers==5.2.0 --with torch --index https://download.pytorch.org/whl/cu124 --index-strategy unsafe-best-match python scripts/run_eval.py …` (CUDA 버전은 그 PC 의 드라이버에 맞춘다. 이 명령은 GPU PC 에서 처음 한 번 확인한다)
-  - 확인: 같은 명령 앞부분으로 `python -c "import torch; print(torch.__version__, torch.cuda.is_available())"` 를 돌려 `+cu…` · `True` 가 나오는지, 실행 뒤 결과 파일의 `reranker.device` 가 `cuda` 인지 본다.
+  - **설치 (2026-11-26 갱신):** 재정렬기는 기본 의존성이 아니라 선택 그룹이다. CPU · macOS 는 `uv sync --locked --group rerank`, NVIDIA GPU 는 `uv sync --locked --group rerank-cu128` (CUDA 12.8 torch, Linux · Windows). 기본 설치와 CI 에는 torch 가 없다 (README 시작하기).
+  - 확인: `uv run --locked --group rerank-cu128 python -c "import torch; print(torch.__version__, torch.cuda.is_available())"` 가 `+cu128` · `True` 인지, 실행 뒤 결과 파일의 `reranker.device` 가 `cuda` 인지 본다. RTX 5060 Laptop GPU (Windows · Python 3.13) 에서 `cuda` 로 도는 것을 확인했다.
 
 ## 6. 웹 검색 흐름 (2026-11-24 추가)
 
