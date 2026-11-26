@@ -60,8 +60,10 @@ docker compose -f docker-compose.prod.yml restart api
 ## 6. 비용 · 남용 막기
 
 - **OpenAI 대시보드에서 월 예산 한도를 꼭 건다** (코드의 횟수 제한은 보조 장치)
-- 질문: IP 당 1분 6번 · 서버 전체 하루 500번 (`ASK_PER_MINUTE` · `ASK_PER_DAY`), 질문 500자 제한, 같은 질문은 캐시
-- 게시판: IP 당 1분 5건, 글은 텍스트로만 보여 준다. 문제 글은 관리자 토큰으로 숨긴다
+- 질문: IP 당 1분 6번 · 하루 60번, 서버 전체 하루 500번 (`ASK_PER_MINUTE` · `ASK_PER_IP_DAY` · `ASK_PER_DAY`). IPv6 는 /64 대역 단위로 센다. 질문 500자 제한, 같은 질문은 캐시(최근 500개)
+- 동시에 도는 검색 · 재정렬은 2개 (`ASK_CONCURRENCY`). 나머지는 줄을 선다
+- Caddy 가 64KB 넘는 요청을 끊고, 보안 머리글(nosniff · 다른 사이트에 끼워 넣기 금지)을 붙인다
+- 게시판: IP 당 1분 5건, 삭제 비밀번호 시도도 1분 5번. 글은 텍스트로만 보여 준다. 문제 글은 관리자 토큰으로 숨긴다
 
 ```bash
 curl -X POST https://도메인/api/posts/12/hide -H "X-Admin-Token: $BOARD_ADMIN_TOKEN"

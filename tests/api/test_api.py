@@ -114,6 +114,7 @@ CITE = {
 def fake_answer(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     """서비스 경로 대신 정해 둔 결과를 돌려준다. 테스트가 result 를 바꿔 상태별 화면을 본다."""
     monkeypatch.setattr(ask, "per_ip", RateLimit(100, 60, "too many"))
+    monkeypatch.setattr(ask, "per_ip_day", RateLimit(100, 86400, "too many"))
     seen: dict[str, Any] = {
         "result": {
             "status": AnswerStatus.ANSWERED,
@@ -225,6 +226,7 @@ def db(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
     monkeypatch.setenv("BOARD_SCHEMA", schema)
     monkeypatch.setenv("BOARD_ADMIN_TOKEN", "admin-token")
     monkeypatch.setattr(board, "writes", RateLimit(100, 60, "too many"))
+    monkeypatch.setattr(board, "password_tries", RateLimit(100, 60, "too many"))
     yield schema
     with psycopg.connect(dsn, autocommit=True) as conn:
         conn.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
@@ -371,3 +373,62 @@ def test_web_files_serves_next_prefetch(tmp_path: Any) -> None:
     assert c.get("/explore/__next.explore.__PAGE__.txt").text == "rsc"
     assert "explore" in c.get("/explore/").text
     assert c.get("/explore/nope.txt").status_code == 404
+
+
+def test_board_password_guessing_is_limited(db: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    pid = _post()["id"]
+    monkeypatch.setattr(board, "password_tries", RateLimit(3, 60, "too many"))
+    codes = [
+        client.request("DELETE", f"/api/posts/{pid}", json={"password": f"{n:04d}"}).status_code
+        for n in range(4)
+    ]
+    assert codes == [403, 403, 403, 429]  # 4자리 비밀번호를 하나씩 대 보는 공격을 막는다
+
+
+def test_ask_per_ip_daily_limit(
+    fake_answer: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ask, "per_ip_day", RateLimit(1, 86400, "today done"))
+    assert client.post("/api/ask", json={"question": "q"}).status_code == 200
+    r = client.post("/api/ask", json={"question": "q"})
+    assert r.status_code == 429 and r.json()["message"] == "today done"
+
+
+def test_ask_while_warming_up_is_503_not_hang(monkeypatch: pytest.MonkeyPatch) -> None:
+    import asyncio
+
+    monkeypatch.setattr(ask, "FAKE_ASK", False)
+    monkeypatch.setattr(ask, "_state", {})
+    lock = asyncio.Lock()
+    monkeypatch.setattr(ask, "_lock", lock)
+
+    async def run() -> int:
+        await lock.acquire()  # 서버 시작 때 색인 · 모델을 읽는 중인 상태
+        try:
+            await ask.answer("q")
+        except ask.SharedException as exc:
+            return exc.status_code
+        return 200
+
+    assert asyncio.run(run()) == 503
+
+
+def test_ipv6_counted_by_64_block() -> None:
+    from types import SimpleNamespace
+
+    from api.limits import client_ip
+
+    a = client_ip(SimpleNamespace(client=SimpleNamespace(host="2001:db8:1:2::1")))  # type: ignore[arg-type]
+    b = client_ip(SimpleNamespace(client=SimpleNamespace(host="2001:db8:1:2:ffff::9")))  # type: ignore[arg-type]
+    assert a == b == "2001:db8:1:2::/64"
+    assert client_ip(SimpleNamespace(client=SimpleNamespace(host="1.2.3.4"))) == "1.2.3.4"  # type: ignore[arg-type]
+
+
+def test_answer_cache_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    from service.answer_cache import AnswerCache
+
+    monkeypatch.setattr(ask, "CACHE_MAX", 2)
+    cache = ask._bounded(AnswerCache({}, {}))
+    for k in "abc":
+        cache.put(k, {"v": k})
+    assert list(cache._store) == ["b", "c"]  # 가장 오래된 답부터 버린다

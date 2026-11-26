@@ -25,16 +25,24 @@ function Movie() {
 
   useEffect(() => {
     if (!id) return;
+    let alive = true; // 다른 작품으로 옮긴 뒤 늦게 온 응답은 버린다
     api<WorkDetail>(`/works/${encodeURIComponent(id)}`)
-      .then(setWork)
-      .catch((e: Error) => setError(e.message));
+      .then((w) => {
+        if (!alive) return;
+        setWork(w);
+        setError("");
+      })
+      .catch((e: Error) => alive && setError(e.message));
+    return () => {
+      alive = false;
+    };
   }, [id]);
 
   return (
     <div className="absolute top-[150px] right-[120px] bottom-[40px] left-[120px] z-10 flex gap-16">
       {(error || !id) && <p className="text-amber">{error || "작품이 지정되지 않았어요."}</p>}
-      {!work && !error && id && <p className="text-muted">불러오는 중…</p>}
-      {work && (
+      {(!work || work.work_id !== id) && !error && id && <p className="text-muted">불러오는 중…</p>}
+      {work && work.work_id === id && (
         <>
           <div className={`tilt relative h-[700px] w-[520px] flex-none overflow-hidden rounded-[28px] border border-white/15 shadow-deep ${artOf(work.work_id)}`} style={{ ["--lift" as string]: "6px" }}>
             <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_50%,rgb(4_5_12/0.9))]" />

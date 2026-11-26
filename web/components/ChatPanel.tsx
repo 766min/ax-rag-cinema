@@ -99,6 +99,7 @@ export default function ChatPanel() {
       <div className="absolute inset-0 z-40 bg-[linear-gradient(90deg,rgb(4_5_12/0.25)_30%,rgb(4_5_12/0.8))] backdrop-blur-[3px]" onClick={close} />
       <aside
         role="dialog"
+        aria-modal="true"
         aria-label="멀티버스 로어 AI"
         className="glass absolute top-[28px] right-[48px] bottom-[28px] z-50 flex w-[600px] flex-col overflow-hidden rounded-[30px] border-white/20 bg-[linear-gradient(170deg,rgb(60_50_120/0.42),rgb(14_16_40/0.72)_45%,rgb(10_12_30/0.85))] shadow-[0_50px_120px_rgb(0_0_0/0.75),0_0_80px_rgb(139_92_246/0.25)]"
       >

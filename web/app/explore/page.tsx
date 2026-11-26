@@ -28,12 +28,17 @@ function Explore() {
     const query = new URLSearchParams({ canon: "true" });
     if (q) query.set("q", q);
     if (phase) query.set("phase", phase);
+    let alive = true; // 검색어를 바꾼 뒤 늦게 온 이전 결과는 버린다
     api<Work[]>(`/works?${query}`)
       .then((w) => {
+        if (!alive) return;
         setWorks(w);
         setError("");
       })
-      .catch((e: Error) => setError(e.message));
+      .catch((e: Error) => alive && setError(e.message));
+    return () => {
+      alive = false;
+    };
   }, [q, phase]);
 
   const go = (next: { q?: string; phase?: string }) => {

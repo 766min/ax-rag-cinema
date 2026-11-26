@@ -3,7 +3,7 @@
 import { IconHeart, IconMessageCircle, IconPencil, IconSearch } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { ago, api, CATEGORIES, type Category, type Post, type PostPage } from "@/lib/api";
 
 const TOPICS = ["인피니티 스톤", "TVA", "와칸다", "양자 영역", "아스가르드", "멀티버스"];
@@ -35,23 +35,35 @@ function Community() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // 탭 · 검색어가 바뀐 뒤에 늦게 도착한 이전 응답은 버린다
+  const view = `${category}|${q}`;
+  const current = useRef(view);
+  useEffect(() => {
+    current.current = view;
+  }, [view]);
+
   const more = () => {
     setLoading(true);
     fetchPage(pages.length, category, q)
-      .then((p) => setPages((prev) => [...prev, p]))
+      .then((p) => current.current === view && setPages((prev) => [...prev, p]))
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     // 탭 · 검색어가 바뀌면 처음부터 다시
+    let alive = true;
     fetchPage(0, category, q)
       .then((p) => {
+        if (!alive) return;
         setPages([p]);
         setError("");
       })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch((e: Error) => alive && setError(e.message))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
   }, [category, q]);
 
   useEffect(() => {

@@ -30,6 +30,14 @@ Category = Literal["lore", "post_credits", "watch_order", "theory", "free"]
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 PAGE = 20
 
+# 지우기 비밀번호 맞히기 막기 (4자리 비밀번호를 하나씩 대 보는 공격)
+password_tries = RateLimit(
+    int(os.getenv("BOARD_DELETES_PER_MINUTE", "5")),
+    60,
+    "비밀번호를 너무 많이 시도했어요. 1분 뒤에 다시 해 주세요.",
+)
+# 좋아요 중복 막기용 비밀값. 없으면 서버마다 임의 값 (고정 기본값이면 해시에서 IP 를 되찾을 수 있다)
+SECRET = os.getenv("BOARD_SECRET") or secrets.token_hex(32)
 writes = RateLimit(
     int(os.getenv("BOARD_WRITES_PER_MINUTE", "5")),
     60,
@@ -128,8 +136,7 @@ def check_password(password: str, stored: str) -> bool:
 
 def _voter(request: Request) -> str:
     # 좋아요 중복 막기용. IP 를 그대로 저장하지 않고 비밀값을 섞은 해시만 남긴다
-    secret = os.getenv("BOARD_SECRET", "dev-only-secret")
-    return hmac.new(secret.encode(), client_ip(request).encode(), "sha256").hexdigest()[:32]
+    return hmac.new(SECRET.encode(), client_ip(request).encode(), "sha256").hexdigest()[:32]
 
 
 def _admin(token: str | None) -> None:
@@ -276,7 +283,8 @@ def get_post(post_id: int) -> APIResponse[PostDetail]:
 
 
 @router.delete("/posts/{post_id}")
-def delete_post(post_id: int, body: PasswordIn) -> APIResponse[None]:
+def delete_post(post_id: int, body: PasswordIn, request: Request) -> APIResponse[None]:
+    password_tries.check(client_ip(request))
     with _db() as (cur, s):
         row = _visible_post(cur, s, post_id, "password_hash")
         if not check_password(body.password, row["password_hash"]):
@@ -350,7 +358,8 @@ def _visible_comment(
 
 
 @router.delete("/comments/{comment_id}")
-def delete_comment(comment_id: int, body: PasswordIn) -> APIResponse[None]:
+def delete_comment(comment_id: int, body: PasswordIn, request: Request) -> APIResponse[None]:
+    password_tries.check(client_ip(request))
     with _db() as (cur, s):
         row = _visible_comment(cur, s, comment_id)
         if not check_password(body.password, row["password_hash"]):
