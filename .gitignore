@@ -39,12 +39,10 @@ tmp/
 *.log
 logs/
 
-# 팀 데이터 공간
-# [팀원 로컬 설정] 저장소를 받은 뒤 아래 데이터 제외 규칙 맨 앞의 #을 제거하고 저장하세요.
-# 압축을 풀고 cineverse-dataset-schema 폴더 자체를 저장소 루트의 data/ 안에 넣으세요.
-# 최종 경로: ax-rag-cinema/data/cineverse-dataset-schema/
-# 주석을 해제한 로컬 변경과 데이터셋 원본은 기능 PR에서 제외하세요.
-#data/
+# 팀 데이터 공간 — 폴더 자리(.gitkeep)만 올리고 안의 데이터는 막는다 (로컬에서 고칠 것 없음)
+# 데이터셋은 data/cineverse-dataset-schema/ 에 둔다. IMDb 값이 있어 공개 저장소에 올리지 않는다
+data/*
+!data/.gitkeep
 
 # 시험 실행 기록 (run_id 끝에 -try 를 붙인 파일, 최종 run 만 커밋)
 results/*-try*.jsonl
