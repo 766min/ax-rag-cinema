@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import Any, Protocol
+
 from shared.core.models import Candidate
 
 # 임시 기본 모델 (로컬 캐시에 있음, 이용 조건 미확인 — 팀 결정 사항)
