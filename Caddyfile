@@ -1,0 +1,5 @@
+# 도메인을 SITE_ADDRESS 에 넣으면 Caddy 가 HTTPS 인증서를 자동으로 받는다 (없으면 localhost)
+{$SITE_ADDRESS:localhost} {
+	encode zstd gzip
+	reverse_proxy api:8000
+}

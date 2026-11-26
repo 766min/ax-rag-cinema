@@ -47,6 +47,18 @@ jobs:
     name: test (pytest)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # 게시판 API 테스트(tests/api)가 임시 스키마를 만들어 쓰는 빈 Postgres
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      BOARD_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: astral-sh/setup-uv@v10.4.0
@@ -61,3 +73,21 @@ jobs:
       - name: 테스트가 아직 없음
         if: hashFiles('tests/**/test_*.py', 'tests/**/*_test.py') == ''
         run: echo '테스트 파일이 없어 pytest 를 실행하지 않았습니다.' >> "$GITHUB_STEP_SUMMARY"
+
+  web:
+    name: web (lint · build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
