@@ -222,9 +222,6 @@ flowchart TB
 - **리라이트 기본 켜기 (2026-11-26 팀 합의).** 문서가 영어라 한국어 질문 그대로는 정답이 후보에도 잘 오르지 않았다 (dev 11문항 실측: 리라이트 없음 Hit@5 1~2/10 · 정답 0~1/10 → 있음 5~6/10 · 3/10). 그래서 서비스 · `ask.py` · `run_eval.py` 모두 A · B · C 를 요청해도 A+ · B+ · C+ 로 돌리고, 기록(`trace.retrieval_mode` · `params.mode`)에는 실제로 돈 구성이 남는다. 질문 준비는 `src/service/query_prep.py` 한 곳에서 한다. 리라이트 효과를 다시 잴 때만 `--no-rewrite`(함수 인자 `rewrite=False`)로 끈다.
 - C 의 재정렬은 RRF 가 합친 후보 N개를 Cross-Encoder 가 질문과 한 쌍으로 다시 읽고 채점해 상위 5개만 생성 모델에 넘긴다. 벡터 · BM25 · RRF 는 질문과 청크를 나란히 놓고 읽지 않으므로, 작품 이름만 겹치는 청크가 답이 든 문단을 5위 밖으로 밀어낼 수 있다. 쌍마다 모델을 돌려 느리므로 전체 색인이 아니라 후보에만 쓴다. B 와 C 의 점수 차이가 곧 재정렬의 효과이고, 그래서 §8 에서 재정렬 전후 순위를 남긴다.
 - 모든 구성이 같은 생성 모델 · 프롬프트 · 출력 한도를 쓰고, 컨텍스트는 상위 5청크다.
-- **재정렬 장치 (2026-11-26).** 재정렬 모델은 NVIDIA GPU(cuda) → Apple GPU(mps) → CPU 순으로 자동으로 고르고, 고른 장치는 실행 기록 `reranker.device` 에 남는다. `RERANKER_DEVICE`(예: `cpu` · `cuda:1`)로 고정할 수 있다. CPU 에서는 후보 20개 재정렬이 질문당 약 10초, 80개는 약 49초였다 (실측). GPU 에서는 1~2초 안팎으로 추정한다 (아직 실측 전).
-  - **GPU PC 에서 주의:** `uv run --with sentence-transformers` 가 받는 Windows 용 torch 는 CPU 전용(`+cpu`)이라 GPU 가 있어도 CPU 로 돈다. CUDA 용 torch 를 PyTorch 저장소에서 받아야 한다. 예: `uv run --locked --with sentence-transformers==5.2.0 --with torch --index https://download.pytorch.org/whl/cu124 --index-strategy unsafe-best-match python scripts/run_eval.py …` (CUDA 버전은 그 PC 의 드라이버에 맞춘다. 이 명령은 GPU PC 에서 처음 한 번 확인한다)
-  - 확인: 같은 명령 앞부분으로 `python -c "import torch; print(torch.__version__, torch.cuda.is_available())"` 를 돌려 `+cu…` · `True` 가 나오는지, 실행 뒤 결과 파일의 `reranker.device` 가 `cuda` 인지 본다.
 - 다섯 구성은 **고정 문서 컬렉션만** 읽는다. 웹 컬렉션은 읽지 않는다.
 - 후보 수 · RRF 가중치 · 재정렬 입력 수 · 근거 부족 판정 · 이름 사전은 `eval/dev.json` 으로만 고친다. `eval/test.json` 은 잠근 뒤 고치지 않는다.
 
@@ -234,6 +231,10 @@ flowchart TB
 | 벡터 · BM25 · RRF | `src/retrieve/search.py` | ⬜ |
 | 재정렬 · 리라이트 | `src/retrieve/refine.py` | ⬜ |
 | 구성별 실행 | `src/retrieve/pipeline.py` | ⬜ |
+
+- **재정렬 장치 (2026-11-26).** 재정렬 모델은 NVIDIA GPU(cuda) → Apple GPU(mps) → CPU 순으로 자동으로 고르고, 고른 장치는 실행 기록 `reranker.device` 에 남는다. `RERANKER_DEVICE`(예: `cpu` · `cuda:1`)로 고정할 수 있다. CPU 에서는 후보 20개 재정렬이 질문당 약 10초, 80개는 약 49초였다 (실측). GPU 에서는 1~2초 안팎으로 추정한다 (아직 실측 전).
+  - **GPU PC 에서 주의:** `uv run --with sentence-transformers` 가 받는 Windows 용 torch 는 CPU 전용(`+cpu`)이라 GPU 가 있어도 CPU 로 돈다. CUDA 용 torch 를 PyTorch 저장소에서 받아야 한다. 예: `uv run --locked --with sentence-transformers==5.2.0 --with torch --index https://download.pytorch.org/whl/cu124 --index-strategy unsafe-best-match python scripts/run_eval.py …` (CUDA 버전은 그 PC 의 드라이버에 맞춘다. 이 명령은 GPU PC 에서 처음 한 번 확인한다)
+  - 확인: 같은 명령 앞부분으로 `python -c "import torch; print(torch.__version__, torch.cuda.is_available())"` 를 돌려 `+cu…` · `True` 가 나오는지, 실행 뒤 결과 파일의 `reranker.device` 가 `cuda` 인지 본다.
 
 ## 6. 웹 검색 흐름 (2026-11-24 추가)
 
