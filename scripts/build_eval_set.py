@@ -517,6 +517,39 @@ def section_of_chunk(c: dict, dc: DataCorpus) -> int | None:
     return None
 
 
+# 실험 세트(blind_v2)의 메모(label_note)는 Codex 가 파일을 쓸 때 한글을 물음표 문자(0x3F)로 바꿔 저장해
+# 원래 글자를 되살릴 수 없다. 원본 파일은 그대로 두고, 평가셋에 옮길 때만 아래처럼 정리한다.
+#   ① 33줄에 똑같이 붙은 문장 → 당시 지시문("primary_gold 를 고른 이유를 덧붙여")으로 뜻을 복원
+#   ② 키워드 확인 기록 → 남은 숫자와 지시문("키워드로 찾아보고 확인 방법을 적어")으로 복원
+#   ③ 나머지 깨진 조각 → 뜻을 알 수 없어 지우고 표시만 남김
+# 복원한 문장에는 '(복원)' 을 붙여 원래 문장이 아님을 드러낸다. 메모는 채점에 쓰지 않는다.
+BROKEN_PRIMARY_NOTE = "primary_gold? ???? ?? ??????? ?? ??? ???? ???."
+BROKEN_KEYWORD_NOTE = re.compile(
+    r"\?\? \?{4} \?\? \?\? \?\?: (?P<counts>[^;]*);\s*\?{3} \?\? \?\? \?{3} \?{5} \?{3} \?{4} \?\?\."
+)
+
+
+def clean_broken_memo(note: str) -> str:
+    if "??" not in note:
+        return note
+    note = note.replace(
+        BROKEN_PRIMARY_NOTE,
+        "primary_gold: 질문에 가장 직접 답하는 청크로 고름 (복원: 한글 깨짐 → 당시 지시문 기준).",
+    )
+
+    def keyword(m: re.Match) -> str:
+        pairs = re.findall(r"([^=,]+)=(\d+)\?", m.group("counts"))
+        found = ", ".join(f"{k.strip()} {n}건" for k, n in pairs)
+        return f"키워드 검색: {found} — 답이 되는 문장 없음 (복원: 한글 깨짐 → 남은 숫자와 당시 지시문 기준)."
+
+    note = BROKEN_KEYWORD_NOTE.sub(keyword, note)
+    if "??" in note:
+        # 문장 단위로 나눠(약어 'S.H.I.E.L.D.' 안에서는 안 나뉘게 마침표 뒤 공백 기준) 깨진 문장만 뺀다
+        kept = [s for s in re.split(r"(?<=[.;])\s+", note) if "??" not in s]
+        note = " ".join(kept + ["(깨진 메모 일부 삭제)"])
+    return note
+
+
 def exp_rows(path: Path, chunks: dict, dc: DataCorpus, prefix: str) -> list[dict]:
     out = []
     for r in read_jsonl(path):
@@ -524,7 +557,7 @@ def exp_rows(path: Path, chunks: dict, dc: DataCorpus, prefix: str) -> list[dict
         q_ko = r.get("question_ko")
         premise = r.get("premise_error")
         loc_override = None
-        memo = [r.get("label_note") or ""]
+        memo = [clean_broken_memo(r.get("label_note") or "")]
         if qid in BLIND_FIX and prefix == "blind":
             q_ko, premise, loc_override = BLIND_FIX[qid]
             memo.append("한국어 깨짐 → question_en 에서 다시 씀(검토 필요)")

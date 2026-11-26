@@ -41,6 +41,8 @@
 ```text
 MCU 한국어 질의응답 RAG 의 평가 문항을 만든다. 사용자는 한국어로 묻고, 시스템은 영어 위키백과 근거를 찾아 한국어로 답한다.
 결과는 아래에 지정한 tmp/eval_gen_<이름>.jsonl 하나에만 쓴다. eval/ · scripts/ · data/ · question_set.jsonl 은 수정하지 마.
+파일은 반드시 UTF-8 로 쓴다 (파이썬 open(..., encoding="utf-8") · json.dumps(..., ensure_ascii=False), PowerShell 은 Out-File -Encoding utf8).
+다 쓴 뒤 파일에 "??" 가 없는지 확인한다 — 예전 결과물에서 한글이 물음표로 바뀌어 저장돼 되살리지 못했다.
 표본 추출이나 검색용 임시 코드는 tmp/gen_scratch/ 안에만 둔다.
 
 ## 데이터 (읽기 전용)

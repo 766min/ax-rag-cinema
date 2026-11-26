@@ -83,6 +83,13 @@ def test_every_row_has_question_facts_and_evidence(split: str) -> None:
 
 
 @pytest.mark.parametrize("split", ["dev", "test"])
+def test_no_broken_korean(split: str) -> None:
+    """한글이 물음표 문자로 바뀐 채 저장된 글(예: '???? ??')이 없어야 한다 (UTF-8 이 아닌 인코딩으로 쓴 흔적)"""
+    text = (EVAL_DIR / f"{split}.json").read_text(encoding="utf-8")
+    assert "??" not in text
+
+
+@pytest.mark.parametrize("split", ["dev", "test"])
 def test_key_facts_at_most_four(split: str) -> None:
     """정답 충족은 핵심 사실을 모두 맞혀야 1 이다. 사실이 많으면 맞는 답도 거의 오답이 된다"""
     for r in load(split):
