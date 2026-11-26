@@ -42,6 +42,17 @@ def health() -> APIResponse[dict[str, str]]:
     return APIResponse.ok({"status": "ok"})
 
 
+class WebFiles(StaticFiles):
+    """Next 정적 화면. 화면 이동 미리 받기는 explore/__next.explore.__PAGE__.txt 를 부르는데
+    빌드 결과는 explore/__next.explore/__PAGE__.txt 라서 없으면 그 경로로 한 번 더 찾는다."""
+
+    def lookup_path(self, path: str) -> tuple[str, os.stat_result | None]:
+        full, stat = super().lookup_path(path)
+        if stat is None and path.endswith(".__PAGE__.txt"):
+            return super().lookup_path(path.removesuffix(".__PAGE__.txt") + "/__PAGE__.txt")
+        return full, stat
+
+
 # API 경로를 다 등록한 뒤에 마지막으로 붙여야 /api/* 가 화면 파일에 가려지지 않는다
 if WEB_DIR.is_dir():
-    app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
+    app.mount("/", WebFiles(directory=WEB_DIR, html=True), name="web")

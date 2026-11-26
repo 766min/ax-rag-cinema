@@ -344,3 +344,25 @@ def test_password_hash_roundtrip() -> None:
     stored = board.hash_password("1234")
     assert stored.startswith("scrypt$") and "1234" not in stored
     assert board.check_password("1234", stored) and not board.check_password("1235", stored)
+
+
+def test_summary_cut_at_sentence_end(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(works, "SUMMARY_CHARS", 30)
+    assert works._cut("First sentence here. Second one is long.") == "First sentence here."
+    assert works._cut("short") == "short"
+
+
+def test_web_files_serves_next_prefetch(tmp_path: Any) -> None:
+    from fastapi import FastAPI
+
+    from api.main import WebFiles
+
+    (tmp_path / "explore" / "__next.explore").mkdir(parents=True)
+    (tmp_path / "explore" / "__next.explore" / "__PAGE__.txt").write_text("rsc")
+    (tmp_path / "explore" / "index.html").write_text("<h1>explore</h1>")
+    web = FastAPI()
+    web.mount("/", WebFiles(directory=tmp_path, html=True))
+    c = TestClient(web)
+    assert c.get("/explore/__next.explore.__PAGE__.txt").text == "rsc"
+    assert "explore" in c.get("/explore/").text
+    assert c.get("/explore/nope.txt").status_code == 404

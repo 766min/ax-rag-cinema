@@ -49,6 +49,15 @@ def _summary(work_id: str) -> WorkSummary:
     raise NotFoundException("작품을 찾을 수 없습니다.")
 
 
+def _cut(text: str) -> str:
+    """SUMMARY_CHARS 안에서 마지막 문장 끝까지만 (문장 중간에서 끊기지 않게)."""
+    if len(text) <= SUMMARY_CHARS:
+        return text
+    head = text[:SUMMARY_CHARS]
+    end = head.rfind(". ")
+    return head[: end + 1] if end > 0 else head.rstrip() + "…"
+
+
 def all_works() -> list[WorkSummary]:
     return [WorkSummary.model_validate(w.model_dump()) for w in _dataset().works]
 
@@ -92,7 +101,7 @@ def get_work(work_id: str) -> APIResponse[WorkDetail]:
     return APIResponse.ok(
         WorkDetail(
             **summary.model_dump(),
-            summary=lead[:SUMMARY_CHARS],
+            summary=_cut(lead),
             source_url=doc.source_url if doc else None,
             license=doc.license if doc else None,
         )
