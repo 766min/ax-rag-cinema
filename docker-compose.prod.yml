@@ -26,6 +26,7 @@ services:
       CORS_ORIGINS: "" # 화면과 API 가 같은 주소라 필요 없다
     volumes:
       - ./data:/app/data:ro # 데이터셋 · 별칭 (이미지에는 없음)
+      - hf-cache:/app/hf-cache # 재정렬 모델 (처음 한 번만 받는다)
     depends_on:
       db:
         condition: service_healthy
@@ -48,3 +49,4 @@ services:
 volumes:
   pgdata:
   caddy-data:
+  hf-cache:

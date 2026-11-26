@@ -4,6 +4,7 @@
 """
 
 import asyncio
+import logging
 import os
 import re
 import uuid
@@ -21,8 +22,10 @@ from shared.core.schemas import AnswerStatus, APIResponse
 router = APIRouter(tags=["ask"])
 
 FAKE_ASK = os.getenv("FAKE_ASK", "").strip().lower() in {"true", "1", "yes", "on"}
-# 배포 기본 B+ : 재정렬 모델(torch)이 없어도 돈다. 서버에 rerank 그룹을 깔았으면 C+ 로
-ASK_MODE = os.getenv("ASK_MODE", "B+")
+# 팀 공식 구성 C+ (리라이트 + 하이브리드 + 재정렬). 재정렬 모델(rerank 그룹)이 없는 서버는 B+ 로
+ASK_MODE = os.getenv("ASK_MODE", "C+")
+# 각 검색기에서 가져오는 후보 수 (팀 평가값 40). 재정렬은 후보 수에 비례해 느려져서 CPU 서버는 줄여 쓴다
+ASK_POOL = int(os.getenv("ASK_POOL", "40"))
 ASK_WEB = os.getenv("ASK_WEB", "").strip().lower() in {"true", "1", "yes", "on"}
 per_ip = RateLimit(
     int(os.getenv("ASK_PER_MINUTE", "6")), 60, "질문이 너무 잦아요. 1분 뒤에 다시 물어봐 주세요."
@@ -71,7 +74,7 @@ def number_citations(answer: str, chunk_ids: list[str]) -> str:
     number = {cid: str(n) for n, cid in enumerate(chunk_ids, start=1)}
 
     def swap(m: re.Match[str]) -> str:
-        parts = [p.strip() for p in m.group(1).split(",")]
+        parts = [p.strip() for p in re.split(r"[,;]", m.group(1))]  # 모델이 ; 로 나누기도 한다
         if not all(p in number or p.isdigit() or ID_LIKE.match(p) for p in parts):
             return m.group(0)  # 청크 ID 가 아닌 보통 괄호 글은 그대로
         kept = [number.get(p, p) for p in parts if p in number or p.isdigit()]
@@ -92,7 +95,7 @@ async def _runtime() -> dict[str, Any]:
             if ASK_MODE not in MODES:
                 raise RuntimeError(f"ASK_MODE={ASK_MODE} 는 없는 구성입니다 ({list(MODES)})")
             rt = await asyncio.to_thread(open_runtime, [ASK_MODE], context="parent")
-            config = SearchConfig()
+            config = SearchConfig(pool=ASK_POOL)
             base = make_retrieve(rt.retriever, MODES[ASK_MODE], config)
 
             async def retrieve(query: str) -> Any:
@@ -112,6 +115,14 @@ async def _runtime() -> dict[str, Any]:
                 ),
             )
     return _state
+
+
+async def warm_up() -> None:
+    """서버 시작 때 미리 준비. 실패해도 서버는 뜨고, 첫 질문 때 다시 시도한다 (그때 503 으로 알린다)."""
+    try:
+        await _runtime()
+    except Exception:  # 원인(색인 없음 · 재정렬 모델 없음 등)을 서버 로그에 남긴다
+        logging.getLogger(__name__).exception("챗봇 준비 실패 (ASK_MODE=%s)", ASK_MODE)
 
 
 async def _web(question: str) -> Any:
@@ -150,7 +161,8 @@ async def answer(question: str) -> dict[str, Any]:
 
     try:
         s = await _runtime()
-    except Exception as exc:  # DB · 데이터셋이 준비되지 않음
+    except Exception as exc:  # DB · 데이터셋 · 재정렬 모델이 준비되지 않음
+        logging.getLogger(__name__).exception("챗봇 준비 실패 (ASK_MODE=%s)", ASK_MODE)
         raise SharedException(
             "챗봇을 준비하지 못했어요. 잠시 후 다시 시도해 주세요.",
             status_code=503,

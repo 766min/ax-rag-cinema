@@ -5,8 +5,9 @@
 ## 개발
 
 ```bash
-# 1) API (저장소 루트). DB · 색인 없이 화면만 볼 때는 FAKE_ASK=true
-uv run --locked uvicorn api.main:app --app-dir src --port 8000
+# 1) API (저장소 루트). 챗봇 기본 구성 C+ 는 재정렬 그룹이 필요하다 (NVIDIA GPU: rerank-cu128 · 그 외: rerank)
+uv run --locked --group rerank-cu128 uvicorn api.main:app --app-dir src --port 8000
+#    DB · 색인 없이 화면만 볼 때는 FAKE_ASK=true (재정렬 그룹 없이도 된다)
 
 # 2) 화면 (web/)
 npm install

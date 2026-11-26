@@ -4,7 +4,10 @@
 화면 개발 중에는 web/ 에서 npm run dev (3000) 를 따로 띄우고 CORS_ORIGINS 로 잇는다.
 """
 
+import asyncio
+import contextlib
 import os
+from collections.abc import AsyncIterator
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -24,7 +27,17 @@ CORS_ORIGINS = [
     o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if o.strip()
 ]
 
-app = FastAPI(title="CINEVERSE API")
+
+@contextlib.asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # 서버가 켜지자마자 색인 · 재정렬 모델을 미리 읽어 둔다 (첫 질문이 수십 초 기다리지 않게)
+    warm = None if ask.FAKE_ASK else asyncio.create_task(ask.warm_up())
+    yield
+    if warm:
+        warm.cancel()
+
+
+app = FastAPI(title="CINEVERSE API", lifespan=lifespan)
 register_exception_handlers(app)
 # 화면을 FastAPI 가 같이 보내는 배포에서는 같은 주소라 CORS 가 필요 없다 (CORS_ORIGINS 를 비워도 됨)
 app.add_middleware(

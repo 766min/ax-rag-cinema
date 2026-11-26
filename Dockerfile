@@ -14,15 +14,19 @@ FROM python:3.13-slim
 COPY --from=ghcr.io/astral-sh/uv:0.12.2 /uv /usr/local/bin/uv
 WORKDIR /app
 ENV UV_LINK_MODE=copy UV_COMPILE_BYTECODE=1 UV_PROJECT_ENVIRONMENT=/app/.venv
-# 재정렬 모델(torch)은 넣지 않는다. C · C+ 를 쓰려면 --group rerank 를 더하고 ASK_MODE=C+
+# 챗봇 기본 구성 C+ 는 재정렬 모델(sentence-transformers + torch)이 필요하다.
+# 기본은 CPU torch(rerank). NVIDIA GPU 서버면 --build-arg RERANK_GROUP=rerank-cu128
+ARG RERANK_GROUP=rerank
 RUN --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=.python-version,target=.python-version \
-    uv sync --locked --no-dev --no-install-project
+    uv sync --locked --no-dev --no-install-project --group "$RERANK_GROUP"
 COPY src ./src
 COPY --from=web /web/out ./web/out
 
-RUN useradd --system --no-create-home app
+# 재정렬 모델(Dongjin-kr/ko-reranker, 약 2.2GB)은 이미지에 넣지 않고 첫 실행 때 받아 볼륨에 둔다
+ENV HF_HOME=/app/hf-cache
+RUN useradd --system --no-create-home app && mkdir -p /app/hf-cache && chown app /app/hf-cache
 USER app
 EXPOSE 8000
 # Caddy 뒤에서 돌므로 실제 접속 주소(요청 횟수 제한용)를 X-Forwarded-For 에서 읽는다. 8000 은 밖에 열지 않는다

@@ -6,7 +6,7 @@
 
 ## 1. 서버 준비
 
-- Docker 가 깔린 리눅스 VM 하나 (메모리 2GB 이상. 재정렬 C+ 를 쓰면 4GB 이상)
+- Docker 가 깔린 리눅스 VM 하나 (CPU 4코어 · 메모리 4GB 이상, 디스크 15GB 이상). 챗봇 기본 구성 C+ 의 재정렬 모델(약 2.2GB)이 메모리에 올라간다
 - 도메인을 쓰면 DNS A 레코드를 서버 IP 로. 방화벽은 80 · 443 만 연다
 - 저장소를 받고, **데이터셋을 `data/cineverse-dataset-schema/` 에 직접 올린다** (저장소 · 이미지에는 없다)
 
@@ -19,7 +19,8 @@
 | `OPENAI_API_KEY` 외 필수 키 | 로컬과 같게 |
 | `POSTGRES_PASSWORD` | 새 비밀번호 (URL 에 들어가므로 영문 · 숫자만) |
 | `SITE_ADDRESS` | 도메인 (없으면 `localhost`) |
-| `ASK_MODE` | `B+` (기본). `C+` 는 Dockerfile 에 rerank 그룹을 더해야 한다 |
+| `ASK_MODE` | `C+` (기본, 팀 공식 구성). 메모리가 모자라면 `B+` |
+| `ASK_POOL` | `40` (기본). CPU 가 느리면 `20` |
 | `BOARD_SECRET` · `BOARD_ADMIN_TOKEN` | 긴 임의 문자열 |
 | `LOG_FILE` | 비운다 (컨테이너는 파일을 쓰지 않는다) |
 
@@ -31,6 +32,10 @@
 docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml logs -f api
 ```
+
+첫 실행 때 재정렬 모델(약 2.2GB)을 받느라 몇 분 걸린다 (`hf-cache` 볼륨에 남아 다음부터는 바로 뜬다). 다 받기 전 질문은 503 으로 "잠시 후 다시" 가 나온다.
+
+NVIDIA GPU 서버면 `docker compose -f docker-compose.prod.yml build --build-arg RERANK_GROUP=rerank-cu128` 로 GPU 용 torch 를 넣는다 (컨테이너에 GPU 를 연결하는 설정은 따로 필요).
 
 ## 4. 색인 옮기기 (한 번)
 
@@ -61,6 +66,16 @@ docker compose -f docker-compose.prod.yml restart api
 ```bash
 curl -X POST https://도메인/api/posts/12/hide -H "X-Admin-Token: $BOARD_ADMIN_TOKEN"
 ```
+
+## 속도 (2026-11-27 노트북 실측, 질문 1건)
+
+| 실행 | 후보 수 | 답 1건 |
+|---|---|---|
+| GPU (RTX 5060) | 40 | 9.4초 |
+| CPU | 40 | 18.6초 |
+| CPU | 20 | 14.3초 |
+
+클라우드 VM 의 CPU 는 노트북보다 느릴 수 있다. 같은 질문은 캐시로 1초대.
 
 ## 한계
 

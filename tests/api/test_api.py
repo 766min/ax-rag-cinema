@@ -197,6 +197,11 @@ def test_number_citations_keeps_plain_brackets() -> None:
     ids = ["tt1-wikipedia-plot-p01", "wp-5-lore-p02"]
     text = "A [tt1-wikipedia-plot-p01]. B [wp-5-lore-p02, tt1-wikipedia-plot-p01]. C [메모]. D [wp-9-x-p01]."
     assert ask.number_citations(text, ids) == "A [1]. B [2, 1]. C [메모]. D ."
+    # 모델이 ; 로 나눈 경우 (실제 C+ 답에서 나옴)
+    assert (
+        ask.number_citations("E [tt1-wikipedia-plot-p01, wp-9-x-p01; wp-5-lore-p02].", ids)
+        == "E [1, 2]."
+    )
 
 
 # ---------- 게시판 (진짜 Postgres) ----------

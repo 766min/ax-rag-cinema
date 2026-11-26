@@ -149,7 +149,7 @@ export default function ChatPanel() {
           {busy && (
             <div className="flex items-center gap-3 text-muted">
               <div className="orb relative size-[34px] flex-none" />
-              자료를 찾고 답을 쓰는 중이에요… (10초쯤 걸려요)
+              자료를 찾고 답을 쓰는 중이에요… (10~20초쯤 걸려요)
             </div>
           )}
           <div ref={bottom} />
