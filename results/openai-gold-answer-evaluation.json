@@ -1,0 +1,814 @@
+{
+  "model": "gpt-6-luna",
+  "input": "results/openai-gold-full-experiment.json",
+  "orders": [
+    "before"
+  ],
+  "summary": {
+    "before": {
+      "answered": 20,
+      "met": 24,
+      "partial": 19,
+      "missing": 24,
+      "avg_latency_ms": 5999.3,
+      "total_tokens": 38699
+    }
+  },
+  "records": [
+    {
+      "question_id": "Q001",
+      "question": "타임 스톤이 뭐야?",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 4324,
+      "tokens": {
+        "input": 1174,
+        "output": 398,
+        "total": 1572
+      },
+      "evidence_ids": [
+        "tt2395427-wikipedia-reception-p11",
+        "tt3498820-wikipedia-cast-p12",
+        "wp-61651800-personality-p06",
+        "wp-66902704-lore-p67",
+        "wp-66902704-other-p62"
+      ],
+      "answer_ko": "타임 스톤은 시간을 관장하는 인피니티 스톤으로, 시간을 조작하고 가능한 미래를 내다볼 수 있습니다. [wp-66902704-lore-p67] 원래 아이 오브 아가모토 안에 보관되어 있었으며, 스티븐 스트레인지 등이 사용했습니다. [wp-66902704-lore-p67]",
+      "facts": [
+        {
+          "fact": "시간을 관장하는 인피니티 스톤이다",
+          "status": "met",
+          "reason": "근거에서 시간의 측면을 관장하는 인피니티 스톤이라고 설명합니다. [wp-66902704-lore-p67]"
+        },
+        {
+          "fact": "시간을 조작할 수 있다",
+          "status": "met",
+          "reason": "근거에서 사용자가 시간을 조작할 수 있다고 설명합니다. [wp-66902704-lore-p67]"
+        },
+        {
+          "fact": "아이 오브 아가모토 안에 보관되어 있었다",
+          "status": "met",
+          "reason": "근거에서 원래 아이 오브 아가모토 안에 보관되었다고 설명합니다. [wp-66902704-lore-p67]"
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q002",
+      "question": "인피니티 스톤은 전부 몇 개고 각각 뭐야?",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 4471,
+      "tokens": {
+        "input": 1149,
+        "output": 512,
+        "total": 1661
+      },
+      "evidence_ids": [
+        "tt2015381-wikipedia-cast-p06",
+        "tt4154796-wikipedia-cast-p05",
+        "tt2395427-wikipedia-cast-p03",
+        "tt2395427-wikipedia-creation-p17",
+        "tt3498820-wikipedia-cast-p16"
+      ],
+      "answer_ko": "제공된 근거만으로는 인피니티 스톤의 총개수나 각각의 이름을 확인할 수 없습니다. [tt2015381-wikipedia-cast-p06] [tt4154796-wikipedia-cast-p05] [tt2395427-wikipedia-cast-p03] [tt2395427-wikipedia-creation-p17] [tt3498820-wikipedia-cast-p16]",
+      "facts": [
+        {
+          "fact": "인피니티 스톤은 총 6개다.",
+          "status": "missing",
+          "reason": "제공된 근거에는 인피니티 스톤의 총개수가 나오지 않습니다. [tt2015381-wikipedia-cast-p06] [tt4154796-wikipedia-cast-p05] [tt2395427-wikipedia-cast-p03] [tt2395427-wikipedia-creation-p17] [tt3498820-wikipedia-cast-p16]"
+        },
+        {
+          "fact": "스페이스, 마인드, 리얼리티, 파워, 타임, 소울 스톤이다.",
+          "status": "missing",
+          "reason": "제공된 근거에는 이 여섯 이름이 나오지 않습니다. [tt2015381-wikipedia-cast-p06] [tt4154796-wikipedia-cast-p05] [tt2395427-wikipedia-cast-p03] [tt2395427-wikipedia-creation-p17] [tt3498820-wikipedia-cast-p16]"
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q003",
+      "question": "타노스는 인피니티 스톤을 왜 모으는 거야? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 5016,
+      "tokens": {
+        "input": 1231,
+        "output": 543,
+        "total": 1774
+      },
+      "evidence_ids": [
+        "tt4154756-wikipedia-cast-p13",
+        "wp-60616450-biography-p03",
+        "wp-60616450-reception-p11",
+        "tt4154756-wikipedia-cast-p12",
+        "tt4154756-wikipedia-plot-p01"
+      ],
+      "answer_ko": "타노스는 우주가 인구 과잉 상태라고 믿고, 우주의 균형을 맞춘다는 명목으로 모든 생명의 절반을 없애려 해. 그 계획을 실행하기 위해 여섯 인피니티 스톤을 모으는 거야. [tt4154756-wikipedia-cast-p12] [wp-60616450-biography-p03]",
+      "facts": [
+        {
+          "fact": "타노스는 우주가 인구 과잉이라고 믿는다.",
+          "status": "met",
+          "reason": "케빈 파이기가 타노스가 우주가 과잉 인구 상태라고 믿었다고 설명한다. [tt4154756-wikipedia-cast-p12]"
+        },
+        {
+          "fact": "타노스는 균형을 맞춘다는 이유로 생명체 절반을 없애려 한다.",
+          "status": "met",
+          "reason": "자료는 그가 균형을 위해 모든 생명의 절반을 파괴하려 한다고 설명한다. [tt4154756-wikipedia-cast-p12]"
+        },
+        {
+          "fact": "타노스는 여섯 인피니티 스톤을 모으려 한다.",
+          "status": "met",
+          "reason": "자료는 그가 여섯 스톤을 모을 계획이라고 명시한다. [wp-60616450-biography-p03]"
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q004",
+      "question": "와칸다가 어떤 나라야?",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 6593,
+      "tokens": {
+        "input": 1268,
+        "output": 746,
+        "total": 2014
+      },
+      "evidence_ids": [
+        "tt1825683-wikipedia-cast-p09",
+        "wp-66902704-lore-p111",
+        "tt1825683-wikipedia-cast-p05",
+        "tt1825683-wikipedia-creation-p17",
+        "tt1825683-wikipedia-plot-p01"
+      ],
+      "answer_ko": "와칸다는 《블랙 팬서》에 등장하는 아프리카의 나라로, 비브라늄을 이용해 고도의 기술을 발전시켰고 외부 세계에는 저개발국처럼 보이도록 하며 고립해 왔습니다 [tt1825683-wikipedia-plot-p01]. 티찰라는 아버지의 죽음 뒤 와칸다로 돌아와 왕위를 이어받습니다 [tt1825683-wikipedia-plot-p01]. 다만 제공된 근거에는 와칸다가 ‘가상 국가’라고 명시되어 있지는 않습니다.",
+      "facts": [
+        {
+          "fact": "아프리카의 가상 국가",
+          "status": "partial",
+          "reason": "와칸다가 아프리카 부족들의 연합으로 형성된 나라라는 점은 확인되지만, 가상 국가라는 표현은 근거에 명시되어 있지 않습니다 [tt1825683-wikipedia-plot-p01]."
+        },
+        {
+          "fact": "비브라늄 기반 기술",
+          "status": "met",
+          "reason": "와칸다 사람들이 비브라늄으로 첨단 기술을 발전시켰다고 나옵니다 [tt1825683-wikipedia-plot-p01]."
+        },
+        {
+          "fact": "고립 정책",
+          "status": "met",
+          "reason": "외부 세계와 고립하고 저개발국처럼 가장했다고 나옵니다 [tt1825683-wikipedia-plot-p01]."
+        },
+        {
+          "fact": "블랙 팬서와 연결",
+          "status": "met",
+          "reason": "최초의 블랙 팬서가 와칸다를 세우고, 티찰라가 왕위를 이어받으러 돌아온다고 나옵니다 [tt1825683-wikipedia-plot-p01]."
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q007",
+      "question": "로키랑 토르는 무슨 관계야?",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 4653,
+      "tokens": {
+        "input": 1188,
+        "output": 503,
+        "total": 1691
+      },
+      "evidence_ids": [
+        "tt1981115-wikipedia-cast-p13",
+        "tt1981115-wikipedia-creation-p10",
+        "tt1981115-wikipedia-creation-p20",
+        "wp-61651800-biography-p18",
+        "tt1981115-wikipedia-cast-p03"
+      ],
+      "answer_ko": "토르와 로키는 의형제 관계야. 토르는 오딘의 아들이고, 로키는 오딘의 양아들이야. [tt1981115-wikipedia-cast-p13] [tt1981115-wikipedia-cast-p03]",
+      "facts": [
+        {
+          "fact": "토르와 로키는 의형제이며, 혈연 형제는 아니다.",
+          "status": "partial",
+          "reason": "자료는 로키를 토르의 양형제라고 설명하지만, 두 사람이 혈연 형제가 아니라고 명시하지는 않는다. [tt1981115-wikipedia-cast-p03]"
+        },
+        {
+          "fact": "토르는 오딘의 친아들이다.",
+          "status": "met",
+          "reason": "자료는 오딘을 토르의 아버지라고 설명한다. [tt1981115-wikipedia-cast-p13]"
+        },
+        {
+          "fact": "로키는 라우페이의 아들이다.",
+          "status": "missing",
+          "reason": "제공된 자료에는 로키의 친부가 라우페이라는 정보가 없다."
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q009",
+      "question": "윈터 솔져는 누구야? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 7800,
+      "tokens": {
+        "input": 1197,
+        "output": 898,
+        "total": 2095
+      },
+      "evidence_ids": [
+        "tt1843866-wikipedia-cast-p04",
+        "tt3498820-wikipedia-creation-p02",
+        "wp-60774345-creation-p02",
+        "wp-60774345-creation-p34",
+        "wp-60774345-creation-p36"
+      ],
+      "answer_ko": "윈터 솔져는 제임스 ‘버키’ 반스이며, 스티브 로저스의 어린 시절 가장 친한 친구다. [tt1843866-wikipedia-cast-p04] 죽은 것으로 여겨졌지만 살아남아 세뇌된 암살자로 나타났고, 만화 설정 자료에는 생체공학 팔을 달고 소련의 암살자로 활동했다고 나온다. [tt1843866-wikipedia-cast-p04][wp-60774345-creation-p02] 다만 제공된 근거만으로는 세뇌 주체가 하이드라인지, 그 팔이 금속 팔인지 확인할 수 없다.",
+      "facts": [
+        {
+          "fact": "버키 반스",
+          "status": "met",
+          "reason": "윈터 솔져가 버키 반스라고 명시되어 있다. [tt1843866-wikipedia-cast-p04]"
+        },
+        {
+          "fact": "스티브의 친구·전우",
+          "status": "partial",
+          "reason": "스티브의 어린 시절 가장 친한 친구라는 점은 확인되지만, 전우라는 점은 제공된 근거에 명시되어 있지 않다. [tt1843866-wikipedia-cast-p04]"
+        },
+        {
+          "fact": "하이드라 세뇌",
+          "status": "missing",
+          "reason": "세뇌된 암살자라는 내용은 있지만, 세뇌 주체가 하이드라라는 근거는 없다. [tt1843866-wikipedia-cast-p04]"
+        },
+        {
+          "fact": "금속 팔 암살자",
+          "status": "partial",
+          "reason": "만화 설정 자료는 생체공학 팔과 소련 암살자 활동을 언급하지만, 팔이 금속이라고 명시하지는 않는다. [wp-60774345-creation-p02]"
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q011",
+      "question": "스파이더맨이 아이언맨을 처음 만난 영화는 뭐야?",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 5888,
+      "tokens": {
+        "input": 1075,
+        "output": 630,
+        "total": 1705
+      },
+      "evidence_ids": [
+        "wp-54537218-biography-p25",
+        "wp-54537218-biography-p26",
+        "wp-59162931-creation-p08",
+        "wp-59162931-creation-p12",
+        "wp-66902704-lore-p31"
+      ],
+      "answer_ko": "제공된 근거에는 피터 파커의 수트가 《캡틴 아메리카: 시빌 워》에 등장한다고 나와 있습니다 [wp-59162931-creation-p12]. 하지만 그 영화에서 아이언맨을 처음 만났는지, 토니가 피터를 방문해 영입했는지는 근거만으로 확인할 수 없습니다.",
+      "facts": [
+        {
+          "fact": "MCU의 톰 홀랜드가 연기하는 피터 파커를 기준으로 한다",
+          "status": "missing",
+          "reason": "근거에 톰 홀랜드가 피터 파커를 연기한다는 정보가 없습니다."
+        },
+        {
+          "fact": "첫 만남은 《캡틴 아메리카: 시빌 워》다",
+          "status": "partial",
+          "reason": "피터의 수트가 이 영화에 등장한다는 내용은 있지만, 아이언맨과의 첫 만남인지는 명시되지 않았습니다 [wp-59162931-creation-p12]."
+        },
+        {
+          "fact": "토니가 피터의 집을 방문해 정체를 밝히고 영입한다",
+          "status": "missing",
+          "reason": "토니의 방문이나 영입에 관한 내용이 근거에 없습니다."
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q015",
+      "question": "젠데이아는 마블에서 무슨 역이야?",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 4585,
+      "tokens": {
+        "input": 1150,
+        "output": 495,
+        "total": 1645
+      },
+      "evidence_ids": [
+        "tt2015381-wikipedia-creation-p11",
+        "tt2015381-wikipedia-creation-p22",
+        "wp-60774345-creation-p31",
+        "tt1211837-wikipedia-creation-p12",
+        "tt1825683-wikipedia-release-p01"
+      ],
+      "answer_ko": "제공된 근거만으로는 젠데이아가 마블에서 맡은 역을 확인할 수 없습니다. [tt2015381-wikipedia-creation-p11] [tt2015381-wikipedia-creation-p22] [wp-60774345-creation-p31] [tt1211837-wikipedia-creation-p12] [tt1825683-wikipedia-release-p01]",
+      "facts": [
+        {
+          "fact": "젠데이아가 미셸 존스-왓슨 또는 MJ를 연기한다",
+          "status": "missing",
+          "reason": "제공된 근거에는 이 배역에 관한 내용이 없습니다. [tt2015381-wikipedia-creation-p11] [tt2015381-wikipedia-creation-p22] [wp-60774345-creation-p31] [tt1211837-wikipedia-creation-p12] [tt1825683-wikipedia-release-p01]"
+        },
+        {
+          "fact": "그 인물은 피터 파커의 학교 친구이며 이후 연인이 된다",
+          "status": "missing",
+          "reason": "제공된 근거에는 피터 파커와의 관계에 관한 내용이 없습니다. [tt2015381-wikipedia-creation-p11] [tt2015381-wikipedia-creation-p22] [wp-60774345-creation-p31] [tt1211837-wikipedia-creation-p12] [tt1825683-wikipedia-release-p01]"
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q016",
+      "question": "톰 홀랜드가 연기하는 캐릭터는 누구야?",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 2794,
+      "tokens": {
+        "input": 1092,
+        "output": 200,
+        "total": 1292
+      },
+      "evidence_ids": [
+        "tt1211837-wikipedia-cast-p05",
+        "tt3498820-wikipedia-cast-p16",
+        "tt2015381-wikipedia-creation-p22",
+        "tt2395427-wikipedia-cast-p02",
+        "tt3498820-wikipedia-cast-p17"
+      ],
+      "answer_ko": "톰 홀랜드는 피터 파커, 즉 스파이더맨을 연기해요. [tt3498820-wikipedia-cast-p16]",
+      "facts": [
+        {
+          "fact": "톰 홀랜드가 연기하는 캐릭터는 피터 파커 / 스파이더맨이다.",
+          "status": "met",
+          "reason": "증거에 톰 홀랜드가 Peter Parker / Spider-Man으로 명시되어 있다. [tt3498820-wikipedia-cast-p16]"
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q019",
+      "question": "타임 스톤은 코믹스에서는 어떻게 쓰여?",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 5034,
+      "tokens": {
+        "input": 1118,
+        "output": 542,
+        "total": 1660
+      },
+      "evidence_ids": [
+        "wp-66902704-lore-p67",
+        "wp-66902704-lore-p08",
+        "wp-66902704-lore-p44",
+        "wp-66902704-lore-p97",
+        "wp-66902704-other-p62"
+      ],
+      "answer_ko": "제공된 자료에서는 타임 스톤이 아가모토의 눈에 있었고, 시간을 조작하고 가능한 미래를 예견하며 스티븐 스트레인지, 에인션트 원, 타노스가 사용했다고 설명합니다 [wp-66902704-lore-p67]. 다만 이 자료는 코믹스에서의 구체적인 사용 사례를 제시하지 않으므로, 코믹스에서 어떻게 쓰이는지는 확인하기 어렵습니다. 코믹스 원작 자료가 필요합니다.",
+      "facts": [
+        {
+          "fact": "자료에는 타임 스톤의 시간 조작·미래 예지 능력과 사용자가 설명되어 있다.",
+          "status": "met",
+          "reason": "아가모토의 눈에 보관되었으며 시간을 조작하고 가능한 미래를 예견하고, 스트레인지·에인션트 원·타노스가 사용했다고 명시되어 있다 [wp-66902704-lore-p67]."
+        },
+        {
+          "fact": "코믹스에서의 구체적인 사용 방식은 제공된 근거만으로 답할 수 없다.",
+          "status": "met",
+          "reason": "자료는 타임 스톤 관련 설정을 설명하지만 코믹스에서의 구체적인 사용 사례는 제시하지 않는다 [wp-66902704-lore-p67]."
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q040",
+      "question": "토니 스타크가 에이지 오브 울트론에서 울트론을 만들게 된 계기는 뭐고, 그 영향이 시빌 워에서 어떻게 이어져? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 7268,
+      "tokens": {
+        "input": 1327,
+        "output": 975,
+        "total": 2302
+      },
+      "evidence_ids": [
+        "wp-54537218-biography-p33",
+        "tt2395427-wikipedia-cast-p07",
+        "tt2395427-wikipedia-cast-p13",
+        "tt1825683-wikipedia-cast-p09",
+        "tt3498820-wikipedia-cast-p02"
+      ],
+      "answer_ko": "자료에 따르면, 《에이지 오브 울트론》 당시 토니는 과거 임무로 인한 PTSD를 겪었고, 갑옷을 더 만드는 것만으로는 위협을 막지 못한다고 생각해 지구를 지킬 방어책을 구상했습니다 [wp-54537218-biography-p33]. 다만 완다의 환영을 봤다거나 로키의 홀 속 인공지능을 이용해 울트론을 만들었다는 구체적 계기는 자료에서 확인되지 않습니다. 또한 울트론이 소코비아를 파괴했다는 내용도 확인되지 않습니다. 자료는 《에이지 오브 울트론》의 사건이 《시빌 워》의 갈등으로 직접 이어지고, 토니가 초능력자 규제를 지지하는 어벤져스 진영을 이끈다고 설명합니다 [wp-54537218-biography-p33] [tt3498820-wikipedia-cast-p02]. 그러나 토니가 책임감 때문에 소코비아 협정을 지지했다는 이유나, 그 지지가 스티브와의 대립으로 이어지는 구체적 과정은 자료에 충분히 나와 있지 않습니다.",
+      "facts": [
+        {
+          "fact": "토니는 지구를 지키기 위한 방어책을 구상했다.",
+          "status": "met",
+          "reason": "자료는 토니가 지구를 지키는 방어책을 핵심 구상으로 삼았다고 설명한다 [wp-54537218-biography-p33]."
+        },
+        {
+          "fact": "완다의 환영과 로키의 홀 속 인공지능이 울트론 제작 계기였다.",
+          "status": "missing",
+          "reason": "제공된 자료에는 이 구체적 계기가 언급되지 않는다."
+        },
+        {
+          "fact": "울트론이 소코비아를 파괴했다.",
+          "status": "missing",
+          "reason": "제공된 자료에는 소코비아 파괴가 언급되지 않는다."
+        },
+        {
+          "fact": "《시빌 워》에서 토니는 초능력자 규제를 지지하는 진영을 이끌었다.",
+          "status": "met",
+          "reason": "자료가 토니가 규제를 지지하는 어벤져스 진영을 이끈다고 설명한다 [wp-54537218-biography-p33] [tt3498820-wikipedia-cast-p02]."
+        },
+        {
+          "fact": "토니의 책임감 때문에 소코비아 협정을 지지했고, 그 결과 스티브와 대립했다.",
+          "status": "partial",
+          "reason": "규제 지지와 《시빌 워》 갈등으로의 직접 연결은 확인되지만, 책임감·소코비아 협정·스티브와의 구체적 대립은 자료에서 확인되지 않는다 [wp-54537218-biography-p33]."
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q042",
+      "question": "완다가 인피니티 워와 엔드게임에서 맡은 역할은 뭐고, 그 전에 어떤 영화에서 능력을 얻었어? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 5076,
+      "tokens": {
+        "input": 1316,
+        "output": 598,
+        "total": 1914
+      },
+      "evidence_ids": [
+        "tt4154796-wikipedia-cast-p13",
+        "wp-55935213-personality-p04",
+        "tt3480822-wikipedia-cast-p01",
+        "tt3480822-wikipedia-creation-p10",
+        "tt3480822-wikipedia-creation-p16"
+      ],
+      "answer_ko": "제공된 근거만으로는 완다가 《인피니티 워》와 《엔드게임》에서 실제로 맡은 역할이나 그 전에 어떤 영화에서 능력을 얻었는지 확인할 수 없습니다. 근거에는 두 영화의 초기 각본에서 완다가 스냅에서 살아남아 《엔드게임》에 더 참여하는 구상이 있었지만 최종적으로 제외됐다는 내용만 있습니다 [wp-55935213-personality-p04]. 또한 《완다비전》이 완다의 능력의 범위와 기원을 탐구한다는 설명은 있지만, 능력의 기원이나 특정 영화에서 처음 드러났는지는 제시되지 않습니다 [wp-55935213-personality-p04].",
+      "facts": [
+        {
+          "fact": "《인피니티 워》에서 비전을 지키고 마인드 스톤을 파괴하려 한 완다의 역할",
+          "status": "missing",
+          "reason": "제공된 근거에 이 내용이 없습니다."
+        },
+        {
+          "fact": "완다가 스냅으로 사라지고 《엔드게임》에서 복원되어 최종 전투에 참여한 내용",
+          "status": "partial",
+          "reason": "초기 각본에서 스냅에서 살아남아 《엔드게임》에 더 참여하는 구상이 최종적으로 제외됐다는 내용만 있습니다. 실제 사건은 확인되지 않습니다 [wp-55935213-personality-p04]."
+        },
+        {
+          "fact": "완다의 능력은 선천적이며 하이드라의 마인드 스톤 실험으로 증폭됐다는 설명",
+          "status": "missing",
+          "reason": "제공된 근거는 《완다비전》이 능력의 기원을 탐구한다고만 말하며, 구체적인 기원은 설명하지 않습니다 [wp-55935213-personality-p04]."
+        },
+        {
+          "fact": "능력이 처음 드러난 영화와 본격적으로 사용된 영화의 구분",
+          "status": "missing",
+          "reason": "제공된 근거에는 이 구분을 확인할 정보가 없습니다."
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q044",
+      "question": "바키(윈터 솔져)가 윈터 솔져, 시빌 워, 인피니티 워에서 어떻게 달라졌어? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 9536,
+      "tokens": {
+        "input": 1308,
+        "output": 1127,
+        "total": 2435
+      },
+      "evidence_ids": [
+        "tt3501632-wikipedia-creation-p15",
+        "wp-60774345-creation-p33",
+        "tt3498820-wikipedia-cast-p06",
+        "tt3498820-wikipedia-creation-p09",
+        "wp-60774345-creation-p04"
+      ],
+      "answer_ko": "제공된 근거로 확인되는 범위에서는, 《시빌 워》의 버키는 하이드라에 세뇌된 암살자이면서 스티브와 연합한 인물로 묘사된다 [tt3498820-wikipedia-cast-p06]. 다만 《윈터 솔져》에서 스티브와 대립했는지, 영화 끝에 스티브를 구하고 과거를 찾기 시작했는지는 근거가 없어 확인할 수 없다. 《시빌 워》에서 테러 누명을 썼는지, 제모가 세뇌를 다시 이용했는지, 와칸다에서 동면했는지도 제공된 근거로는 확인되지 않는다. 근거는 이후 와칸다에서 슈리가 하이드라 세뇌 회복을 돕고, 《인피니티 워》에서는 와칸다 사람들이 하이드라의 프로그램을 제거하는 데 도움을 줬다는 내용까지다 [wp-60774345-creation-p33]. 《인피니티 워》에서 버키가 ‘화이트 울프’라는 이름을 받았다는 점은 확인되지만 [wp-60774345-creation-p33], 치료 후 와칸다 동료들과 타노스 군대에 맞서 싸웠는지, 스냅으로 사라졌는지는 근거가 없다.",
+      "facts": [
+        {
+          "fact": "《윈터 솔져》에서 세뇌 암살자로 스티브와 대립하고, 끝에 스티브를 구해 자아 회복을 시작함",
+          "status": "partial",
+          "reason": "《시빌 워》에서 버키가 세뇌된 암살자로 묘사된 점은 확인된다 [tt3498820-wikipedia-cast-p06]. 하지만 그 상태가 《윈터 솔져》에서 어떻게 전개됐는지와 영화 결말의 행동은 근거에 없다."
+        },
+        {
+          "fact": "《시빌 워》에서 테러 누명을 쓰고 제모에게 조종당한 뒤 와칸다에서 동면함",
+          "status": "missing",
+          "reason": "제공된 근거는 버키가 《시빌 워》에서 세뇌된 암살자이자 스티브의 동맹으로 묘사됐다고만 한다 [tt3498820-wikipedia-cast-p06]. 누명, 제모의 조종, 와칸다 동면은 확인되지 않는다."
+        },
+        {
+          "fact": "《인피니티 워》에서 세뇌에서 벗어나 동료들과 싸우고 스냅으로 사라짐",
+          "status": "partial",
+          "reason": "와칸다 사람들이 하이드라의 프로그램 제거를 도왔고 버키가 ‘화이트 울프’라는 이름을 받았다는 점은 확인된다 [wp-60774345-creation-p33]. 전투와 스냅에 관한 내용은 근거에 없다."
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q052",
+      "question": "소코비아 협정은 어떤 사건 때문에 생겼고 어떤 결과를 낳았어? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 6310,
+      "tokens": {
+        "input": 1267,
+        "output": 735,
+        "total": 2002
+      },
+      "evidence_ids": [
+        "tt1843866-wikipedia-creation-p02",
+        "wp-55935213-personality-p02",
+        "wp-66902704-lore-p88",
+        "wp-66902704-other-p44",
+        "tt3480822-wikipedia-creation-p27"
+      ],
+      "answer_ko": "소코비아 협정은 소코비아 전투 이후 유엔의 지지를 받아 비준됐고, 어벤져스를 유엔이 감독하도록 하는 장치였어.[wp-66902704-lore-p88] 토니는 협정을 지지하고 스티브는 반대했으며, 이 입장 차이가 어벤져스의 내전으로 이어졌어.[wp-66902704-lore-p88] 스티브와 버키를 도운 멤버들은 래프트에 수감됐지만, 이후 스티브와 나타샤가 그들을 탈옥시켰어.[wp-66902704-other-p44] 다만 제공된 근거만으로는 라고스 작전의 피해가 협정의 직접적인 계기였는지 확인할 수 없어.",
+      "facts": [
+        {
+          "fact": "소코비아·라고스 피해가 협정의 배경이 됐는지",
+          "status": "partial",
+          "reason": "협정이 소코비아 전투 이후 비준됐다는 점은 확인되지만, 소코비아 피해의 구체 내용이나 라고스 작전 피해는 근거에 제시되지 않아.[wp-66902704-lore-p88]"
+        },
+        {
+          "fact": "유엔 감독",
+          "status": "met",
+          "reason": "협정은 유엔의 어벤져스 감독을 정한 것으로 설명돼 있어.[wp-66902704-lore-p88]"
+        },
+        {
+          "fact": "토니와 스티브의 입장 차이",
+          "status": "met",
+          "reason": "토니는 협정을 지지하고 스티브는 반대했다고 제시돼 있어.[wp-66902704-lore-p88]"
+        },
+        {
+          "fact": "분열과 수감·도피",
+          "status": "partial",
+          "reason": "입장 차이가 내전으로 이어졌고, 스티브와 버키를 도운 멤버들이 수감됐다가 스티브와 나타샤의 도움으로 탈옥한 사실은 확인돼. 모든 세부적인 분열·도피 경위는 근거에 충분히 나오지 않아.[wp-66902704-lore-p88][wp-66902704-other-p44]"
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q056",
+      "question": "블랙 위도우의 사건은 시간상 어느 영화들 사이에 있어? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 4471,
+      "tokens": {
+        "input": 1199,
+        "output": 509,
+        "total": 1708
+      },
+      "evidence_ids": [
+        "tt3480822-wikipedia-creation-p11",
+        "tt3480822-wikipedia-cast-p02",
+        "tt3480822-wikipedia-creation-p01",
+        "tt3480822-wikipedia-creation-p14",
+        "tt3480822-wikipedia-release-p14"
+      ],
+      "answer_ko": "확인 가능한 근거에 따르면, 《블랙 위도우》의 주요 사건은 《캡틴 아메리카: 시빌 워》의 본편 사건과 그 영화의 마지막 장면 사이에 놓인다.[tt3480822-wikipedia-creation-p11] 도입부는 1990년대에 설정되고, 나머지는 ‘현재’의 이야기라는 근거가 있다.[tt3480822-wikipedia-creation-p14] 《어벤져스: 인피니티 워》보다 앞선다는 점과 쿠키영상이 나타샤의 죽음 이후라는 점은 제공된 근거로 확인할 수 없다.",
+      "facts": [
+        {
+          "fact": "본편은 《시빌 워》의 주요 사건과 그 영화의 마지막 장면 사이에 놓인다.",
+          "status": "met",
+          "reason": "근거가 이 시간적 위치를 직접 설명한다.[tt3480822-wikipedia-creation-p11]"
+        },
+        {
+          "fact": "《인피니티 워》보다 앞선다.",
+          "status": "missing",
+          "reason": "제공된 근거에는 《인피니티 워》와의 시간적 관계가 언급되지 않는다."
+        },
+        {
+          "fact": "도입부와 쿠키영상은 본편과 다른 시점이다.",
+          "status": "partial",
+          "reason": "도입부가 1990년대라는 점은 확인되지만,[tt3480822-wikipedia-creation-p14] 쿠키영상의 시점은 근거에 없다."
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q041",
+      "question": "토르는 라그나로크, 인피니티 워, 엔드게임을 거치면서 무엇을 잃고 어떻게 변해? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 5879,
+      "tokens": {
+        "input": 1304,
+        "output": 697,
+        "total": 2001
+      },
+      "evidence_ids": [
+        "wp-66902704-lore-p02",
+        "tt3501632-wikipedia-cast-p10",
+        "tt3501632-wikipedia-creation-p15",
+        "tt4154756-wikipedia-cast-p03",
+        "tt4154796-wikipedia-cast-p04"
+      ],
+      "answer_ko": "제공된 근거로 확인되는 것은 묠니르가 《라그나로크》에서 파괴된 뒤 토르가 스톰브레이커를 사용하며, 《엔드게임》에서는 토르가 과체중에 술에 의존하는 아스가르드 난민들의 통치자로 묘사된다는 점입니다. [tt4154796-wikipedia-cast-p04] 오딘·한쪽 눈·아스가르드의 상실과 백성 구출, 《인피니티 워》에서의 추가 상실과 스냅 실패, 《엔드게임》에서의 침체·회복과 왕위 이양은 제공된 근거만으로 확인할 수 없습니다.",
+      "facts": [
+        {
+          "fact": "《라그나로크》에서 토르가 무엇을 잃고 백성을 구했는가",
+          "status": "partial",
+          "reason": "묠니르가 파괴된 사실은 확인되지만, 오딘·한쪽 눈·아스가르드의 상실과 백성 구출은 근거에 없습니다. [tt4154796-wikipedia-cast-p04]"
+        },
+        {
+          "fact": "《인피니티 워》에서 로키와 헤임달을 잃고 스냅을 막지 못했는가",
+          "status": "missing",
+          "reason": "제공된 근거에는 이 사건들이 언급되지 않습니다."
+        },
+        {
+          "fact": "《엔드게임》에서 침체했다가 회복하고 왕위를 넘겼는가",
+          "status": "partial",
+          "reason": "토르가 과체중에 술에 의존하는 아스가르드 난민들의 통치자로 묘사된다는 점은 확인되지만, 침체의 원인·회복 과정·왕위 이양은 근거에 없습니다. [tt4154796-wikipedia-cast-p04]"
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q045",
+      "question": "네뷸라는 가디언즈, 인피니티 워, 엔드게임에서 가모라, 타노스와 각각 어떤 관계였어? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 9028,
+      "tokens": {
+        "input": 1419,
+        "output": 1224,
+        "total": 2643
+      },
+      "evidence_ids": [
+        "tt4154756-wikipedia-cast-p10",
+        "tt2015381-wikipedia-cast-p11",
+        "tt4154756-wikipedia-plot-p02",
+        "tt4154796-wikipedia-cast-p13",
+        "wp-60616450-biography-p17"
+      ],
+      "answer_ko": "《가디언즈 오브 갤럭시》에서 네뷸라와 가모라는 타노스가 자매처럼 함께 길렀으며, 둘 사이에는 질투와 자매 간 경쟁이 있었다. 네뷸라는 로난과 타노스 밑에서 일하는 부하였지만, 이 자료만으로는 가모라와 싸웠거나 타노스에게 등을 돌렸다고 확인할 수 없다. [tt2015381-wikipedia-cast-p11] 《인피니티 워》에서는 타노스가 네뷸라를 고문했고, 가모라는 네뷸라를 구하려고 소울 스톤의 위치를 밝혔다. 이후 타노스는 소울 스톤을 얻기 위해 가모라를 희생시켰다. [tt4154756-wikipedia-plot-p02] 《엔드게임》 자료는 네뷸라가 과거의 자신과 마주하고 속죄의 변화를 겪는다고 설명하지만, 현재 네뷸라와 2014년 네뷸라의 충성 관계나 2014년 가모라와의 구체적인 일은 확인해 주지 않는다. [tt4154796-wikipedia-cast-p13] 2014년 타노스와 네뷸라가 시간 이동 전에 함께 나오는 장면이 있다는 내용은 확인된다. [wp-60616450-biography-p17]",
+      "facts": [
+        {
+          "fact": "의자매 관계와 경쟁, 타노스의 학대",
+          "status": "partial",
+          "reason": "가모라와 네뷸라가 자매처럼 길러졌고 자매 간 경쟁과 질투가 있었다는 점은 확인된다. 인피니티 워에서 네뷸라가 타노스에게 고문당한 것도 확인되지만, 가디언즈에서의 구체적인 학대나 두 사람의 싸움은 이 자료에 없다. [tt2015381-wikipedia-cast-p11] [tt4154756-wikipedia-plot-p02]"
+        },
+        {
+          "fact": "네뷸라의 고문과 가모라의 선택",
+          "status": "met",
+          "reason": "타노스가 네뷸라를 고문하자 가모라가 네뷸라를 구하기 위해 소울 스톤의 위치를 밝혔다. [tt4154756-wikipedia-plot-p02]"
+        },
+        {
+          "fact": "현재 네뷸라와 2014년 네뷸라의 구분",
+          "status": "partial",
+          "reason": "네뷸라가 과거의 자신과 마주한다는 점과 2014년 타노스와 네뷸라가 시간 이동 전 함께 나오는 장면은 확인된다. 그러나 두 네뷸라의 충성 관계나 구체적인 행동은 확인되지 않는다. [tt4154796-wikipedia-cast-p13] [wp-60616450-biography-p17]"
+        },
+        {
+          "fact": "2014년 가모라와 인피니티 워에서 죽은 가모라의 구분",
+          "status": "missing",
+          "reason": "자료에는 2014년 가모라가 등장하거나 두 가모라의 관계를 설명하는 내용이 없다. [tt4154796-wikipedia-cast-p13] [wp-60616450-biography-p17]"
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q047",
+      "question": "마인드 스톤이 어떻게 비전의 몸에 들어갔고, 이후 어떻게 됐어? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 6727,
+      "tokens": {
+        "input": 1350,
+        "output": 806,
+        "total": 2156
+      },
+      "evidence_ids": [
+        "tt3498820-wikipedia-cast-p12",
+        "wp-55935213-biography-p03",
+        "tt2395427-wikipedia-plot-p03",
+        "wp-55935213-biography-p04",
+        "wp-66902704-lore-p107"
+      ],
+      "answer_ko": "《에이지 오브 울트론》에서 울트론은 로키의 홀로 헬렌 조를 조종해 합성 조직과 비브라늄, 홀의 보석을 결합한 새 몸을 만들었습니다.[tt2395427-wikipedia-plot-p03] 어벤져스가 그 몸을 확보한 뒤 토니와 배너가 J.A.R.V.I.S.를 업로드했고, 토르가 몸을 활성화했습니다. 홀의 보석이 마인드 스톤이며, 그 몸은 비전이 되었습니다.[tt2395427-wikipedia-plot-p03] 완다가 비전과 스톤을 파괴한 일, 타노스가 시간을 되돌려 스톤을 가져간 일, 《엔드게임》에서 과거의 스톤을 반환한 일은 제공된 근거만으로 확인할 수 없습니다.",
+      "facts": [
+        {
+          "fact": "울트론은 마인드 스톤과 비브라늄, 헬렌 조의 합성 조직 기술로 새 몸을 만들었다.",
+          "status": "met",
+          "reason": "울트론이 로키의 홀을 사용해 헬렌 조를 조종하고, 합성 조직·비브라늄·홀의 보석으로 몸을 만든다고 명시되어 있다.[tt2395427-wikipedia-plot-p03]"
+        },
+        {
+          "fact": "J.A.R.V.I.S.가 새 몸에 업로드되고 토르가 활성화를 도와 비전이 탄생했다.",
+          "status": "met",
+          "reason": "토니와 배너가 J.A.R.V.I.S.를 몸에 업로드하고 토르가 활성화했으며, 새 존재가 비전이라는 이름을 얻었다고 명시되어 있다.[tt2395427-wikipedia-plot-p03]"
+        },
+        {
+          "fact": "완다가 비전과 마인드 스톤을 파괴하고 타노스가 시간을 되돌려 스톤을 가져갔다.",
+          "status": "missing",
+          "reason": "제공된 근거에는 이 사건이 설명되어 있지 않아 확인할 수 없다."
+        },
+        {
+          "fact": "《엔드게임》에서 과거의 마인드 스톤을 반환했다.",
+          "status": "missing",
+          "reason": "제공된 근거에는 과거의 스톤을 가져오거나 반환한 내용이 없어 확인할 수 없다."
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q049",
+      "question": "리얼리티 스톤(에테르)은 다크 월드에서 가디언즈를 거쳐 인피니티 워까지 어떻게 이동했어? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 7071,
+      "tokens": {
+        "input": 1350,
+        "output": 874,
+        "total": 2224
+      },
+      "evidence_ids": [
+        "tt4154756-wikipedia-plot-p02",
+        "tt2015381-wikipedia-creation-p20",
+        "tt2015381-wikipedia-creation-p24",
+        "wp-66902704-other-p91",
+        "tt1981115-wikipedia-cast-p06"
+      ],
+      "answer_ko": "제공된 근거로 확인되는 흐름은 《인피니티 워》에서 토르가 리얼리티 스톤을 노웨어의 타넬리어 티반(콜렉터)이 가진 것으로 알고 있었고, 피터 퀼 일행이 노웨어에 도착했을 때 타노스가 이미 그 스톤을 갖고 있었다는 점입니다. [tt4154756-wikipedia-plot-p02] 제공된 근거만으로는 《다크 월드》에서 제인 포스터에게서 말레키스로, 이어 시프와 볼스타그를 거쳐 콜렉터에게 넘어간 과정이나 콜렉터에게 맡긴 시점을 확인할 수 없습니다. 《가디언즈 오브 갤럭시》에서 다뤄진 스톤은 파워 스톤으로 설명되므로, 리얼리티 스톤과는 구별해야 합니다. [tt2015381-wikipedia-creation-p20]",
+      "facts": [
+        {
+          "fact": "제인 포스터→말레키스→시프·볼스타그→콜렉터로 이어지는 이동 경로",
+          "status": "missing",
+          "reason": "제공된 근거에는 이 인물들 사이의 이동 과정이 나오지 않습니다."
+        },
+        {
+          "fact": "콜렉터에게 맡긴 시점은 《다크 월드》 쿠키영상",
+          "status": "missing",
+          "reason": "근거는 《다크 월드》 미드크레딧 장면을 언급하지만, 에테르를 콜렉터에게 맡기는 장면이라는 내용은 확인해 주지 않습니다. [tt2015381-wikipedia-creation-p20]"
+        },
+        {
+          "fact": "《인피니티 워》에서 타노스가 노웨어에서 이미 리얼리티 스톤을 가지고 있었다",
+          "status": "met",
+          "reason": "퀼 일행이 노웨어에 도착했을 때 타노스가 이미 리얼리티 스톤을 가지고 있었다고 나옵니다. [tt4154756-wikipedia-plot-p02]"
+        },
+        {
+          "fact": "《가디언즈 오브 갤럭시》의 스톤은 파워 스톤이며 리얼리티 스톤과 다르다",
+          "status": "partial",
+          "reason": "근거는 《가디언즈 오브 갤럭시》에서 파워 스톤을 다뤘다고 뒷받침하지만, 오브의 구체적인 이동 경로까지는 확인해 주지 않습니다. [tt2015381-wikipedia-creation-p20]"
+        }
+      ],
+      "grounded": true
+    },
+    {
+      "question_id": "Q058",
+      "question": "닥터 스트레인지가 아이 오브 아가모토를 얻는 과정과 이후 영화에서의 쓰임은? (스포)",
+      "context_order": "before",
+      "status": "answered",
+      "latency_ms": 7462,
+      "tokens": {
+        "input": 1345,
+        "output": 860,
+        "total": 2205
+      },
+      "evidence_ids": [
+        "wp-66902704-lore-p58",
+        "tt1211837-wikipedia-creation-p17",
+        "tt1211837-wikipedia-reception-p07",
+        "wp-66902704-lore-p67",
+        "tt1211837-wikipedia-cast-p02"
+      ],
+      "answer_ko": "확인 가능한 내용은 스트레인지가 금서를 공부해 아이 오브 아가모토의 사용법을 익혔다는 점입니다. 다만 몰래 공부했는지는 근거에 나와 있지 않습니다.[wp-66902704-lore-p58] 아이는 타임 스톤을 담은 유물이고, 시간 조작과 가능한 미래를 내다보는 능력은 그 안의 타임 스톤에 속합니다.[wp-66902704-lore-p67][tt1211837-wikipedia-cast-p02] 홍콩의 시간을 되돌린 일, 도르마무를 시간 고리에 가둔 일, 《인피니티 워》에서 미래를 확인하거나 토니를 살리기 위해 스톤을 넘긴 일은 제공된 근거만으로 확인할 수 없습니다.",
+      "facts": [
+        {
+          "fact": "금서를 몰래 학습하고 아이 오브 아가모토 사용법을 익힘",
+          "status": "partial",
+          "reason": "금서를 공부해 아이 사용법을 배웠다는 내용은 있지만, 몰래 공부했는지는 확인되지 않습니다.[wp-66902704-lore-p58]"
+        },
+        {
+          "fact": "홍콩의 시간을 역전함",
+          "status": "missing",
+          "reason": "제공된 근거에 해당 장면이 없습니다."
+        },
+        {
+          "fact": "도르마무를 시간 고리에 가둠",
+          "status": "missing",
+          "reason": "제공된 근거에 해당 장면이 없습니다."
+        },
+        {
+          "fact": "《인피니티 워》에서 가능한 미래들을 확인함",
+          "status": "partial",
+          "reason": "타임 스톤이 가능한 미래를 내다보게 하고 스트레인지가 사용했다는 일반 정보는 있지만, 해당 영화에서 미래들을 확인한 장면은 확인되지 않습니다.[wp-66902704-lore-p67]"
+        },
+        {
+          "fact": "토니를 살리기 위해 타노스에게 스톤을 넘김",
+          "status": "missing",
+          "reason": "제공된 근거에 양도 장면이나 그 이유가 없습니다."
+        },
+        {
+          "fact": "아이와 타임 스톤의 구분",
+          "status": "met",
+          "reason": "아이는 타임 스톤을 담은 유물이며, 시간 조작과 가능한 미래 예견은 타임 스톤의 능력이라고 설명되어 있습니다.[wp-66902704-lore-p67][tt1211837-wikipedia-cast-p02]"
+        }
+      ],
+      "grounded": true
+    }
+  ]
+}

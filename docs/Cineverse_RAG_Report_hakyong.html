@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>CINEVERSE | 개인 RAG 실험 보고서</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#172033;--muted:#5e6878;--line:#e2e6ef;--blue:#2563eb}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}main{max-width:1120px;margin:auto;padding:36px 22px 80px}header{background:linear-gradient(135deg,#172554,#2563eb);color:#fff;border-radius:18px;padding:30px 32px;margin-bottom:20px}h1{margin:0 0 6px;font-size:30px}header p{margin:0;color:#dbeafe}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin:16px 0}.callout{background:#eaf1ff;border-left:4px solid var(--blue);padding:14px 16px;border-radius:8px;margin:16px 0}h2{border-bottom:2px solid var(--line);padding-bottom:7px;margin-top:34px}table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0 20px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:9px 10px}th{background:#f1f4f9;color:#334155}code{background:#f1f4f9;padding:2px 5px;border-radius:4px}pre{background:#111827;color:#e5e7eb;overflow:auto;padding:18px;border-radius:10px;line-height:1.5}.muted{color:var(--muted)}
+</style></head><body><main>
+<header><h1>CINEVERSE | 팀 공통 RAG 설정 결정 실험 보고서</h1><p>랙랙무비 · OpenAI 임베딩 / 검색 구조 비교</p></header>
+<div class="callout"><b>목적:</b> Vector·Hybrid·Query Rewrite·Re-ranking·청킹에 대한 팀 공통 설정을 결정하기 위한 실험이다. 개인 브랜치와 팀 DB와 분리된 PostgreSQL 컬렉션에서 실행했으며, 팀원 결과와 수치를 직접 합산하지 않고 동일 조건 확정을 위한 근거로 사용한다.</div>
+<section class="card"><h2>1. 핵심 결과</h2><table><tr><th>방식</th><th>Hit@5</th><th>MRR</th></tr><tr><td>Vector A</td><td>3/20</td><td>0.070</td></tr><tr><td>Hybrid B</td><td>3/20</td><td>0.070</td></tr><tr><td>English Rewrite + 단순 재랭킹</td><td>9/20</td><td>0.228</td></tr><tr><td><b>English Rewrite + Cross-Encoder</b></td><td><b>13/20</b></td><td><b>0.471</b></td></tr></table><p>Query Rewrite와 실제 Cross-Encoder 재랭킹이 가장 강한 개선 후보로 확인됐다.</p></section>
+<section class="card"><h2>2. 실험 흐름</h2><pre>팀 데이터셋 → 근거 문서 추출 → 1,584청크 → OpenAI 임베딩 → 개인 pgvector
+→ Vector / Hybrid → Query Rewrite → Cross-Encoder → Top-5 근거
+→ 답변 생성 → 자동 평가 → 인사이트 → 팀 설정 확정</pre></section>
+<section class="card"><h2>3. 실험 조건</h2><table><tr><th>항목</th><th>조건</th></tr><tr><td>질문</td><td>20개</td></tr><tr><td>문서</td><td>영화·인물·세계관 근거 문서</td></tr><tr><td>청크</td><td>1,584개</td></tr><tr><td>임베딩</td><td><code>text-embedding-3-small</code></td></tr><tr><td>검색</td><td>Vector, BM25 + Vector RRF</td></tr><tr><td>재랭킹</td><td>키워드 겹침 / Cross-Encoder</td></tr></table></section>
+<section class="card"><h2>4. 핵심 인사이트</h2><ol><li>한국어 질문을 영어 검색어로 변환하면 영어 위키 검색에 유리하다.</li><li>Hybrid는 자동 개선이 아니며 RRF와 BM25 설정을 검증해야 한다.</li><li>단순 문자열 겹침보다 Cross-Encoder가 재랭킹에 적합하다.</li><li>Overlap은 문서 유형별 차등 적용이 필요하다.</li><li>짧은 Top-5 문맥에서는 Context 배치 순서의 우위가 확정되지 않았다.</li></ol></section>
+<section class="card"><h2>5. 다음 작업</h2><ol><li>공식 평가셋과 gold chunk 규칙 확정</li><li>CK05·CK09 청킹 비교</li><li>Query Rewrite와 Cross-Encoder 후보 확정</li><li>팀 DB에 최종 데이터 적재</li><li>동일 조건 A/B/C 공식 평가</li><li>실패 유형 분류 및 최종 보고서 작성</li><li>RAGAS·수동 채점·Guardrail·UI 통합</li></ol></section>
+<section class="card"><h2>6. 한계</h2><p>팀원 실험과 데이터·청킹·질문 세트가 다르며, 답변 평가는 LLM 자동 판정이다. RAGAS, 수동 교차 검토, 한국어용 Cross-Encoder 비교, 팀 서비스 통합은 남아 있다.</p></section>
+<p class="muted">개인 실험 완료 · 팀 최종 설정 확정 전 · 커밋·푸시는 하지 않았다.</p>
+</main></body></html>

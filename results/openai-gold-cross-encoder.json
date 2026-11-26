@@ -1,0 +1,314 @@
+{
+  "input": "results/openai-gold-full-experiment.json",
+  "cross_encoder_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+  "candidate_source": "rewrite_hybrid_candidates",
+  "rows": 20,
+  "scored_rows": 20,
+  "summary": {
+    "hit_at_5": 13,
+    "total": 20,
+    "mrr": 0.47085784313725493
+  },
+  "records": [
+    {
+      "question_id": "Q001",
+      "question": "타임 스톤이 뭐야?",
+      "rewrite_query": "What is the Time Stone in Marvel?",
+      "gold_count": 127,
+      "rank": 1,
+      "hit_at_5": true,
+      "top_hits": [
+        "wp-66902704-lore-p67",
+        "wp-66902704-other-p62",
+        "wp-54537218-biography-p20",
+        "wp-66902704-other-p93",
+        "tt4154756-wikipedia-plot-p04"
+      ]
+    },
+    {
+      "question_id": "Q002",
+      "question": "인피니티 스톤은 전부 몇 개고 각각 뭐야?",
+      "rewrite_query": "How many Infinity Stones are there, and what does each one do?",
+      "gold_count": 133,
+      "rank": 1,
+      "hit_at_5": true,
+      "top_hits": [
+        "wp-66902704-lore-p67",
+        "wp-66902704-lore-p66",
+        "tt4154756-wikipedia-plot-p01",
+        "wp-66902704-other-p93",
+        "wp-66902704-lore-p42"
+      ]
+    },
+    {
+      "question_id": "Q003",
+      "question": "타노스는 인피니티 스톤을 왜 모으는 거야? (스포)",
+      "rewrite_query": "Why does Thanos collect the Infinity Stones? (spoilers)",
+      "gold_count": 9,
+      "rank": 7,
+      "hit_at_5": false,
+      "top_hits": [
+        "wp-66902704-other-p91",
+        "wp-60616450-alternate_versions-p03",
+        "wp-54537218-biography-p22",
+        "wp-60616450-alternate_versions-p04",
+        "wp-60616450-biography-p02"
+      ]
+    },
+    {
+      "question_id": "Q004",
+      "question": "와칸다가 어떤 나라야?",
+      "rewrite_query": "What country is Wakanda?",
+      "gold_count": 6,
+      "rank": 7,
+      "hit_at_5": false,
+      "top_hits": [
+        "wp-66902704-other-p22",
+        "wp-66902704-other-p23",
+        "tt1825683-wikipedia-creation-p17",
+        "tt1825683-wikipedia-creation-p18",
+        "tt1825683-wikipedia-reception-p28"
+      ]
+    },
+    {
+      "question_id": "Q007",
+      "question": "로키랑 토르는 무슨 관계야?",
+      "rewrite_query": "Loki and Thor relationship",
+      "gold_count": 36,
+      "rank": 5,
+      "hit_at_5": true,
+      "top_hits": [
+        "tt1981115-wikipedia-creation-p10",
+        "wp-61651800-alternate_versions-p08",
+        "tt1981115-wikipedia-cast-p13",
+        "tt1981115-wikipedia-creation-p20",
+        "wp-61651800-biography-p13"
+      ]
+    },
+    {
+      "question_id": "Q009",
+      "question": "윈터 솔져는 누구야? (스포)",
+      "rewrite_query": "Who is the Winter Soldier in Marvel? (Spoilers)",
+      "gold_count": 3,
+      "rank": 12,
+      "hit_at_5": false,
+      "top_hits": [
+        "tt1843866-wikipedia-synopsis-p01",
+        "tt1843866-wikipedia-cast-p04",
+        "tt1843866-wikipedia-release-p04",
+        "wp-60774345-creation-p31",
+        "wp-60774345-creation-p34"
+      ]
+    },
+    {
+      "question_id": "Q011",
+      "question": "스파이더맨이 아이언맨을 처음 만난 영화는 뭐야?",
+      "rewrite_query": "Spider-Man first meets Iron Man movie",
+      "gold_count": 33,
+      "rank": 6,
+      "hit_at_5": false,
+      "top_hits": [
+        "wp-54537218-biography-p26",
+        "wp-59162931-creation-p09",
+        "wp-54537218-creation-p02",
+        "wp-54537218-biography-p25",
+        "wp-59162931-personality-p03"
+      ]
+    },
+    {
+      "question_id": "Q015",
+      "question": "젠데이아는 마블에서 무슨 역이야?",
+      "rewrite_query": "What role does Zendaya play in Marvel movies?",
+      "gold_count": 2,
+      "rank": 2,
+      "hit_at_5": true,
+      "top_hits": [
+        "wp-61283242-personality-p01",
+        "wp-61283242-intro-p01",
+        "wp-61283242-creation-p04",
+        "wp-61283242-personality-p03",
+        "wp-61283242-reception-p01"
+      ]
+    },
+    {
+      "question_id": "Q016",
+      "question": "톰 홀랜드가 연기하는 캐릭터는 누구야?",
+      "rewrite_query": "Which character does Tom Holland play?",
+      "gold_count": 4,
+      "rank": 2,
+      "hit_at_5": true,
+      "top_hits": [
+        "wp-59162931-biography-p29",
+        "wp-59162931-intro-p01",
+        "wp-59162931-personality-p05",
+        "tt3498820-wikipedia-creation-p18",
+        "wp-59162931-biography-p26"
+      ]
+    },
+    {
+      "question_id": "Q019",
+      "question": "타임 스톤은 코믹스에서는 어떻게 쓰여?",
+      "rewrite_query": "How is the Time Stone used in Marvel Comics?",
+      "gold_count": 127,
+      "rank": 1,
+      "hit_at_5": true,
+      "top_hits": [
+        "wp-66902704-lore-p67",
+        "wp-66902704-other-p62",
+        "wp-54537218-biography-p20",
+        "wp-66902704-other-p91",
+        "wp-55935213-biography-p09"
+      ]
+    },
+    {
+      "question_id": "Q040",
+      "question": "토니 스타크가 에이지 오브 울트론에서 울트론을 만들게 된 계기는 뭐고, 그 영향이 시빌 워에서 어떻게 이어져? (스포)",
+      "rewrite_query": "What motivated Tony Stark to create Ultron in Avengers: Age of Ultron, and how did it affect Captain America: Civil War? (Spoilers)",
+      "gold_count": 44,
+      "rank": 1,
+      "hit_at_5": true,
+      "top_hits": [
+        "tt3498820-wikipedia-plot-p02",
+        "wp-54537218-biography-p33",
+        "tt3498820-wikipedia-cast-p03",
+        "tt2395427-wikipedia-creation-p08",
+        "tt2395427-wikipedia-plot-p04"
+      ]
+    },
+    {
+      "question_id": "Q042",
+      "question": "완다가 인피니티 워와 엔드게임에서 맡은 역할은 뭐고, 그 전에 어떤 영화에서 능력을 얻었어? (스포)",
+      "rewrite_query": "Wanda’s role in Avengers: Infinity War and Avengers: Endgame, and which earlier movie gave her powers (spoilers)",
+      "gold_count": 39,
+      "rank": 2,
+      "hit_at_5": true,
+      "top_hits": [
+        "wp-55935213-reception-p01",
+        "wp-55935213-biography-p25",
+        "wp-55935213-personality-p04",
+        "wp-55935213-intro-p01",
+        "wp-55935213-personality-p01"
+      ]
+    },
+    {
+      "question_id": "Q044",
+      "question": "바키(윈터 솔져)가 윈터 솔져, 시빌 워, 인피니티 워에서 어떻게 달라졌어? (스포)",
+      "rewrite_query": "How does Bucky (Winter Soldier) change in Captain America: The Winter Soldier, Captain America: Civil War, and Avengers: Infinity War? (Spoilers)",
+      "gold_count": 21,
+      "rank": 17,
+      "hit_at_5": false,
+      "top_hits": [
+        "wp-60774345-creation-p33",
+        "tt3498820-wikipedia-cast-p06",
+        "tt1843866-wikipedia-cast-p04",
+        "wp-60774345-creation-p30",
+        "wp-60774345-creation-p04"
+      ]
+    },
+    {
+      "question_id": "Q052",
+      "question": "소코비아 협정은 어떤 사건 때문에 생겼고 어떤 결과를 낳았어? (스포)",
+      "rewrite_query": "What events led to the Sokovia Accords, and what were their consequences? (Spoilers)",
+      "gold_count": 6,
+      "rank": 5,
+      "hit_at_5": true,
+      "top_hits": [
+        "wp-66902704-lore-p88",
+        "wp-66902704-other-p89",
+        "wp-66902704-other-p47",
+        "wp-54537218-biography-p16",
+        "tt3498820-wikipedia-plot-p01"
+      ]
+    },
+    {
+      "question_id": "Q056",
+      "question": "블랙 위도우의 사건은 시간상 어느 영화들 사이에 있어? (스포)",
+      "rewrite_query": "Between which movies does Black Widow take place chronologically? (Spoilers)",
+      "gold_count": 5,
+      "rank": 21,
+      "hit_at_5": false,
+      "top_hits": [
+        "tt3480822-wikipedia-synopsis-p01",
+        "tt3480822-wikipedia-creation-p11",
+        "tt3480822-wikipedia-creation-p15",
+        "tt3480822-wikipedia-creation-p02",
+        "tt3480822-wikipedia-release-p02"
+      ]
+    },
+    {
+      "question_id": "Q041",
+      "question": "토르는 라그나로크, 인피니티 워, 엔드게임을 거치면서 무엇을 잃고 어떻게 변해? (스포)",
+      "rewrite_query": "What does Thor lose and how does he change in Thor: Ragnarok, Avengers: Infinity War, and Avengers: Endgame? (spoilers)",
+      "gold_count": 16,
+      "rank": 8,
+      "hit_at_5": false,
+      "top_hits": [
+        "tt4154796-wikipedia-cast-p04",
+        "tt3501632-wikipedia-cast-p10",
+        "tt4154756-wikipedia-cast-p02",
+        "wp-66902704-lore-p02",
+        "wp-60616450-intro-p02"
+      ]
+    },
+    {
+      "question_id": "Q045",
+      "question": "네뷸라는 가디언즈, 인피니티 워, 엔드게임에서 가모라, 타노스와 각각 어떤 관계였어? (스포)",
+      "rewrite_query": "What was Nebula’s relationship with Gamora and Thanos in Guardians, Infinity War, and Endgame? (Spoilers)",
+      "gold_count": 22,
+      "rank": 2,
+      "hit_at_5": true,
+      "top_hits": [
+        "wp-67063919-alternate_versions-p02",
+        "wp-67063919-biography-p02",
+        "wp-67063919-biography-p05",
+        "wp-60616450-biography-p03",
+        "wp-60616450-personality-p01"
+      ]
+    },
+    {
+      "question_id": "Q047",
+      "question": "마인드 스톤이 어떻게 비전의 몸에 들어갔고, 이후 어떻게 됐어? (스포)",
+      "rewrite_query": "How did the Mind Stone get into Vision’s body, and what happened to it afterward? (spoilers)",
+      "gold_count": 16,
+      "rank": 4,
+      "hit_at_5": true,
+      "top_hits": [
+        "wp-55935213-biography-p09",
+        "wp-66902704-lore-p65",
+        "wp-55935213-biography-p08",
+        "tt4154756-wikipedia-plot-p05",
+        "wp-60616450-biography-p06"
+      ]
+    },
+    {
+      "question_id": "Q049",
+      "question": "리얼리티 스톤(에테르)은 다크 월드에서 가디언즈를 거쳐 인피니티 워까지 어떻게 이동했어? (스포)",
+      "rewrite_query": "How did the Reality Stone (Aether) move from Thor: The Dark World through Guardians of the Galaxy to Avengers: Infinity War?",
+      "gold_count": 141,
+      "rank": 1,
+      "hit_at_5": true,
+      "top_hits": [
+        "tt4154756-wikipedia-plot-p02",
+        "wp-66902704-other-p91",
+        "tt1981115-wikipedia-plot-p03",
+        "wp-66902704-other-p55",
+        "tt4154796-wikipedia-plot-p03"
+      ]
+    },
+    {
+      "question_id": "Q058",
+      "question": "닥터 스트레인지가 아이 오브 아가모토를 얻는 과정과 이후 영화에서의 쓰임은? (스포)",
+      "rewrite_query": "How does Doctor Strange obtain the Eye of Agamotto, and how is it used in later films? (Spoilers)",
+      "gold_count": 11,
+      "rank": 1,
+      "hit_at_5": true,
+      "top_hits": [
+        "tt1211837-wikipedia-plot-p03",
+        "tt1211837-wikipedia-cast-p02",
+        "wp-66902704-lore-p58",
+        "tt1211837-wikipedia-plot-p05",
+        "tt1211837-wikipedia-release-p10"
+      ]
+    }
+  ]
+}
