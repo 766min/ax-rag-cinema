@@ -38,6 +38,9 @@ class RetrievalMode(StrEnum):
     HYBRID_RERANK = "hybrid_rerank"  # C: Hybrid + Re-ranking
     HYBRID_RERANK_REWRITE = "hybrid_rerank_rewrite"  # C+리라이트: C + 쿼리 리라이트
     HYBRID_RERANK_ENRICHED = "hybrid_rerank_enriched"  # D: C + LLM 가공 색인
+    # 팀 추가 실험 (재정렬 없는 영문 검색어 구성). 공식 A/B/C/C+ 비교표와 따로 기록한다
+    VECTOR_REWRITE = "vector_rewrite"  # A+: 영문 리라이트 + Vector
+    HYBRID_REWRITE = "hybrid_rewrite"  # B+: 영문 리라이트 + BM25 + Vector (RRF)
 
 
 class APIResponse(BaseModel, Generic[T]):
