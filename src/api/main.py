@@ -1,0 +1,47 @@
+"""CINEVERSE 배포 서버: /api/* (챗봇 · 영화 정보 · 게시판) + Next.js 정적 화면(web/out).
+
+실행 (저장소 루트):  uv run --locked uvicorn api.main:app --app-dir src --port 8000
+화면 개발 중에는 web/ 에서 npm run dev (3000) 를 따로 띄우고 CORS_ORIGINS 로 잇는다.
+"""
+
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+load_dotenv()  # 아래 모듈들이 FAKE_ASK · ASK_MODE 등을 import 시점에 읽는다
+
+from api import ask, board, works  # noqa: E402
+from shared.core.exception_handlers import register_exception_handlers  # noqa: E402
+from shared.core.schemas import APIResponse  # noqa: E402
+
+ROOT = Path(__file__).resolve().parents[2]
+WEB_DIR = Path(os.getenv("WEB_DIR", ROOT / "web" / "out"))
+CORS_ORIGINS = [
+    o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if o.strip()
+]
+
+app = FastAPI(title="CINEVERSE API")
+register_exception_handlers(app)
+# 화면을 FastAPI 가 같이 보내는 배포에서는 같은 주소라 CORS 가 필요 없다 (CORS_ORIGINS 를 비워도 됨)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["Content-Type", "X-Admin-Token"],
+)
+for module in (ask, works, board):
+    app.include_router(module.router, prefix="/api")
+
+
+@app.get("/api/health")
+def health() -> APIResponse[dict[str, str]]:
+    return APIResponse.ok({"status": "ok"})
+
+
+# API 경로를 다 등록한 뒤에 마지막으로 붙여야 /api/* 가 화면 파일에 가려지지 않는다
+if WEB_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
