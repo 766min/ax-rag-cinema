@@ -16,6 +16,7 @@ dependencies = [
     "python-dotenv>=1.2.4",
     "ragas>=0.4.4",
     "rank-bm25>=0.2.2",
+    "torch==2.11.0",
     "uvicorn>=0.54.0",
 ]
 
@@ -55,3 +56,12 @@ explicit_package_bases = true
 # langchain 등 타입 정보가 느슨한 라이브러리 때문에 처음에는 완화해서 시작한다
 ignore_missing_imports = true
 warn_unused_ignores = true
+
+# CUDA - pytorch 사용 설정 (있는 경우만 작동)
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
