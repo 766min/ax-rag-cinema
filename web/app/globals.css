@@ -30,17 +30,22 @@ body {
 }
 
 @layer components {
-  /* 1920x1080 무대를 창 크기에 맞춰 16:9 그대로 줄인다 (--s 는 layout 의 스크립트가 넣는다) */
-  .stage {
+  /* 1920x1080 무대를 창 크기에 맞춰 16:9 그대로 줄인다 (--s 는 layout 의 스크립트가 넣는다).
+     transform: scale 은 큰 그림을 그린 뒤 줄여서 글씨가 흐려진다. zoom 은 줄인 크기로 다시 그려서 선명하다 */
+  .viewport {
     position: fixed;
-    left: 50%;
-    top: 50%;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  .stage {
+    position: relative;
     width: 1920px;
     height: 1080px;
     overflow: hidden;
     background: var(--color-bg);
-    transform: translate(-50%, -50%) scale(var(--s, 1));
-    perspective: 1800px;
+    zoom: var(--s, 1);
   }
   .space {
     position: absolute;

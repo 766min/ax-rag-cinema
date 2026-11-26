@@ -54,10 +54,12 @@ export default function Stage({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div ref={stage} className="stage">
-      <div className="space" />
-      <canvas ref={stars} width={1920} height={1080} className="absolute inset-0" data-depth="6" />
-      {children}
+    <div className="viewport">
+      <div ref={stage} className="stage">
+        <div className="space" />
+        <canvas ref={stars} width={1920} height={1080} className="absolute inset-0" data-depth="6" />
+        {children}
+      </div>
     </div>
   );
 }
