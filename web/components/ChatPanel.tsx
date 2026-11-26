@@ -65,14 +65,35 @@ export default function ChatPanel() {
   const input = useRef<HTMLTextAreaElement>(null);
   const bottom = useRef<HTMLDivElement>(null);
 
+  const panel = useRef<HTMLElement>(null);
+
+  // 열 때 입력창으로, 닫을 때 열기 전에 누르던 버튼으로 포커스를 돌려준다
   useEffect(() => {
-    if (isOpen) input.current?.focus();
+    if (!isOpen) return;
+    const opener = document.activeElement as HTMLElement | null;
+    input.current?.focus();
+    return () => opener?.focus();
   }, [isOpen]);
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "end" }); // 요즘 브라우저는 Promise 를 돌려줘서 정리 함수로 넘기면 안 된다
   }, [messages, busy]);
   useEffect(() => {
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && close();
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+      if (e.key !== "Tab" || !panel.current) return;
+      // 포커스 가두기: Tab 이 창 밖(뒤쪽 화면)으로 나가지 않고 창 안에서 돈다
+      const items = [...panel.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), textarea, input")];
+      const first = items[0];
+      const last = items.at(-1);
+      const inside = panel.current.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || !inside)) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
     addEventListener("keydown", esc);
     return () => removeEventListener("keydown", esc);
   }, [close]);
@@ -98,6 +119,7 @@ export default function ChatPanel() {
     <>
       <div className="absolute inset-0 z-40 bg-[linear-gradient(90deg,rgb(4_5_12/0.25)_30%,rgb(4_5_12/0.8))] backdrop-blur-[3px]" onClick={close} />
       <aside
+        ref={panel}
         role="dialog"
         aria-modal="true"
         aria-label="멀티버스 로어 AI"
