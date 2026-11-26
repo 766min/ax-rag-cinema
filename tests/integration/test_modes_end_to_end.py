@@ -150,8 +150,8 @@ def test_six_modes_branch_and_trace_citations(tmp_path: Path) -> None:
         if reranked:
             assert reranker.inputs[-1] == len(rec.candidates)  # 결합 후보 전부를 재정렬
 
-        # 인용 ⊆ 모델이 읽은 범위 ⊆ 상위 top_k ⊆ 후보
-        top = rec.top_chunk_ids(5)
+        # 인용 ⊆ 모델이 읽은 범위 ⊆ 상위 generate_k ⊆ 후보
+        top = rec.top_chunk_ids(SearchConfig().generate_k)
         read_ids = [cid for block in rec.params["read"] for cid in block["ids"]]
         assert rec.cited_chunk_ids and set(rec.cited_chunk_ids) <= set(read_ids) <= set(top)
         assert set(top) <= {c.chunk_id for c in rec.candidates}

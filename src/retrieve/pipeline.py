@@ -69,12 +69,20 @@ def effective_mode(name: str, rewrite: bool = True) -> str:
 class SearchConfig:
     """검색 설정. params() 를 실행 기록에 남겨 어떤 설정으로 돌렸는지 추적한다."""
 
-    top_k: int = 5  # 생성 모델에 넘기는 수 · Hit@k 의 k
-    pool: int = 20  # 결합 후보 깊이 = 각 검색기에서 가져오는 수 = 재정렬 입력 수 (임시값)
+    top_k: int = 5  # 평가 Hit@k 의 k (검색 지표는 상위 5 로 잰다)
+    generate_k: int = (
+        8  # 생성 모델에 넘기는 수. 재정렬 뒤 6위로 밀린 정답이 많아 5 → 8 (2026-11-26 dev)
+    )
+    pool: int = 40  # 각 검색기에서 가져오는 수. 20 일 때 놓친 정답이 17 · 25위에 있어 20 → 40 (2026-11-26 dev)
     rrf_k: int = RRF_K  # RRF 상수 (임시값 60)
 
     def params(self) -> dict[str, Any]:
-        return {"top_k": self.top_k, "pool": self.pool, "rrf_k": self.rrf_k}
+        return {
+            "top_k": self.top_k,
+            "generate_k": self.generate_k,
+            "pool": self.pool,
+            "rrf_k": self.rrf_k,
+        }
 
 
 def search_text(chunk: Chunk) -> str:
@@ -106,12 +114,15 @@ class Retriever:
 
     @measure_time(label="retrieve")
     def first_stage(self, query: str, mode: RetrievalMode, config: SearchConfig) -> list[Candidate]:
-        """1단계 검색. A 계열은 벡터 순위 그대로, 나머지는 벡터 + BM25 를 RRF 로 합친다."""
+        """1단계 검색. A 계열은 벡터 순위 그대로, 나머지는 벡터 + BM25 를 RRF 로 합친다.
+
+        합친 목록(최대 2×pool)은 자르지 않는다. 재정렬 구성은 합집합 전체를 다시 읽는다 —
+        RRF 가 벡터 상위권을 아래로 미는 경우(dev: 벡터 2위 → RRF 13위)에도 재정렬이 되살릴 수 있게.
+        """
         vector = vector_search(self.store, query, config.pool)
         if mode in VECTOR_ONLY:
             return vector_candidates(vector)
-        merged = rrf_merge(vector, self.bm25.search(query, config.pool), k=config.rrf_k)
-        return merged[: config.pool]  # 두 목록을 합치면 최대 2×pool 이라 깊이만큼 자른다
+        return rrf_merge(vector, self.bm25.search(query, config.pool), k=config.rrf_k)
 
     @measure_time(label="rerank")
     def _rerank(self, query: str, candidates: list[Candidate]) -> list[Candidate]:
@@ -119,7 +130,7 @@ class Retriever:
         return rerank(query, candidates, self.texts, self.reranker)
 
     def search(self, query: str, mode: RetrievalMode, config: SearchConfig) -> list[Candidate]:
-        """구성에 맞게 1단계 → (재정렬) 을 돌려 후보 전부를 최종 순위대로 돌려준다. 상위 top_k 가 생성 모델로 간다."""
+        """구성에 맞게 1단계 → (재정렬) 을 돌려 후보 전부를 최종 순위대로 돌려준다. 상위 generate_k 가 생성 모델로 간다."""
         if mode == RetrievalMode.HYBRID_RERANK_ENRICHED:
             raise NotImplementedError("D 구성은 이번 취합 범위가 아닙니다")
         if mode in RERANK_MODES and self.reranker is None:

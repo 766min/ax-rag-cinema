@@ -74,7 +74,7 @@ async def run_questions(
                 query_translator=query_translator,
                 answer_translator=answer_translator,
                 mode=mode,
-                top_k=config.top_k,
+                top_k=config.generate_k,
                 query_en=(queries or {}).get(item.question_id),
                 rewrite=rewrite,
             )
