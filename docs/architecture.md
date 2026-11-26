@@ -237,6 +237,10 @@ flowchart TB
 | 재정렬 · 리라이트 | `src/retrieve/refine.py` | ⬜ |
 | 구성별 실행 | `src/retrieve/pipeline.py` | ⬜ |
 
+- **재정렬 장치 (2026-11-26).** 재정렬 모델은 NVIDIA GPU(cuda) → Apple GPU(mps) → CPU 순으로 자동으로 고르고, 고른 장치는 실행 기록 `reranker.device` 에 남는다. `RERANKER_DEVICE`(예: `cpu` · `cuda:1`)로 고정할 수 있다. CPU 에서는 후보 20개 재정렬이 질문당 약 10초, 80개는 약 49초였다 (실측). GPU 에서는 1~2초 안팎으로 추정한다 (아직 실측 전).
+  - **GPU PC 에서 주의:** `uv run --with sentence-transformers` 가 받는 Windows 용 torch 는 CPU 전용(`+cpu`)이라 GPU 가 있어도 CPU 로 돈다. CUDA 용 torch 를 PyTorch 저장소에서 받아야 한다. 예: `uv run --locked --with sentence-transformers==5.2.0 --with torch --index https://download.pytorch.org/whl/cu124 --index-strategy unsafe-best-match python scripts/run_eval.py …` (CUDA 버전은 그 PC 의 드라이버에 맞춘다. 이 명령은 GPU PC 에서 처음 한 번 확인한다)
+  - 확인: 같은 명령 앞부분으로 `python -c "import torch; print(torch.__version__, torch.cuda.is_available())"` 를 돌려 `+cu…` · `True` 가 나오는지, 실행 뒤 결과 파일의 `reranker.device` 가 `cuda` 인지 본다.
+
 ## 6. 웹 검색 흐름 (2026-11-24 추가)
 
 문서에 근거가 없는 질문을 Brave Search 로 보강하고, 받은 결과를 **기존 적재와 같은 구조**로 넣어 다음 질문부터 다시 쓰는 흐름이다. 서비스 경로에서만 돌고 평가에서는 꺼 둔다.

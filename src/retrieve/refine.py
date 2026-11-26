@@ -55,6 +55,22 @@ def cached_revision(model_id: str) -> str:
     return parts[parts.index("snapshots") + 1] if "snapshots" in parts else "unknown"
 
 
+def pick_device(torch: Any, requested: str | None = None) -> str:
+    """재정렬 장치: 인자 > RERANKER_DEVICE > NVIDIA GPU(cuda) > Apple GPU(mps) > CPU.
+
+    CPU 에서는 후보 80개 재정렬이 질문당 약 49초 걸린다 (2026-11-26 실측). GPU 가 있으면 자동으로 쓴다.
+    Windows 의 기본 torch 는 CPU 전용이라, GPU 를 쓰려면 CUDA 용 torch 가 깔려 있어야 한다 (architecture.md §5).
+    """
+    choice = requested or os.getenv("RERANKER_DEVICE")
+    if choice:
+        return choice
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
 # [역할] 실제 Cross-Encoder 모델을 감싼 재정렬기 (로컬에서 돌아 API 비용이 없다)
 class CrossEncoderReranker:
     """로컬 Cross-Encoder (API 비용 없음). info 에 이름 · 판 · 장치 · 로컬 캐시 여부를 남긴다"""
@@ -76,8 +92,8 @@ class CrossEncoderReranker:
                 "재정렬에는 sentence-transformers 가 필요합니다 (팀 의존성 밖): "
                 "uv run --with sentence-transformers==5.2.0 ..."
             ) from exc
-        # Apple 실리콘 GPU(mps)가 있으면 쓰고, 없으면 CPU
-        device = device or ("mps" if torch.backends.mps.is_available() else "cpu")
+        # NVIDIA GPU(cuda) → Apple GPU(mps) → CPU 순으로 고른다. 고른 장치는 info["device"] 로 기록에 남는다
+        device = pick_device(torch, device)
         self.model: Any = CrossEncoder(model_id, max_length=max_length, device=device)
         revision = cached_revision(model_id)
         self.name = f"{model_id}@{revision[:12]}"

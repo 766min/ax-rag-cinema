@@ -1,6 +1,9 @@
+from types import SimpleNamespace
+from typing import Any
+
 import pytest
 
-from retrieve.refine import rerank
+from retrieve.refine import pick_device, rerank
 from shared.core.models import Candidate, Chunk, SourceId
 from shared.core.schemas import Section
 
@@ -64,3 +67,28 @@ def test_rerank_rejects_mismatched_scores() -> None:
     ]  # fmt: skip
     with pytest.raises(ValueError, match="점수 개수"):
         rerank("q", candidates, {"a": "x"}, BadReranker())
+
+
+def fake_torch(cuda: bool, mps: bool) -> Any:
+    return SimpleNamespace(
+        cuda=SimpleNamespace(is_available=lambda: cuda),
+        backends=SimpleNamespace(mps=SimpleNamespace(is_available=lambda: mps)),
+    )
+
+
+@pytest.mark.parametrize(
+    ("cuda", "mps", "expected"),
+    [(True, False, "cuda"), (True, True, "cuda"), (False, True, "mps"), (False, False, "cpu")],
+)
+def test_pick_device_prefers_gpu(
+    cuda: bool, mps: bool, expected: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """NVIDIA GPU(cuda) → Apple GPU(mps) → CPU 순으로 고른다."""
+    monkeypatch.delenv("RERANKER_DEVICE", raising=False)
+    assert pick_device(fake_torch(cuda, mps)) == expected
+
+
+def test_pick_device_respects_argument_then_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RERANKER_DEVICE", "cpu")
+    assert pick_device(fake_torch(True, False)) == "cpu"
+    assert pick_device(fake_torch(True, False), "cuda:1") == "cuda:1"
