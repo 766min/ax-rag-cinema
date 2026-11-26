@@ -1,0 +1,26 @@
+name: Block exp branches
+
+on:
+  pull_request:
+    branches: [main, dev]
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  check-source-branch:
+    name: block exp branches
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Validate Source Branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}   # 스크립트에 바로 넣지 않고 환경 변수로 넘긴다
+        run: |
+          echo "PR Head Ref: $HEAD_REF"
+          if [[ "$HEAD_REF" == exp/* ]]; then
+            echo "Error: exp/ 브랜치는 개인 실험 기록용이라 main · dev 로 머지할 수 없습니다."
+            exit 1
+          fi
+          echo "통과: 병합 가능한 브랜치입니다."
