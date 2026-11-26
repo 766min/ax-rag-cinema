@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 from service_fakes import POOL, Calls, Q, ask, chunk, ports, web_outcome
 
-from retrieve.pipeline import MODES
+from retrieve.pipeline import MODES, with_rewrite
 from service.answer_cache import AnswerCache
 from service.movie_qa import EnglishDraft, answer_movie_question
 from shared.core.models import SourceId
@@ -20,17 +20,42 @@ NORMALIZED = "아이언맨은 누구야? Iron Man"  # 별칭 치환한 원질문
 
 
 @pytest.mark.parametrize("mode", ["A", "B", "C"])
-def test_official_modes_without_rewrite_search_the_normalized_question(mode: str) -> None:
-    """리라이트 없는 구성은 리라이트를 부르지 않고 별칭 치환한 질문으로 검색한다."""
+def test_all_modes_rewrite_by_default(mode: str) -> None:
+    """기본으로 모든 구성이 영문 리라이트를 한 번 부르고, 기록에는 실제로 돈 구성(A+ · B+ · C+)이 남는다."""
     calls = Calls()
 
     out = ask(calls, mode)
+
+    assert calls.rewrite == 1
+    assert calls.search == ["Who is Iron Man?"]
+    assert out["query_source"] == "llm"
+    assert out["mode"] == str(with_rewrite(MODES[mode]))
+    assert out["status"] == AnswerStatus.ANSWERED
+
+
+@pytest.mark.parametrize("mode", ["A", "B", "C"])
+def test_no_rewrite_searches_the_normalized_question(mode: str) -> None:
+    """rewrite=False(리라이트 효과 비교용)면 리라이트를 부르지 않고 별칭 치환한 질문으로 검색한다."""
+    calls = Calls()
+
+    out = ask(calls, mode, rewrite=False)
 
     assert calls.rewrite == 0
     assert calls.search == [NORMALIZED]
     assert out["query_en"] == ""
     assert out["search_query"] == NORMALIZED
+    assert out["mode"] == str(MODES[mode])
     assert out["status"] == AnswerStatus.ANSWERED
+
+
+def test_plus_modes_rewrite_even_when_rewrite_is_off() -> None:
+    """이름에 + 가 붙은 구성은 rewrite=False 여도 리라이트한다 (구성 이름이 우선)."""
+    calls = Calls()
+
+    out = ask(calls, "C+", rewrite=False)
+
+    assert calls.rewrite == 1
+    assert out["mode"] == str(MODES["C+"])
 
 
 @pytest.mark.parametrize("mode", ["C+", "A+", "B+"])
@@ -55,18 +80,22 @@ def test_rewrite_failure_falls_back_and_is_recorded() -> None:
     assert calls.search == [NORMALIZED]
 
 
-def test_saved_english_query_skips_llm_rewrite() -> None:
-    """저장한 영문 검색어는 리라이트 구성에서만 쓰고, 쓰면 LLM 리라이트를 부르지 않는다."""
+@pytest.mark.parametrize("mode", ["A", "A+"])
+def test_saved_english_query_skips_llm_rewrite(mode: str) -> None:
+    """저장한 영문 검색어를 주면 LLM 리라이트를 부르지 않고 그것으로 검색한다."""
     calls = Calls()
 
-    out = ask(calls, "A+", query_en="Who is Iron Man in the MCU?")
+    out = ask(calls, mode, query_en="Who is Iron Man in the MCU?")
 
     assert calls.rewrite == 0
     assert calls.search == ["Who is Iron Man in the MCU?"]
     assert out["query_source"] == "file"
     assert out["rewrite_failed"] is False
 
-    plain = ask(Calls(), "A", query_en="ignored")
+
+def test_saved_english_query_is_ignored_when_rewrite_is_off() -> None:
+    plain = ask(Calls(), "A", query_en="ignored", rewrite=False)
+
     assert plain["search_query"] == NORMALIZED
     assert plain["query_source"] == "none"
 

@@ -1,6 +1,14 @@
 import pytest
 
-from retrieve.pipeline import MODES, REWRITE_MODES, Retriever, SearchConfig, mode_of
+from retrieve.pipeline import (
+    MODES,
+    REWRITE_MODES,
+    Retriever,
+    SearchConfig,
+    effective_mode,
+    mode_of,
+    with_rewrite,
+)
 from retrieve.refine import rerank
 from shared.core.models import Candidate, Chunk, SourceId
 from shared.core.schemas import RetrievalMode, Section
@@ -130,3 +138,14 @@ def test_rerank_keeps_previous_rank() -> None:
 
     got = [(c.chunk_id, c.rank, c.rank_before_rerank) for c in out]
     assert got == [("b", 1, 2), ("a", 2, 1)]
+
+
+def test_rewrite_pairs_and_effective_mode() -> None:
+    """리라이트를 켜면(기본) A · B · C 가 A+ · B+ · C+ 로 돈다. + 구성은 그대로, 끄면 요청한 그대로."""
+    assert {name: with_rewrite(mode) for name, mode in MODES.items()} == {
+        "A": MODES["A+"], "B": MODES["B+"], "C": MODES["C+"],
+        "A+": MODES["A+"], "B+": MODES["B+"], "C+": MODES["C+"],
+    }  # fmt: skip
+    assert all(with_rewrite(m) in REWRITE_MODES for m in MODES.values())
+    assert [effective_mode(n) for n in ("A", "B", "C", "C+")] == ["A+", "B+", "C+", "C+"]
+    assert [effective_mode(n, rewrite=False) for n in ("A", "C+")] == ["A", "C+"]

@@ -8,7 +8,7 @@ from evals.items import check_ready, excerpts_by_question, load_queries, read_ro
 from evals.recorder import Recorder
 from evals.run import RunMeta, input_text, run_questions
 from evals.score import summarize
-from retrieve.pipeline import MODES, SearchConfig
+from retrieve.pipeline import MODES, SearchConfig, effective_mode
 from service.runtime import alias_version, open_runtime, run_meta_values
 from shared.core.logger import setup_logging
 
@@ -41,6 +41,9 @@ def main() -> None:
     parser.add_argument("--pool", type=int, default=20)
     parser.add_argument("--rrf-k", type=int, default=60)
     parser.add_argument("--results", default="results")
+    parser.add_argument(
+        "--no-rewrite", action="store_true", help="영문 리라이트 끄기 (리라이트 효과 비교용)"
+    )
     args = parser.parse_args()  # fmt: skip
     setup_logging()
 
@@ -49,6 +52,12 @@ def main() -> None:
     unknown = [m for m in modes if m not in MODES]
     if unknown:
         raise SystemExit(f"모르는 구성: {unknown}")
+    # 리라이트가 켜져 있으면(기본) A · B · C 를 A+ · B+ · C+ 로 돌린다. 겹치는 구성은 한 번만
+    rewrite = not args.no_rewrite
+    asked = modes
+    modes = list(dict.fromkeys(effective_mode(m, rewrite) for m in modes))
+    if modes != asked:
+        print(f"영문 리라이트 켜짐: {','.join(asked)} → {','.join(modes)} (끄려면 --no-rewrite)")
     # 2) 준비
     rt = open_runtime(modes, context=args.context, parent_chars=args.parent_chars)
     rows = read_rows(args.questions)
@@ -69,7 +78,7 @@ def main() -> None:
     meta = RunMeta(
         index_version=rt.index_version,
         alias_version=alias_version(rt.aliases),
-        params={**rt.info, "run_kind": run_kind, "questions_file": Path(args.questions).name,
+        params={**rt.info, "run_kind": run_kind, "questions_file": Path(args.questions).name, "rewrite_default": rewrite,
                 "queries_file": Path(args.queries).name if args.queries else None},
         **run_meta_values(),
     )  # fmt: skip
@@ -81,7 +90,8 @@ def main() -> None:
         )
         records = asyncio.run(
             run_questions(items, mode_name=mode, retriever=rt.retriever, generate_en=rt.generate_en,
-                          aliases=rt.aliases, config=config, recorder=recorder, meta=meta, queries=queries)
+                          aliases=rt.aliases, config=config, recorder=recorder, meta=meta, queries=queries,
+                          rewrite=rewrite)
         )  # fmt: skip
         inputs = {
             r.question_id: input_text(r.params["read"], rt.chunks, rt.sources) for r in records

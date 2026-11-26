@@ -3,7 +3,14 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from evals.recorder import Recorder, measure
-from retrieve.pipeline import MODES, VECTOR_ONLY, Retriever, SearchConfig
+from retrieve.pipeline import (
+    MODES,
+    REWRITE_MODES,
+    VECTOR_ONLY,
+    Retriever,
+    SearchConfig,
+    effective_mode,
+)
 from service.answer import make_retrieve
 from service.movie_qa import GenerateEnglish, answer_movie_question
 from shared.core.models import Alias, Chunk, EvalItem, EvidenceSource, RunRecord, Trace
@@ -48,7 +55,10 @@ async def run_questions(
     queries: Mapping[str, str] | None = None,
     query_translator: Rewrite = model_translate,
     answer_translator: Rewrite = model_translate,
+    rewrite: bool = True,
 ) -> list[RunRecord]:
+    # 리라이트가 켜져 있으면(기본) A · B · C 를 A+ · B+ · C+ 로 돌리고, 기록에도 실제로 돈 구성을 남긴다
+    mode_name = effective_mode(mode_name, rewrite)
     mode = MODES[mode_name]
     # 구성에 맞는 검색 함수를 한 번 만들어 모든 문항에 쓴다
     retrieve = make_retrieve(retriever, mode, config)
@@ -66,6 +76,7 @@ async def run_questions(
                 mode=mode,
                 top_k=config.top_k,
                 query_en=(queries or {}).get(item.question_id),
+                rewrite=rewrite,
             )
         # 2) 결과 → RunRecord. 평가 중에 웹 근거가 나오면 설정이 잘못된 것이라 멈춘다
         status = result["status"]
@@ -91,6 +102,7 @@ async def run_questions(
                 **meta.params,
                 **config.params(),
                 "mode": mode_name,
+                "rewrite": mode in REWRITE_MODES,
                 "search_query": result["search_query"],
                 "query_source": result.get("query_source"),
                 "answer_ko": result["answer_ko"],

@@ -3,7 +3,8 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 
-from retrieve.pipeline import REWRITE_MODES
+from retrieve.pipeline import REWRITE_MODES, with_rewrite
+from service.query_prep import prepare_query
 from shared.core.models import Alias, Candidate, Chunk, EvidenceSource
 from shared.core.schemas import AnswerStatus, RetrievalMode
 from shared.core.timing import measure_time
@@ -11,8 +12,6 @@ from tools.translation import (
     Rewrite,
     load_aliases,
     model_translate,
-    normalize_query,
-    rewrite_movie_query,
     translate_answer_to_korean,
 )
 
@@ -103,42 +102,25 @@ async def answer_movie_question(
     web: WebFallback | None = None,
     cache: AnswerCacheLike | None = None,
     query_en: str | None = None,
+    rewrite: bool = True,
 ) -> dict:
     """질문 하나를 서비스 경로(모듈 설명의 흐름 1~6)로 처리한다.
 
     retrieve 는 후보 전부를 최종 순위대로 돌려준다. 생성에는 상위 top_k 개만 간다 (None 이면 전부).
-    query_en: 저장해 둔 영문 검색어 (리라이트 구성에서만 쓴다). 주면 LLM 리라이트를 부르지 않는다.
+    rewrite: 영문 리라이트. 기본으로 모든 구성에서 켠다 (A · B · C 도 A+ · B+ · C+ 로 돈다).
+    False 는 리라이트 효과를 재는 비교 실험용이고, 이름에 + 가 붙은 구성은 False 여도 리라이트한다.
+    query_en: 저장해 둔 영문 검색어. 주면 LLM 리라이트를 부르지 않는다.
     청킹 · 부모 문맥 비교에서 실행마다 검색어가 달라지지 않게 하려는 것이다 (프롬프트 [6]).
     """
     # 1) 질문 준비. 별칭 사전을 주지 않으면 데이터셋 파일에서 읽는다
     alias_list = list(aliases) if aliases is not None else load_aliases()
-    if mode in REWRITE_MODES and query_en:
-        normalized, matched = normalize_query(query_ko, alias_list)
-        translation: dict[str, Any] = {
-            "query_ko": query_ko,
-            "query_normalized": normalized,
-            "query_en": query_en,
-            "rewrite_failed": False,
-            "matched_aliases": matched,
-            "query_source": "file",
-        }
-    elif mode in REWRITE_MODES:
-
-        @measure_time(label="rewrite")
-        async def _rewrite() -> dict:
-            return await rewrite_movie_query(query_ko, alias_list, query_translator)
-
-        translation = {**await _rewrite(), "query_source": "llm"}
-    else:
-        normalized, matched = normalize_query(query_ko, alias_list)
-        translation = {
-            "query_ko": query_ko,
-            "query_normalized": normalized,
-            "query_en": "",
-            "rewrite_failed": False,
-            "matched_aliases": matched,
-            "query_source": "none",
-        }
+    use_rewrite = rewrite or mode in REWRITE_MODES
+    if use_rewrite:
+        # 기록 · 캐시 키에 실제로 돈 구성(A → A+ …)이 남도록 구성 값도 바꾼다
+        mode = with_rewrite(mode)
+    translation = await prepare_query(
+        query_ko, alias_list, translator=query_translator, rewrite=use_rewrite, query_en=query_en
+    )
     # 리라이트를 안 쓰거나 실패해 query_en 이 비면 원질문(별칭 치환)으로 검색한다
     search_query = translation["query_en"] or translation["query_normalized"]
     # 실행 기록과 화면이 같은 칸을 쓰므로 모양을 먼저 정해 두고 단계마다 채운다

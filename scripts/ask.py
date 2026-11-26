@@ -6,7 +6,9 @@
 
 화면에 원 질문 · 치환 · 검색어 · 상태 · 답변과 '후보 → 모델이 읽은 범위 → 인용' · 출처를 찍는다.
 
-OpenAI 호출: 리라이트(C+ · A+ · B+ 에서 1) + 질문 임베딩 1 + 생성 1 + (답했으면) 번역 1.
+영문 리라이트는 모든 구성에서 기본으로 켠다 (--mode C 는 C+ 로 돈다). --no-rewrite 는 리라이트 효과 비교용.
+
+OpenAI 호출: 리라이트 1(--query-en · --no-rewrite 면 0) + 질문 임베딩 1 + 생성 1 + (답했으면) 번역 1.
 --web 은 근거 없음일 때만 Brave 를 부른다 (BRAVE_API_KEY · WEB_STORE 설정을 따른다. 평가에서는 쓰지 않는다).
 """
 
@@ -15,7 +17,7 @@ import asyncio
 import json
 from typing import Any
 
-from retrieve.pipeline import MODES, SearchConfig
+from retrieve.pipeline import MODES, SearchConfig, effective_mode
 from service.answer import make_retrieve
 from service.movie_qa import answer_movie_question
 from service.runtime import open_runtime
@@ -30,15 +32,18 @@ async def main() -> None:
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--pool", type=int, default=20, help="결합 후보 깊이 (임시값 20)")
     parser.add_argument("--rrf-k", type=int, default=60, help="RRF 상수 (임시값 60)")
+    parser.add_argument("--query-en", default=None, help="저장한 영문 검색어 (LLM 리라이트 대신)")
     parser.add_argument(
-        "--query-en", default=None, help="저장한 영문 검색어 (리라이트 구성에서 LLM 대신)"
+        "--no-rewrite", action="store_true", help="영문 리라이트 끄기 (리라이트 효과 비교용)"
     )
     parser.add_argument("--web", action="store_true", help="근거 없음일 때 웹 보강 (서비스 옵션)")
     parser.add_argument("--json", action="store_true", help="결과 전체를 JSON 으로")
     args = parser.parse_args()  # fmt: skip
     setup_logging()  # 단계별 시간이 로그에 찍힌다
+    # 리라이트가 켜져 있으면(기본) A · B · C 를 A+ · B+ · C+ 로 돌린다
+    name = effective_mode(args.mode, rewrite=not args.no_rewrite)
 
-    rt = open_runtime([args.mode], context=args.context)  # C 계열이면 재정렬 모델도 여기서 로드
+    rt = open_runtime([name], context=args.context)  # C 계열이면 재정렬 모델도 여기서 로드
     config = SearchConfig(top_k=args.top_k, pool=args.pool, rrf_k=args.rrf_k)
     web: Any = None
     if args.web:
@@ -52,13 +57,14 @@ async def main() -> None:
 
     result = await answer_movie_question(
         args.question,
-        retrieve=make_retrieve(rt.retriever, MODES[args.mode], config),
+        retrieve=make_retrieve(rt.retriever, MODES[name], config),
         generate_en=rt.generate_en,
         aliases=rt.aliases,
-        mode=MODES[args.mode],
+        mode=MODES[name],
         top_k=args.top_k,
         web=web,
         query_en=args.query_en,
+        rewrite=not args.no_rewrite,
     )
 
     if args.json:
@@ -66,7 +72,7 @@ async def main() -> None:
         print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
         return
     print(
-        f"구성: {args.mode} · 문맥: {args.context} · 색인 {rt.index_version} ({rt.info['database']}/{rt.info['collection']})"
+        f"구성: {name} · 문맥: {args.context} · 색인 {rt.index_version} ({rt.info['database']}/{rt.info['collection']})"
     )
     print(
         f"질문: {result['query_ko']}\n사전 치환: {result['query_normalized']}\n검색어: {result['search_query']}"
