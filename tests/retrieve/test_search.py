@@ -1,4 +1,21 @@
-from retrieve.search import BM25Index, tokenize, vector_candidates, vector_search
+from retrieve.search import BM25Index, rrf_merge, tokenize, vector_candidates, vector_search
+
+
+def test_rrf_rewards_agreement_between_rankings() -> None:
+    fused = rrf_merge([("a", 0.9), ("b", 0.8), ("c", 0.7)], [("c", 5.0), ("d", 4.0)])
+    assert [c.chunk_id for c in fused] == ["c", "a", "b", "d"]
+    assert fused[0].rrf_score == round(1 / 63 + 1 / 61, 6)
+    assert fused[0].vector_score == 0.7 and fused[0].bm25_score == 5.0
+    assert fused[1].bm25_score is None
+
+
+def test_rrf_ties_keep_first_ranking_order() -> None:
+    assert [c.chunk_id for c in rrf_merge([("a", 0.5)], [("b", 1.0)])] == ["a", "b"]
+
+
+def test_rrf_k_is_a_parameter() -> None:
+    fused = rrf_merge([("a", 0.9)], [("a", 1.0)], k=10)
+    assert fused[0].rrf_score == round(2 / 11, 6)
 
 
 def test_bm25_matches_the_appended_english_name_only() -> None:
