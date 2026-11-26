@@ -1,0 +1,802 @@
+{
+  "run_id": "2026-11-25-minji-R0-en",
+  "index_version": "R0-c1-handoff-77e1f29ba0",
+  "params": {
+    "variant": "R0",
+    "max_chars": null,
+    "top_k": 5,
+    "n_chunks": 861,
+    "chunker": "c1",
+    "collection": "exp_minji_r0",
+    "search_query": "영문 번역(캐시)",
+    "translate": {
+      "file": "2026-11-25-minji-query-en.json",
+      "version": "t1"
+    },
+    "agent": "Claude Code (Opus 5.5)"
+  },
+  "judge": {
+    "model": "gpt-6-luna",
+    "prompt_version": "j1",
+    "kind": "LLM 판정"
+  },
+  "summary": {
+    "n_questions": 20,
+    "n_answerable": 19,
+    "gold_in_index": 13,
+    "hit_section_at_k": 0.579,
+    "hit_excerpt_at_k": 0.579,
+    "section_recall_mean": 0.307,
+    "excerpt_recall_mean": 0.318,
+    "context_chars_mean": 14864,
+    "answer_correct": 0.211,
+    "judge_missing": 0,
+    "refusal_correct": "1/1",
+    "cited_gold_rate": 0.615,
+    "status": {
+      "answered": 13,
+      "no_evidence": 7
+    },
+    "latency_total_ms_mean": 2941,
+    "latency_total_ms_median": 2741,
+    "latency_generate_ms_mean": 2745,
+    "tokens_input_mean": 3674,
+    "tokens_output_mean": 136,
+    "by_group": {
+      "plot_only": {
+        "n": 6,
+        "hit_section_at_k": 0.833,
+        "hit_excerpt_at_k": 0.833,
+        "section_recall_mean": 0.472,
+        "excerpt_recall_mean": 0.5,
+        "answer_correct": 0.0
+      },
+      "needs_character_universe": {
+        "n": 13,
+        "hit_section_at_k": 0.462,
+        "hit_excerpt_at_k": 0.462,
+        "section_recall_mean": 0.231,
+        "excerpt_recall_mean": 0.235,
+        "answer_correct": 0.308
+      }
+    }
+  },
+  "rows": [
+    {
+      "question_id": "Q001",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 21391,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "인피니티 스톤 중 하나라고만 했고, 시간을 관장하거나 조작한다는 내용과 아이 오브 아가모토에 보관된다는 내용은 없습니다. 추가 설명은 기준 답안과 모순되지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 379,
+        "generate": 2348,
+        "total": 2727
+      },
+      "tokens": {
+        "input": 5068,
+        "output": 97,
+        "generate_input": 5068,
+        "generate_output": 97
+      }
+    },
+    {
+      "question_id": "Q002",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.5,
+      "excerpts_found": [
+        2
+      ],
+      "context_chars": 21391,
+      "cited_gold": true,
+      "judge": {
+        "correct": true,
+        "facts": [
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "총 6개라고 했고 여섯 스톤의 이름을 모두 제시했습니다."
+      },
+      "latency_ms": {
+        "retrieve": 145,
+        "generate": 3834,
+        "total": 3979
+      },
+      "tokens": {
+        "input": 5076,
+        "output": 110,
+        "generate_input": 5076,
+        "generate_output": 110
+      }
+    },
+    {
+      "question_id": "Q003",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.5,
+      "excerpts_found": [
+        2
+      ],
+      "context_chars": 21123,
+      "cited_gold": true,
+      "judge": {
+        "correct": true,
+        "facts": [
+          true,
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "인구 과잉에 대한 믿음, 생명체 절반 제거, 모든 인피니티 스톤 수집을 모두 언급했으며 추가 의도도 기준 답안과 모순되지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 166,
+        "generate": 2271,
+        "total": 2437
+      },
+      "tokens": {
+        "input": 5052,
+        "output": 102,
+        "generate_input": 5052,
+        "generate_output": 102
+      }
+    },
+    {
+      "question_id": "Q004",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.5,
+      "excerpts_found": [
+        1
+      ],
+      "context_chars": 13429,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          true,
+          true,
+          false
+        ],
+        "contradiction": false,
+        "note": "아프리카 국가라고 했지만 가상 국가라는 점은 없고, 비브라늄 기술과 고립 정책은 충족하며 블랙 팬서와의 연결은 언급하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 182,
+        "generate": 1888,
+        "total": 2070
+      },
+      "tokens": {
+        "input": 3571,
+        "output": 78,
+        "generate_input": 3571,
+        "generate_output": 78
+      }
+    },
+    {
+      "question_id": "Q007",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 9783,
+      "cited_gold": false,
+      "judge": {
+        "correct": true,
+        "facts": [
+          true,
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "로키가 오딘에게 입양된 라우페이의 친아들이라고 했고, 토르와 로키를 오딘의 아들로 함께 자란 형제로 설명했습니다."
+      },
+      "latency_ms": {
+        "retrieve": 166,
+        "generate": 6126,
+        "total": 6292
+      },
+      "tokens": {
+        "input": 2599,
+        "output": 98,
+        "generate_input": 2599,
+        "generate_output": 98
+      }
+    },
+    {
+      "question_id": "Q009",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 9987,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          true,
+          false,
+          true,
+          false
+        ],
+        "contradiction": false,
+        "note": "버키 반스이며 하이드라의 세뇌를 받았다는 내용은 충족하지만, 전우라는 점과 금속 팔을 지닌 암살자라는 점은 언급되지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 171,
+        "generate": 2584,
+        "total": 2755
+      },
+      "tokens": {
+        "input": 2528,
+        "output": 88,
+        "generate_input": 2528,
+        "generate_output": 88
+      }
+    },
+    {
+      "question_id": "Q011",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 16362,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": true,
+        "note": "답변은 MCU 피터 파커가 아이언맨을 처음 만난 영화로 《스파이더맨: 홈커밍》을 제시해, 기준 영화인 《캡틴 아메리카: 시빌 워》와 다릅니다. 토니의 방문·영입도 언급하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 177,
+        "generate": 1458,
+        "total": 1635
+      },
+      "tokens": {
+        "input": 3846,
+        "output": 65,
+        "generate_input": 3846,
+        "generate_output": 65
+      }
+    },
+    {
+      "question_id": "Q015",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 8434,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변은 젠데이아의 배역이나 피터 파커와의 관계를 제시하지 않고 확인할 수 없다고만 합니다."
+      },
+      "latency_ms": {
+        "retrieve": 154,
+        "generate": 1182,
+        "total": 1337
+      },
+      "tokens": {
+        "input": 2325,
+        "output": 58,
+        "generate_input": 2325,
+        "generate_output": 58
+      }
+    },
+    {
+      "question_id": "Q016",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 18019,
+      "cited_gold": false,
+      "judge": {
+        "correct": true,
+        "facts": [
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "피터 파커와 스파이더맨을 모두 명시했습니다."
+      },
+      "latency_ms": {
+        "retrieve": 298,
+        "generate": 1415,
+        "total": 1714
+      },
+      "tokens": {
+        "input": 4111,
+        "output": 59,
+        "generate_input": 4111,
+        "generate_output": 59
+      }
+    },
+    {
+      "question_id": "Q019",
+      "answerable": false,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 15542,
+      "cited_gold": false,
+      "judge": {
+        "correct": true,
+        "declined": true,
+        "unsupported_claim": false,
+        "note": "제공된 자료에 코믹스의 구체적인 사용 사례가 없다고 안내하고, 근거 없이 단정하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 143,
+        "generate": 1335,
+        "total": 1479
+      },
+      "tokens": {
+        "input": 3863,
+        "output": 64,
+        "generate_input": 3863,
+        "generate_output": 64
+      }
+    },
+    {
+      "question_id": "Q040",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.5,
+      "excerpts_found": [
+        2
+      ],
+      "context_chars": 17816,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          true,
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "울트론을 지구 방어 목적으로 만들었다고 했지만 완다가 보여 준 환영과 그로 인한 두려움은 언급하지 않았습니다. 나머지 사실은 충족하며 기준과 모순되는 내용은 없습니다."
+      },
+      "latency_ms": {
+        "retrieve": 158,
+        "generate": 3193,
+        "total": 3352
+      },
+      "tokens": {
+        "input": 4236,
+        "output": 245,
+        "generate_input": 4236,
+        "generate_output": 245
+      }
+    },
+    {
+      "question_id": "Q042",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 8560,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변은 관련 정보가 없다고만 하며, 기준 답안의 핵심 사실을 제시하지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 200,
+        "generate": 1647,
+        "total": 1847
+      },
+      "tokens": {
+        "input": 2311,
+        "output": 65,
+        "generate_input": 2311,
+        "generate_output": 65
+      }
+    },
+    {
+      "question_id": "Q044",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.5,
+      "excerpts_found": [
+        1,
+        2
+      ],
+      "context_chars": 11294,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          true,
+          true,
+          false
+        ],
+        "contradiction": false,
+        "note": "《윈터 솔져》에서 세뇌 암살자였던 버키가 스티브를 구한 점과, 《시빌 워》에서 제모의 음모 및 와칸다에서의 냉동 수면을 언급했습니다. 《인피니티 워》에서 동료들과 싸우고 스냅으로 사라졌다는 내용은 없습니다."
+      },
+      "latency_ms": {
+        "retrieve": 154,
+        "generate": 3332,
+        "total": 3486
+      },
+      "tokens": {
+        "input": 2843,
+        "output": 305,
+        "generate_input": 2843,
+        "generate_output": 305
+      }
+    },
+    {
+      "question_id": "Q052",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 1.0,
+      "excerpt_recall": 1.0,
+      "excerpts_found": [
+        1,
+        2,
+        3
+      ],
+      "context_chars": 13901,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "contradiction": true,
+        "note": "핵심 사실은 모두 충족하지만, 이후 토니가 로저스 편에 합류했다는 내용은 기준 답안의 입장 차이 및 분열 서술과 맞지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 199,
+        "generate": 4720,
+        "total": 4919
+      },
+      "tokens": {
+        "input": 3440,
+        "output": 257,
+        "generate_input": 3440,
+        "generate_output": 257
+      }
+    },
+    {
+      "question_id": "Q056",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.667,
+      "excerpts_found": [
+        2,
+        3
+      ],
+      "context_chars": 17408,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          true,
+          true,
+          false
+        ],
+        "contradiction": false,
+        "note": "본편이 시빌 워 이후이자 인피니티 워 이전이라고 했고, 쿠키영상의 시점도 언급했지만 1995년 도입부 예외는 빠져 있습니다."
+      },
+      "latency_ms": {
+        "retrieve": 206,
+        "generate": 2561,
+        "total": 2767
+      },
+      "tokens": {
+        "input": 4212,
+        "output": 148,
+        "generate_input": 4212,
+        "generate_output": 148
+      }
+    },
+    {
+      "question_id": "Q041",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.333,
+      "excerpt_recall": 0.333,
+      "excerpts_found": [
+        1,
+        2
+      ],
+      "context_chars": 15665,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "라그나로크의 상실과 왕이 되는 변화만 언급하고 백성을 구한 점은 빠져 있으며, 나머지 두 작품의 핵심 사실도 답하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 212,
+        "generate": 2093,
+        "total": 2305
+      },
+      "tokens": {
+        "input": 3975,
+        "output": 91,
+        "generate_input": 3975,
+        "generate_output": 91
+      }
+    },
+    {
+      "question_id": "Q045",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.25,
+      "excerpt_recall": 0.25,
+      "excerpts_found": [
+        3
+      ],
+      "context_chars": 18800,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": true,
+        "note": "가모라가 네뷸라를 구하려 소울 스톤의 위치를 밝힌 것이 아니라, 답변은 네뷸라가 가모라의 위치를 알렸다고 서술해 기준과 모순됩니다."
+      },
+      "latency_ms": {
+        "retrieve": 178,
+        "generate": 3332,
+        "total": 3510
+      },
+      "tokens": {
+        "input": 4694,
+        "output": 233,
+        "generate_input": 4694,
+        "generate_output": 233
+      }
+    },
+    {
+      "question_id": "Q047",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 6760,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변은 비전의 몸에 스톤이 들어간 과정이나 이후의 사건을 설명하지 않았으며, 기준 답안과 모순되는 주장도 하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 250,
+        "generate": 2376,
+        "total": 2626
+      },
+      "tokens": {
+        "input": 1901,
+        "output": 91,
+        "generate_input": 1901,
+        "generate_output": 91
+      }
+    },
+    {
+      "question_id": "Q049",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.75,
+      "excerpt_recall": 0.8,
+      "excerpts_found": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "context_chars": 18533,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": true,
+        "note": "콜렉터에게 맡긴 뒤 타노스가 갖게 된 경로를 확인할 수 없다고 하여 기준의 이동 경로와 모순되며, 쿠키영상 시점과 오브가 파워 스톤이라는 점도 밝히지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 189,
+        "generate": 4488,
+        "total": 4677
+      },
+      "tokens": {
+        "input": 4613,
+        "output": 291,
+        "generate_input": 4613,
+        "generate_output": 291
+      }
+    },
+    {
+      "question_id": "Q058",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.5,
+      "excerpts_found": [
+        1,
+        2
+      ],
+      "context_chars": 13078,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          true,
+          true,
+          true,
+          false,
+          false,
+          true
+        ],
+        "contradiction": false,
+        "note": "몰래 문헌을 읽어 시간 조작을 익히고 홍콩 시간 역전과 도르마무 시간 고리를 언급했습니다. 미래 확인과 토니를 살리기 위한 스톤 양도는 빠졌지만, 아이와 그 안의 스톤을 구분했습니다."
+      },
+      "latency_ms": {
+        "retrieve": 188,
+        "generate": 2716,
+        "total": 2904
+      },
+      "tokens": {
+        "input": 3217,
+        "output": 183,
+        "generate_input": 3217,
+        "generate_output": 183
+      }
+    }
+  ]
+}

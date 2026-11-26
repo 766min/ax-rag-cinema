@@ -1,0 +1,774 @@
+{
+  "run_id": "2026-11-25-minji-R0-ko",
+  "index_version": "R0-c1-handoff-77e1f29ba0",
+  "params": {
+    "variant": "R0",
+    "max_chars": null,
+    "top_k": 5,
+    "n_chunks": 861,
+    "chunker": "c1",
+    "collection": "exp_minji_r0",
+    "search_query": "한국어 + 이름 사전",
+    "translate": null,
+    "agent": "Claude Code (Opus 5.5)"
+  },
+  "judge": {
+    "model": "gpt-6-luna",
+    "prompt_version": "j1",
+    "kind": "LLM 판정"
+  },
+  "summary": {
+    "n_questions": 20,
+    "n_answerable": 19,
+    "gold_in_index": 13,
+    "hit_section_at_k": 0.105,
+    "hit_excerpt_at_k": 0.105,
+    "section_recall_mean": 0.053,
+    "excerpt_recall_mean": 0.061,
+    "context_chars_mean": 7224,
+    "answer_correct": 0.0,
+    "judge_missing": 0,
+    "refusal_correct": "1/1",
+    "cited_gold_rate": 1.0,
+    "status": {
+      "no_evidence": 19,
+      "answered": 1
+    },
+    "latency_total_ms_mean": 2775,
+    "latency_total_ms_median": 2760,
+    "latency_generate_ms_mean": 2595,
+    "tokens_input_mean": 2001,
+    "tokens_output_mean": 80,
+    "by_group": {
+      "plot_only": {
+        "n": 6,
+        "hit_section_at_k": 0.333,
+        "hit_excerpt_at_k": 0.333,
+        "section_recall_mean": 0.167,
+        "excerpt_recall_mean": 0.195,
+        "answer_correct": 0.0
+      },
+      "needs_character_universe": {
+        "n": 13,
+        "hit_section_at_k": 0.0,
+        "hit_excerpt_at_k": 0.0,
+        "section_recall_mean": 0.0,
+        "excerpt_recall_mean": 0.0,
+        "answer_correct": 0.0
+      }
+    }
+  },
+  "rows": [
+    {
+      "question_id": "Q001",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 8193,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변은 근거 문서에 정보가 없다고만 하며 타임 스톤의 핵심 사실을 제시하지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 338,
+        "generate": 3147,
+        "total": 3486
+      },
+      "tokens": {
+        "input": 2247,
+        "output": 48,
+        "generate_input": 2247,
+        "generate_output": 48
+      }
+    },
+    {
+      "question_id": "Q002",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 6100,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답을 찾을 수 없다고만 했으며 개수와 여섯 스톤의 이름을 제시하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 191,
+        "generate": 1954,
+        "total": 2146
+      },
+      "tokens": {
+        "input": 1709,
+        "output": 61,
+        "generate_input": 1709,
+        "generate_output": 61
+      }
+    },
+    {
+      "question_id": "Q003",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 1198,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변은 근거가 없다고만 했으며, 핵심 사실을 언급하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 158,
+        "generate": 2544,
+        "total": 2703
+      },
+      "tokens": {
+        "input": 696,
+        "output": 68,
+        "generate_input": 696,
+        "generate_output": 68
+      }
+    },
+    {
+      "question_id": "Q004",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 5932,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "와칸다에 관한 설명이 없다고만 답해 네 가지 핵심 사실을 충족하지 않지만, 기준 답안과 모순되지는 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 185,
+        "generate": 2225,
+        "total": 2410
+      },
+      "tokens": {
+        "input": 1715,
+        "output": 46,
+        "generate_input": 1715,
+        "generate_output": 46
+      }
+    },
+    {
+      "question_id": "Q007",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 5470,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "관계를 설명하지 않아 세 핵심 사실을 충족하지 않으며, 기준 답안과 모순되는 내용도 없습니다."
+      },
+      "latency_ms": {
+        "retrieve": 157,
+        "generate": 3734,
+        "total": 3891
+      },
+      "tokens": {
+        "input": 1602,
+        "output": 51,
+        "generate_input": 1602,
+        "generate_output": 51
+      }
+    },
+    {
+      "question_id": "Q009",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 7481,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "윈터 솔져에 관한 정보를 제시하지 않아 네 가지 핵심 사실을 모두 충족하지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 207,
+        "generate": 2892,
+        "total": 3100
+      },
+      "tokens": {
+        "input": 1994,
+        "output": 49,
+        "generate_input": 1994,
+        "generate_output": 49
+      }
+    },
+    {
+      "question_id": "Q011",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 14410,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변은 관련 정보를 찾을 수 없다고만 하며 세 핵심 사실을 제시하지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 162,
+        "generate": 3566,
+        "total": 3728
+      },
+      "tokens": {
+        "input": 3483,
+        "output": 55,
+        "generate_input": 3483,
+        "generate_output": 55
+      }
+    },
+    {
+      "question_id": "Q015",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 6289,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변이 배역이나 피터 파커와의 관계를 제시하지 않고, 문서에 정보가 없다고만 합니다."
+      },
+      "latency_ms": {
+        "retrieve": 167,
+        "generate": 3520,
+        "total": 3687
+      },
+      "tokens": {
+        "input": 1856,
+        "output": 55,
+        "generate_input": 1856,
+        "generate_output": 55
+      }
+    },
+    {
+      "question_id": "Q016",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 6876,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변은 캐릭터가 언급되어 있지 않다고만 하며, 피터 파커와 스파이더맨을 제시하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 194,
+        "generate": 2880,
+        "total": 3075
+      },
+      "tokens": {
+        "input": 2011,
+        "output": 55,
+        "generate_input": 2011,
+        "generate_output": 55
+      }
+    },
+    {
+      "question_id": "Q019",
+      "answerable": false,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": false,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 1490,
+      "cited_gold": false,
+      "judge": {
+        "correct": true,
+        "declined": true,
+        "unsupported_claim": false,
+        "note": "제공된 문서에서 코믹스 활용 정보를 찾을 수 없다고 안내했고, 근거 없는 사실을 단정하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 162,
+        "generate": 2662,
+        "total": 2823
+      },
+      "tokens": {
+        "input": 737,
+        "output": 78,
+        "generate_input": 737,
+        "generate_output": 78
+      }
+    },
+    {
+      "question_id": "Q040",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 5272,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변은 관련 사건을 확인할 수 없다고만 하며 핵심 사실을 제시하지 않는다."
+      },
+      "latency_ms": {
+        "retrieve": 182,
+        "generate": 2459,
+        "total": 2641
+      },
+      "tokens": {
+        "input": 1511,
+        "output": 121,
+        "generate_input": 1511,
+        "generate_output": 121
+      }
+    },
+    {
+      "question_id": "Q042",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 8462,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": true,
+        "note": "핵심 역할과 능력의 배경·등장 시기를 전혀 제시하지 않았고, 완다가 감시자인 척하며 스톤을 모은다는 내용은 기준 답안과 맞지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 173,
+        "generate": 2220,
+        "total": 2393
+      },
+      "tokens": {
+        "input": 2246,
+        "output": 103,
+        "generate_input": 2246,
+        "generate_output": 103
+      }
+    },
+    {
+      "question_id": "Q044",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 1296,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "영화별 버키의 변화에 관한 핵심 사실을 제시하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 152,
+        "generate": 1794,
+        "total": 1947
+      },
+      "tokens": {
+        "input": 732,
+        "output": 93,
+        "generate_input": 732,
+        "generate_output": 93
+      }
+    },
+    {
+      "question_id": "Q052",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 5699,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "핵심 사실을 설명하지 않았으며, 로드리게스와 라몬에 관한 내용은 기준 답안과 모순된다고 볼 수 없습니다."
+      },
+      "latency_ms": {
+        "retrieve": 194,
+        "generate": 2103,
+        "total": 2297
+      },
+      "tokens": {
+        "input": 1679,
+        "output": 106,
+        "generate_input": 1679,
+        "generate_output": 106
+      }
+    },
+    {
+      "question_id": "Q056",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.667,
+      "excerpts_found": [
+        2,
+        3
+      ],
+      "context_chars": 10310,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "2016년이라는 언급만으로는 시빌 워 무렵·직후, 인피니티 워 이전이라는 관계나 도입부·쿠키영상의 시점 예외를 충족하지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 142,
+        "generate": 2675,
+        "total": 2816
+      },
+      "tokens": {
+        "input": 2706,
+        "output": 73,
+        "generate_input": 2706,
+        "generate_output": 73
+      }
+    },
+    {
+      "question_id": "Q041",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 7662,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변은 세 영화에서 토르가 겪는 상실과 변화를 설명하지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 141,
+        "generate": 1922,
+        "total": 2064
+      },
+      "tokens": {
+        "input": 2146,
+        "output": 78,
+        "generate_input": 2146,
+        "generate_output": 78
+      }
+    },
+    {
+      "question_id": "Q045",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 7623,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변이 관계에 대한 내용을 제시하지 않고 답을 찾을 수 없다고만 했습니다."
+      },
+      "latency_ms": {
+        "retrieve": 143,
+        "generate": 1753,
+        "total": 1896
+      },
+      "tokens": {
+        "input": 2166,
+        "output": 57,
+        "generate_input": 2166,
+        "generate_output": 57
+      }
+    },
+    {
+      "question_id": "Q047",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 15851,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "답변이 관련 내용은 제공된 근거에 없다고만 하여 핵심 사실을 다루지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 227,
+        "generate": 1968,
+        "total": 2195
+      },
+      "tokens": {
+        "input": 3832,
+        "output": 65,
+        "generate_input": 3832,
+        "generate_output": 65
+      }
+    },
+    {
+      "question_id": "Q049",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 6401,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "경로와 쿠키영상, 가디언즈의 오브에 관한 핵심 사실을 제시하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 172,
+        "generate": 2896,
+        "total": 3068
+      },
+      "tokens": {
+        "input": 1893,
+        "output": 91,
+        "generate_input": 1893,
+        "generate_output": 91
+      }
+    },
+    {
+      "question_id": "Q058",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.5,
+      "excerpts_found": [
+        1,
+        2
+      ],
+      "context_chars": 12462,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          true,
+          true,
+          true,
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "몰래 배워 홍콩의 시간을 되돌리고 도르마무를 시간 루프에 가둔 내용은 충족합니다. 미래 확인과 토니를 위해 스톤을 넘긴 내용은 없으며, 아이 안에 인피니티 스톤이 있다고만 하고 타임 스톤과 보관 유물의 구분은 명시하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 155,
+        "generate": 2986,
+        "total": 3142
+      },
+      "tokens": {
+        "input": 3062,
+        "output": 249,
+        "generate_input": 3062,
+        "generate_output": 249
+      }
+    }
+  ]
+}

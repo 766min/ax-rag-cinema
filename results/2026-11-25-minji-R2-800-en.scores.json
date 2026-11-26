@@ -1,0 +1,799 @@
+{
+  "run_id": "2026-11-25-minji-R2-800-en",
+  "index_version": "R2-c1-800-cc8314c297",
+  "params": {
+    "variant": "R2",
+    "max_chars": 800,
+    "top_k": 5,
+    "n_chunks": 7068,
+    "chunker": "c1",
+    "collection": "exp_minji_r2_800",
+    "search_query": "영문 번역(캐시)",
+    "translate": {
+      "file": "2026-11-25-minji-query-en.json",
+      "version": "t1"
+    },
+    "agent": "Claude Code (Opus 5.5)"
+  },
+  "judge": {
+    "model": "gpt-6-luna",
+    "prompt_version": "j1",
+    "kind": "LLM 판정"
+  },
+  "summary": {
+    "n_questions": 20,
+    "n_answerable": 19,
+    "gold_in_index": 19,
+    "hit_section_at_k": 0.842,
+    "hit_excerpt_at_k": 0.632,
+    "section_recall_mean": 0.518,
+    "excerpt_recall_mean": 0.382,
+    "context_chars_mean": 3292,
+    "answer_correct": 0.368,
+    "judge_missing": 0,
+    "refusal_correct": "1/1",
+    "cited_gold_rate": 0.733,
+    "status": {
+      "answered": 15,
+      "no_evidence": 5
+    },
+    "latency_total_ms_mean": 2502,
+    "latency_total_ms_median": 2131,
+    "latency_generate_ms_mean": 2270,
+    "tokens_input_mean": 1115,
+    "tokens_output_mean": 163,
+    "by_group": {
+      "plot_only": {
+        "n": 6,
+        "hit_section_at_k": 0.667,
+        "hit_excerpt_at_k": 0.333,
+        "section_recall_mean": 0.389,
+        "excerpt_recall_mean": 0.111,
+        "answer_correct": 0.0
+      },
+      "needs_character_universe": {
+        "n": 13,
+        "hit_section_at_k": 0.923,
+        "hit_excerpt_at_k": 0.769,
+        "section_recall_mean": 0.577,
+        "excerpt_recall_mean": 0.508,
+        "answer_correct": 0.538
+      }
+    }
+  },
+  "rows": [
+    {
+      "question_id": "Q001",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 1.0,
+      "excerpt_recall": 1.0,
+      "excerpts_found": [
+        1
+      ],
+      "context_chars": 2735,
+      "cited_gold": true,
+      "judge": {
+        "correct": true,
+        "facts": [
+          true,
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "시간을 다스리는 인피니티 스톤이며 시간을 조작할 수 있고, 아가모토의 눈에 들어 있었다고 설명합니다."
+      },
+      "latency_ms": {
+        "retrieve": 547,
+        "generate": 1744,
+        "total": 2291
+      },
+      "tokens": {
+        "input": 980,
+        "output": 100,
+        "generate_input": 980,
+        "generate_output": 100
+      }
+    },
+    {
+      "question_id": "Q002",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.5,
+      "excerpts_found": [
+        1
+      ],
+      "context_chars": 2777,
+      "cited_gold": true,
+      "judge": {
+        "correct": true,
+        "facts": [
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "총 6개라고 했고, 여섯 스톤의 이름을 모두 제시했습니다."
+      },
+      "latency_ms": {
+        "retrieve": 196,
+        "generate": 1613,
+        "total": 1810
+      },
+      "tokens": {
+        "input": 983,
+        "output": 86,
+        "generate_input": 983,
+        "generate_output": 86
+      }
+    },
+    {
+      "question_id": "Q003",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": false,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 3256,
+      "cited_gold": true,
+      "judge": {
+        "correct": true,
+        "facts": [
+          true,
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "인구 과잉에 대한 타노스의 신념, 생명체 절반 제거 계획, 인피니티 스톤 전부 수집 목적을 모두 충족합니다."
+      },
+      "latency_ms": {
+        "retrieve": 215,
+        "generate": 1882,
+        "total": 2098
+      },
+      "tokens": {
+        "input": 1131,
+        "output": 88,
+        "generate_input": 1131,
+        "generate_output": 88
+      }
+    },
+    {
+      "question_id": "Q004",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 3739,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          true,
+          false
+        ],
+        "contradiction": false,
+        "note": "고립은 명시했지만 아프리카의 가상 국가, 비브라늄 기반 기술, 블랙 팬서와의 연결은 명시하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 187,
+        "generate": 2615,
+        "total": 2803
+      },
+      "tokens": {
+        "input": 1167,
+        "output": 131,
+        "generate_input": 1167,
+        "generate_output": 131
+      }
+    },
+    {
+      "question_id": "Q007",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.5,
+      "excerpts_found": [
+        2
+      ],
+      "context_chars": 3442,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          true,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "입양된 형제라고 밝혔지만, 토르가 오딘의 친아들이고 로키가 라우페이의 아들이라는 정보는 언급하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 197,
+        "generate": 1701,
+        "total": 1898
+      },
+      "tokens": {
+        "input": 1168,
+        "output": 59,
+        "generate_input": 1168,
+        "generate_output": 59
+      }
+    },
+    {
+      "question_id": "Q009",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 1.0,
+      "excerpt_recall": 1.0,
+      "excerpts_found": [
+        1
+      ],
+      "context_chars": 3751,
+      "cited_gold": true,
+      "judge": {
+        "correct": true,
+        "facts": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "버키 반즈이며 스티브의 어린 시절 친구이고, 하이드라에 세뇌된 금속 팔의 암살자로 묘사했다."
+      },
+      "latency_ms": {
+        "retrieve": 158,
+        "generate": 1627,
+        "total": 1785
+      },
+      "tokens": {
+        "input": 1200,
+        "output": 90,
+        "generate_input": 1200,
+        "generate_output": 90
+      }
+    },
+    {
+      "question_id": "Q011",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 3268,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "MCU 피터 파커 기준이라는 점과 《시빌 워》에서 토니가 방문해 영입한다는 내용이 없고, 《아이언맨 2》 장면은 첫 만남으로 단정하지 않아 기준 답안과 모순되지는 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 202,
+        "generate": 1616,
+        "total": 1819
+      },
+      "tokens": {
+        "input": 1137,
+        "output": 94,
+        "generate_input": 1137,
+        "generate_output": 94
+      }
+    },
+    {
+      "question_id": "Q015",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 1.0,
+      "excerpt_recall": 1.0,
+      "excerpts_found": [
+        1
+      ],
+      "context_chars": 2853,
+      "cited_gold": true,
+      "judge": {
+        "correct": true,
+        "facts": [
+          true,
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "미셸 존스-왓슨과 MJ라는 별칭을 밝혔고, 피터 파커의 학교 친구이자 연인이라고 설명했습니다."
+      },
+      "latency_ms": {
+        "retrieve": 160,
+        "generate": 1828,
+        "total": 1989
+      },
+      "tokens": {
+        "input": 1006,
+        "output": 90,
+        "generate_input": 1006,
+        "generate_output": 90
+      }
+    },
+    {
+      "question_id": "Q016",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 1.0,
+      "excerpt_recall": 1.0,
+      "excerpts_found": [
+        1
+      ],
+      "context_chars": 3689,
+      "cited_gold": true,
+      "judge": {
+        "correct": true,
+        "facts": [
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "피터 파커이자 스파이더맨이라고 답했습니다."
+      },
+      "latency_ms": {
+        "retrieve": 187,
+        "generate": 1056,
+        "total": 1243
+      },
+      "tokens": {
+        "input": 1168,
+        "output": 58,
+        "generate_input": 1168,
+        "generate_output": 58
+      }
+    },
+    {
+      "question_id": "Q019",
+      "answerable": false,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 1.0,
+      "excerpt_recall": 1.0,
+      "excerpts_found": [
+        1
+      ],
+      "context_chars": 2764,
+      "cited_gold": false,
+      "judge": {
+        "correct": true,
+        "declined": true,
+        "unsupported_claim": false,
+        "note": "제공된 자료에는 MCU의 설정만 있고 코믹스 사용 사례는 없다고 안내해 정보 부족을 명확히 밝혔습니다."
+      },
+      "latency_ms": {
+        "retrieve": 167,
+        "generate": 1692,
+        "total": 1860
+      },
+      "tokens": {
+        "input": 980,
+        "output": 77,
+        "generate_input": 980,
+        "generate_output": 77
+      }
+    },
+    {
+      "question_id": "Q040",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.5,
+      "excerpts_found": [
+        1
+      ],
+      "context_chars": 3603,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "지구 방어 동기는 언급했지만 완다의 환영은 빠졌고, 소코비아 파괴·토니의 책임감·스티브와의 대립도 명시하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 278,
+        "generate": 2731,
+        "total": 3009
+      },
+      "tokens": {
+        "input": 1188,
+        "output": 202,
+        "generate_input": 1188,
+        "generate_output": 202
+      }
+    },
+    {
+      "question_id": "Q042",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": false,
+      "section_recall": 0.25,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 3180,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          true,
+          true,
+          false
+        ],
+        "contradiction": true,
+        "note": "인피니티 워에서 비전을 지키고 마인드 스톤을 파괴한 내용과 스냅으로 사라진 내용이 빠졌습니다. 엔드게임 전투와 선천적 소질·마인드 스톤에 의한 증폭은 충족합니다. 능력이 처음 드러난 영화는 《윈터 솔져》 쿠키영상이므로 《에이지 오브 울트론》에서 처음 드러났다는 주장은 모순됩니다."
+      },
+      "latency_ms": {
+        "retrieve": 514,
+        "generate": 3874,
+        "total": 4387
+      },
+      "tokens": {
+        "input": 1073,
+        "output": 397,
+        "generate_input": 1073,
+        "generate_output": 397
+      }
+    },
+    {
+      "question_id": "Q044",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.25,
+      "excerpt_recall": 0.25,
+      "excerpts_found": [
+        3
+      ],
+      "context_chars": 3024,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          true,
+          false,
+          true
+        ],
+        "contradiction": false,
+        "note": "세뇌된 암살자에서 치료를 통해 벗어나는 흐름과 타노스에 맞선 뒤 블립되는 내용은 담겼지만, 시빌 워 이후 와칸다에서 동면했다는 사실은 빠져 있습니다."
+      },
+      "latency_ms": {
+        "retrieve": 215,
+        "generate": 3787,
+        "total": 4002
+      },
+      "tokens": {
+        "input": 1048,
+        "output": 353,
+        "generate_input": 1048,
+        "generate_output": 353
+      }
+    },
+    {
+      "question_id": "Q052",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 1.0,
+      "excerpt_recall": 0.333,
+      "excerpts_found": [
+        2
+      ],
+      "context_chars": 3744,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          true,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "소코비아 피해와 유엔 감독은 언급했지만 라고스 피해, 토니와 스티브의 구체적 입장 차이, 일부 멤버의 수감·도피는 빠져 있습니다. 협정의 폐지 언급은 기준 답안과 모순되지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 213,
+        "generate": 1806,
+        "total": 2020
+      },
+      "tokens": {
+        "input": 1215,
+        "output": 129,
+        "generate_input": 1215,
+        "generate_output": 129
+      }
+    },
+    {
+      "question_id": "Q056",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.333,
+      "excerpts_found": [
+        2
+      ],
+      "context_chars": 3395,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          true,
+          true,
+          false
+        ],
+        "contradiction": true,
+        "note": "본편을 시빌 워와 인피니티 워 사이로 설명한 점은 맞지만, 도입부와 쿠키영상의 시점 예외를 언급하지 않고 사건이 그 사이에 있다고 단정했습니다."
+      },
+      "latency_ms": {
+        "retrieve": 188,
+        "generate": 1816,
+        "total": 2005
+      },
+      "tokens": {
+        "input": 1164,
+        "output": 100,
+        "generate_input": 1164,
+        "generate_output": 100
+      }
+    },
+    {
+      "question_id": "Q041",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": false,
+      "hit_excerpt": false,
+      "section_recall": 0.0,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 3975,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          true
+        ],
+        "contradiction": false,
+        "note": "라그나로크의 백성 구출과 인피니티 워에서 로키·헤임달을 잃은 점은 언급되지 않았습니다. 엔드게임에서는 침체된 모습, 최종 전투 참여와 왕위 이양이 제시됩니다."
+      },
+      "latency_ms": {
+        "retrieve": 180,
+        "generate": 5277,
+        "total": 5457
+      },
+      "tokens": {
+        "input": 1256,
+        "output": 555,
+        "generate_input": 1256,
+        "generate_output": 555
+      }
+    },
+    {
+      "question_id": "Q045",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.25,
+      "excerpt_recall": 0.25,
+      "excerpts_found": [
+        2
+      ],
+      "context_chars": 3464,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contradiction": false,
+        "note": "자매 관계와 과거의 자신과 마주한 점은 언급하지만, 각 핵심 사실의 구체적인 내용을 충족하지 않습니다."
+      },
+      "latency_ms": {
+        "retrieve": 204,
+        "generate": 2309,
+        "total": 2513
+      },
+      "tokens": {
+        "input": 1184,
+        "output": 170,
+        "generate_input": 1184,
+        "generate_output": 170
+      }
+    },
+    {
+      "question_id": "Q047",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "answered",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": false,
+      "section_recall": 0.333,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 3158,
+      "cited_gold": true,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          true,
+          false
+        ],
+        "contradiction": true,
+        "note": "울트론이 스톤·비브라늄 등으로 비전의 몸을 만들었다는 설명과 J.A.R.V.I.S.·토르의 활성화가 빠졌고, 엔드게임에서 과거 스톤을 가져와 반환한 내용도 없다. 토니와 배너가 스톤으로 울트론을 만들기 시작했다고 한 부분은 기준 답안의 순서·내용과 다르다."
+      },
+      "latency_ms": {
+        "retrieve": 156,
+        "generate": 2389,
+        "total": 2546
+      },
+      "tokens": {
+        "input": 1072,
+        "output": 215,
+        "generate_input": 1072,
+        "generate_output": 215
+      }
+    },
+    {
+      "question_id": "Q049",
+      "answerable": true,
+      "needs_extra_docs": true,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": true,
+      "section_recall": 0.75,
+      "excerpt_recall": 0.6,
+      "excerpts_found": [
+        2,
+        3,
+        5
+      ],
+      "context_chars": 3125,
+      "cited_gold": false,
+      "judge": {
+        "correct": true,
+        "facts": [
+          true,
+          true,
+          true
+        ],
+        "contradiction": false,
+        "note": "제인→말레키스→콜렉터→타노스의 경로와 다크 월드 쿠키영상에서 맡긴 점을 언급했다. 가디언즈가 가져간 오브는 파워 스톤이므로 리얼리티 스톤이 가디언즈를 거친 경로는 아니라고 구분했다."
+      },
+      "latency_ms": {
+        "retrieve": 280,
+        "generate": 1884,
+        "total": 2164
+      },
+      "tokens": {
+        "input": 1128,
+        "output": 118,
+        "generate_input": 1128,
+        "generate_output": 118
+      }
+    },
+    {
+      "question_id": "Q058",
+      "answerable": true,
+      "needs_extra_docs": false,
+      "status": "no_evidence",
+      "gold_in_index": true,
+      "hit_section": true,
+      "hit_excerpt": false,
+      "section_recall": 0.5,
+      "excerpt_recall": 0.0,
+      "excerpts_found": [],
+      "context_chars": 2891,
+      "cited_gold": false,
+      "judge": {
+        "correct": false,
+        "facts": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          true
+        ],
+        "contradiction": false,
+        "note": "타임 스톤이 아이 안에 담긴 유물이라고 구분했지만, 몰래 학습, 홍콩 시간 역전, 도르마무의 시간 고리, 미래 확인, 토니를 살리기 위한 스톤 양도는 언급하지 않았습니다."
+      },
+      "latency_ms": {
+        "retrieve": 184,
+        "generate": 2158,
+        "total": 2342
+      },
+      "tokens": {
+        "input": 1044,
+        "output": 154,
+        "generate_input": 1044,
+        "generate_output": 154
+      }
+    }
+  ]
+}

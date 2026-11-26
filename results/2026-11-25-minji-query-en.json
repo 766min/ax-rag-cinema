@@ -1,0 +1,306 @@
+{
+  "version": "t1",
+  "model": "gpt-6-luna",
+  "queries": {
+    "Q001": {
+      "question": "타임 스톤이 뭐야?",
+      "normalized": "타임 스톤이 뭐야?",
+      "query_en": "What is the Time Stone in the Marvel Cinematic Universe?",
+      "latency_ms": {
+        "rewrite": 2216,
+        "total": 2216
+      },
+      "tokens": {
+        "input": 93,
+        "output": 53,
+        "rewrite_input": 93,
+        "rewrite_output": 53
+      }
+    },
+    "Q002": {
+      "question": "인피니티 스톤은 전부 몇 개고 각각 뭐야?",
+      "normalized": "인피니티 스톤은 전부 몇 개고 각각 뭐야?",
+      "query_en": "How many Infinity Stones are there in total, and what is each one?",
+      "latency_ms": {
+        "rewrite": 1910,
+        "total": 1910
+      },
+      "tokens": {
+        "input": 101,
+        "output": 81,
+        "rewrite_input": 101,
+        "rewrite_output": 81
+      }
+    },
+    "Q003": {
+      "question": "타노스는 인피니티 스톤을 왜 모으는 거야? (스포)",
+      "normalized": "타노스는 인피니티 스톤을 왜 모으는 거야? (스포)",
+      "query_en": "Why does Thanos collect the Infinity Stones? (spoilers)",
+      "latency_ms": {
+        "rewrite": 2221,
+        "total": 2221
+      },
+      "tokens": {
+        "input": 107,
+        "output": 98,
+        "rewrite_input": 107,
+        "rewrite_output": 98
+      }
+    },
+    "Q004": {
+      "question": "와칸다가 어떤 나라야?",
+      "normalized": "와칸다가 어떤 나라야?",
+      "query_en": "What country is Wakanda in the Marvel Cinematic Universe?",
+      "latency_ms": {
+        "rewrite": 1395,
+        "total": 1395
+      },
+      "tokens": {
+        "input": 93,
+        "output": 72,
+        "rewrite_input": 93,
+        "rewrite_output": 72
+      }
+    },
+    "Q007": {
+      "question": "로키랑 토르는 무슨 관계야?",
+      "normalized": "로키 (Loki)랑 토르는 무슨 관계야?",
+      "query_en": "What is the relationship between Loki and Thor in the Marvel Cinematic Universe?",
+      "latency_ms": {
+        "rewrite": 1751,
+        "total": 1751
+      },
+      "tokens": {
+        "input": 99,
+        "output": 56,
+        "rewrite_input": 99,
+        "rewrite_output": 56
+      }
+    },
+    "Q009": {
+      "question": "윈터 솔져는 누구야? (스포)",
+      "normalized": "윈터 솔져는 누구야? (스포)",
+      "query_en": "Who is the Winter Soldier (spoilers)?",
+      "latency_ms": {
+        "rewrite": 1672,
+        "total": 1672
+      },
+      "tokens": {
+        "input": 97,
+        "output": 89,
+        "rewrite_input": 97,
+        "rewrite_output": 89
+      }
+    },
+    "Q011": {
+      "question": "스파이더맨이 아이언맨을 처음 만난 영화는 뭐야?",
+      "normalized": "스파이더맨이 아이언맨 (Iron Man)을 처음 만난 영화는 뭐야?",
+      "query_en": "Which MCU film features Spider-Man's first meeting with Iron Man?",
+      "latency_ms": {
+        "rewrite": 1674,
+        "total": 1674
+      },
+      "tokens": {
+        "input": 106,
+        "output": 77,
+        "rewrite_input": 106,
+        "rewrite_output": 77
+      }
+    },
+    "Q015": {
+      "question": "젠데이아는 마블에서 무슨 역이야?",
+      "normalized": "젠데이아는 마블에서 무슨 역이야?",
+      "query_en": "What role does Zendaya play in the Marvel Cinematic Universe?",
+      "latency_ms": {
+        "rewrite": 1516,
+        "total": 1516
+      },
+      "tokens": {
+        "input": 99,
+        "output": 76,
+        "rewrite_input": 99,
+        "rewrite_output": 76
+      }
+    },
+    "Q016": {
+      "question": "톰 홀랜드가 연기하는 캐릭터는 누구야?",
+      "normalized": "톰 홀랜드가 연기하는 캐릭터는 누구야?",
+      "query_en": "Which MCU character does Tom Holland portray?",
+      "latency_ms": {
+        "rewrite": 1618,
+        "total": 1618
+      },
+      "tokens": {
+        "input": 100,
+        "output": 62,
+        "rewrite_input": 100,
+        "rewrite_output": 62
+      }
+    },
+    "Q019": {
+      "question": "타임 스톤은 코믹스에서는 어떻게 쓰여?",
+      "normalized": "타임 스톤은 코믹스에서는 어떻게 쓰여?",
+      "query_en": "How is the Time Stone used in the comics?",
+      "latency_ms": {
+        "rewrite": 1594,
+        "total": 1594
+      },
+      "tokens": {
+        "input": 99,
+        "output": 81,
+        "rewrite_input": 99,
+        "rewrite_output": 81
+      }
+    },
+    "Q040": {
+      "question": "토니 스타크가 에이지 오브 울트론에서 울트론을 만들게 된 계기는 뭐고, 그 영향이 시빌 워에서 어떻게 이어져? (스포)",
+      "normalized": "토니 스타크가 에이지 오브 울트론에서 울트론을 만들게 된 계기는 뭐고, 그 영향이 시빌 워에서 어떻게 이어져? (스포)",
+      "query_en": "What prompted Tony Stark to create Ultron in Avengers: Age of Ultron, and how did the consequences carry over into Captain America: Civil War? (spoilers)",
+      "latency_ms": {
+        "rewrite": 1586,
+        "total": 1586
+      },
+      "tokens": {
+        "input": 125,
+        "output": 89,
+        "rewrite_input": 125,
+        "rewrite_output": 89
+      }
+    },
+    "Q042": {
+      "question": "완다가 인피니티 워와 엔드게임에서 맡은 역할은 뭐고, 그 전에 어떤 영화에서 능력을 얻었어? (스포)",
+      "normalized": "완다가 인피니티 워와 엔드게임에서 맡은 역할은 뭐고, 그 전에 어떤 영화에서 능력을 얻었어? (스포)",
+      "query_en": "What role did Wanda Maximoff play in Avengers: Infinity War and Avengers: Endgame, and in which earlier film did she gain her powers? (Spoilers)",
+      "latency_ms": {
+        "rewrite": 2070,
+        "total": 2070
+      },
+      "tokens": {
+        "input": 119,
+        "output": 129,
+        "rewrite_input": 119,
+        "rewrite_output": 129
+      }
+    },
+    "Q044": {
+      "question": "바키(윈터 솔져)가 윈터 솔져, 시빌 워, 인피니티 워에서 어떻게 달라졌어? (스포)",
+      "normalized": "바키(윈터 솔져)가 윈터 솔져, 시빌 워, 인피니티 워에서 어떻게 달라졌어? (스포)",
+      "query_en": "How does Bucky Barnes (the Winter Soldier) change in Captain America: The Winter Soldier, Captain America: Civil War, and Avengers: Infinity War? (Spoilers)",
+      "latency_ms": {
+        "rewrite": 1751,
+        "total": 1751
+      },
+      "tokens": {
+        "input": 119,
+        "output": 116,
+        "rewrite_input": 119,
+        "rewrite_output": 116
+      }
+    },
+    "Q052": {
+      "question": "소코비아 협정은 어떤 사건 때문에 생겼고 어떤 결과를 낳았어? (스포)",
+      "normalized": "소코비아 협정은 어떤 사건 때문에 생겼고 어떤 결과를 낳았어? (스포)",
+      "query_en": "What event led to the Sokovia Accords, and what consequences did they have? (spoilers)",
+      "latency_ms": {
+        "rewrite": 1672,
+        "total": 1673
+      },
+      "tokens": {
+        "input": 110,
+        "output": 79,
+        "rewrite_input": 110,
+        "rewrite_output": 79
+      }
+    },
+    "Q056": {
+      "question": "블랙 위도우의 사건은 시간상 어느 영화들 사이에 있어? (스포)",
+      "normalized": "블랙 위도우 (Black Widow)의 사건은 시간상 어느 영화들 사이에 있어? (스포)",
+      "query_en": "Between which Marvel Cinematic Universe films does the story of Black Widow take place chronologically? (Spoilers)",
+      "latency_ms": {
+        "rewrite": 1801,
+        "total": 1801
+      },
+      "tokens": {
+        "input": 109,
+        "output": 100,
+        "rewrite_input": 109,
+        "rewrite_output": 100
+      }
+    },
+    "Q041": {
+      "question": "토르는 라그나로크, 인피니티 워, 엔드게임을 거치면서 무엇을 잃고 어떻게 변해? (스포)",
+      "normalized": "토르는 라그나로크, 인피니티 워, 엔드게임을 거치면서 무엇을 잃고 어떻게 변해? (스포)",
+      "query_en": "What does Thor lose, and how does he change in Thor: Ragnarok, Avengers: Infinity War, and Avengers: Endgame? (spoilers)",
+      "latency_ms": {
+        "rewrite": 1829,
+        "total": 1830
+      },
+      "tokens": {
+        "input": 119,
+        "output": 117,
+        "rewrite_input": 119,
+        "rewrite_output": 117
+      }
+    },
+    "Q045": {
+      "question": "네뷸라는 가디언즈, 인피니티 워, 엔드게임에서 가모라, 타노스와 각각 어떤 관계였어? (스포)",
+      "normalized": "네뷸라는 가디언즈, 인피니티 워, 엔드게임에서 가모라, 타노스와 각각 어떤 관계였어? (스포)",
+      "query_en": "What was Nebula’s relationship with Gamora and Thanos in Guardians of the Galaxy, Avengers: Infinity War, and Avengers: Endgame? (Spoilers)",
+      "latency_ms": {
+        "rewrite": 2388,
+        "total": 2388
+      },
+      "tokens": {
+        "input": 122,
+        "output": 155,
+        "rewrite_input": 122,
+        "rewrite_output": 155
+      }
+    },
+    "Q047": {
+      "question": "마인드 스톤이 어떻게 비전의 몸에 들어갔고, 이후 어떻게 됐어? (스포)",
+      "normalized": "마인드 스톤이 어떻게 비전의 몸에 들어갔고, 이후 어떻게 됐어? (스포)",
+      "query_en": "How did the Mind Stone get into Vision’s body, and what happened to it afterward? (Spoilers)",
+      "latency_ms": {
+        "rewrite": 1640,
+        "total": 1640
+      },
+      "tokens": {
+        "input": 112,
+        "output": 98,
+        "rewrite_input": 112,
+        "rewrite_output": 98
+      }
+    },
+    "Q049": {
+      "question": "리얼리티 스톤(에테르)은 다크 월드에서 가디언즈를 거쳐 인피니티 워까지 어떻게 이동했어? (스포)",
+      "normalized": "리얼리티 스톤(에테르)은 다크 월드에서 가디언즈를 거쳐 인피니티 워까지 어떻게 이동했어? (스포)",
+      "query_en": "How did the Reality Stone (Aether) travel from Thor: The Dark World through Guardians of the Galaxy to Avengers: Infinity War? (Spoilers)",
+      "latency_ms": {
+        "rewrite": 2647,
+        "total": 2647
+      },
+      "tokens": {
+        "input": 123,
+        "output": 162,
+        "rewrite_input": 123,
+        "rewrite_output": 162
+      }
+    },
+    "Q058": {
+      "question": "닥터 스트레인지가 아이 오브 아가모토를 얻는 과정과 이후 영화에서의 쓰임은? (스포)",
+      "normalized": "닥터 스트레인지 (Doctor Strange)가 아이 오브 아가모토를 얻는 과정과 이후 영화에서의 쓰임은? (스포)",
+      "query_en": "How does Doctor Strange obtain the Eye of Agamotto, and how is it used in subsequent MCU films? (Spoilers)",
+      "latency_ms": {
+        "rewrite": 1766,
+        "total": 1766
+      },
+      "tokens": {
+        "input": 118,
+        "output": 94,
+        "rewrite_input": 118,
+        "rewrite_output": 94
+      }
+    }
+  }
+}

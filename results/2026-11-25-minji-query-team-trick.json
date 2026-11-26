@@ -1,0 +1,54 @@
+{
+  "version": "team-rewrite_movie_query",
+  "tag": "tr",
+  "model": "gpt-6-luna",
+  "queries": {
+    "T001": {
+      "query_ko": "엔드게임에서 결국 타노스가 이겼지?",
+      "query_normalized": "엔드게임에서 결국 타노스가 이겼지?",
+      "query_en": "Did Thanos ultimately win in Endgame?",
+      "rewrite_failed": false,
+      "matched_aliases": [],
+      "latency_ms": 6360,
+      "tokens": {
+        "input": 86,
+        "output": 67,
+        "unlabeled_input": 86,
+        "unlabeled_output": 67
+      }
+    },
+    "T002": {
+      "query_ko": "타임 스톤은 원래 테서랙트 안에 들어 있던 거지?",
+      "query_normalized": "타임 스톤은 원래 테서랙트 안에 들어 있던 거지?",
+      "query_en": "The Time Stone was originally inside the Tesseract, right?",
+      "rewrite_failed": false,
+      "matched_aliases": [],
+      "latency_ms": 2354,
+      "tokens": {
+        "input": 92,
+        "output": 56,
+        "unlabeled_input": 92,
+        "unlabeled_output": 56
+      }
+    },
+    "T003": {
+      "query_ko": "로키는 오딘의 친아들이지?",
+      "query_normalized": "로키는 오딘의 친아들이지? Loki",
+      "query_en": "Is Loki Odin’s biological son?",
+      "rewrite_failed": false,
+      "matched_aliases": [
+        {
+          "alias_ko": "로키",
+          "canonical_en": "Loki"
+        }
+      ],
+      "latency_ms": 2349,
+      "tokens": {
+        "input": 88,
+        "output": 106,
+        "unlabeled_input": 88,
+        "unlabeled_output": 106
+      }
+    }
+  }
+}
