@@ -1,4 +1,4 @@
-# 연결 카드 테스트 
+# 연결 카드 테스트
 
 from datetime import date
 

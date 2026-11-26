@@ -35,7 +35,9 @@ handoff 형식은 팀 모델로 읽히지 않는다.
 from shared.core.models import Document, Work
 
 works = [Work.model_validate_json(line) for line in open("works.jsonl", encoding="utf-8")]
-documents = [Document.model_validate_json(line) for line in open("documents.jsonl", encoding="utf-8")]
+documents = [
+    Document.model_validate_json(line) for line in open("documents.jsonl", encoding="utf-8")
+]
 ```
 
 **청크(`chunks`)는 넣지 않았다.** 청킹은 각자 시험하기로 했기 때문이다. `sections.jsonl` 의 절을 잘라 팀 `Chunk` 를 만들면 된다 (아래 "청크를 만들 때").

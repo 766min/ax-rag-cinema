@@ -58,7 +58,7 @@ def test_second_load_skips_everything() -> None:
     assert plan.counts()["unchanged_skipped"] == 2 and not (plan.insert or plan.update)
 
 
-# [검증] 청크 → DB 행 → 청크 왕복이 같음 
+# [검증] 청크 → DB 행 → 청크 왕복이 같음
 def test_row_round_trips_to_the_same_chunk() -> None:
     c = chunk(1)
     meta, document = row(c)
@@ -82,8 +82,8 @@ def test_db_version_matches_file_version() -> None:
 
 # 가짜 DB load
 
-class FakeDB:
 
+class FakeDB:
     def __init__(self) -> None:
         self.rows: dict[str, tuple[str, dict[str, Any], str]] = {}
         self.embedded = 0
@@ -152,7 +152,7 @@ def run(db: FakeDB, chunks: list[Chunk], collection: str = "c1", **kw: Any) -> d
     )
 
 
-# [검증] 두 번 적재해도 임베딩은 처음 한 번만 진행(=동일 버전) 
+# [검증] 두 번 적재해도 임베딩은 처음 한 번만 진행(=동일 버전)
 def test_load_twice_embeds_once_and_versions_match() -> None:
     db, chunks = FakeDB(), [chunk(1), chunk(2)]
     first = run(db, chunks)
