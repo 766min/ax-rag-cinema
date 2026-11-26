@@ -1,5 +1,6 @@
-from shared.core.models import Chunk, SourceId
-from shared.core.schemas import Section
+from build.chunks import index_version
+from shared.core.models import Candidate, Chunk, RunRecord, SourceId, Trace
+from shared.core.schemas import AnswerStatus, RetrievalMode, Section
 
 
 def chunk(n: int, text: str) -> Chunk:
@@ -36,3 +37,20 @@ ROW = {
 }
 # 근거 없음 문항
 NO_ROW = {**ROW, "query_id": "Q901", "answerable": False, "채점 핵심 사실": "단정하지 않기"}
+
+
+def record(status: AnswerStatus, ranked: list[str], cited: list[str], error: str | None = None) -> RunRecord:  # fmt: skip
+    return RunRecord(
+        run_id="r-try1",
+        question_id="Q900",
+        status=status,
+        candidates=[Candidate(chunk_id=c, rank=i, rank_before_rerank=None, vector_score=None,
+                              bm25_score=None, rrf_score=None, rerank_score=None)
+                    for i, c in enumerate(ranked, 1)],
+        cited_chunk_ids=cited,
+        error=error,
+        embedding_model="e", llm_model="m", prompt_version="p", params={"mode": "B"},
+        trace=Trace(query_ko="q", query_normalized="q", retrieval_mode=RetrievalMode.HYBRID,
+                    evidence_source="documents" if cited else "none",
+                    index_version=index_version(CHUNKS)),
+    )  # fmt: skip
