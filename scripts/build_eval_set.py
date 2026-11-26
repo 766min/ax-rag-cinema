@@ -728,7 +728,7 @@ def official_section(official: list[dict], diag: list[dict]) -> list[str]:
         return "–" if v is None else ("예" if v else "아니오")
 
     lines = [
-        "## 0. 공식 평가셋 30문항 (2026-11-26 확정)",
+        "## 0. 공식 평가셋 31문항 (2026-11-26 확정: dev 11 · test 20)",
         "",
         "확정본은 `eval/dev.json`(10) · `eval/test.json`(20) 이다. 이 스크립트는 eval/ 을 쓰지 않는다 — 아래 표는 `tmp/eval_official.json` 기준이고,"
         " 확정 뒤 공식 문항을 바꾸려면 OFFICIAL_DEV · OFFICIAL_TEST 와 eval/ 파일을 함께 고친다(test 는 잠근 뒤 고치지 않음)."
@@ -739,7 +739,8 @@ def official_section(official: list[dict], diag: list[dict]) -> list[str]:
         "2. 팀 20문항에 없는 칸을 10문항으로 채운다: 시놉시스 · 에피소드(이름표 약점), 메타(감독), 인물 소개,"
         " 인물 동기(인과), 함정 2(전제 바로잡기), 근거 없음 2(미공개 작품 · 문서 밖 세부).",
         "3. 청크를 보고 쓴 질문보다 보지 않고 쓴 질문을 먼저 고른다. 고른 팀 밖 문항은 기준 답 · 핵심 사실 · 원문 발췌를 손으로 다시 적었다.",
-        "4. test 20 = 답변 가능 17 + 근거 없음 3 (architecture.md §8). dev 10 은 난이도를 고르게 섞고 함정 1을 둔다.",
+        "4. test 20 = 답변 가능 17 + 근거 없음 3 (architecture.md §8). dev 11 = 답변 가능 10(난이도를 고르게, 함정 1) + 근거 없음 1"
+        " (근거 부족 판정을 dev 로 맞추기 위해, 2026-11-26 결정).",
         "",
         "| split | 문항 | 질문 | 근거위치 | 난이도 | 질문유형 | 필요 문서 수 | 경계 걸침 | 빠진 것 |",
         "|---|---|---|---|---|---|---|---|---|",
@@ -888,10 +889,12 @@ def write_report(
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-# ---------------------------------------------------------------- 공식 30문항 · 확장 진단셋 (팀 인사이트 취합 2026-11-25)
+# ---------------------------------------------------------------- 공식 31문항 · 확장 진단셋 (팀 인사이트 취합 2026-11-25)
 
 # 공식 평가셋 (2026-11-26 사용자 확정 → eval/dev.json · eval/test.json). 팀 question_set.jsonl 20문항 + 빈 칸을 채우는 10문항.
 # test 20 = 답변 가능 17 + 근거 없음 3 (architecture.md §8). 함정(전제 바로잡기)은 dev · test 에 하나씩.
+# dev 11 = 답변 가능 10 + 근거 없음 1 (2026-11-26 결정, PR #22). 근거 부족 판정은 dev 로만 고치므로(§5)
+# dev 에도 근거 없음 문항이 있어야 한다. 근거가 '조금 있는데 답하기엔 모자란' 문항을 골랐다.
 OFFICIAL_DEV = [
     "Q001",
     "Q004",
@@ -903,6 +906,7 @@ OFFICIAL_DEV = [
     "blind-q018",
     "chunk-c025",
     "minji-T003",
+    "blind-q039",
 ]
 OFFICIAL_TEST = [
     "Q002",
@@ -954,7 +958,8 @@ OFFICIAL_FILL = {
     },
     "chunk-c038": {
         "expected_answer": "《완다비전》 에피소드에서 완다와 비전이 다투던 중, 죽은 오빠(쌍둥이 형제) '피에트로'가 문 앞에 나타난다. 다만 배우가 바뀌어(다른 얼굴) 나타난 인물이다.",
-        "채점 핵심 사실": "피에트로(완다의 죽은 쌍둥이 형제) / 완다비전 에피소드의 장면 / 다른 배우로 바뀌어 등장",
+        # 질문이 "누가 나타났나" 라 피에트로면 정답. '다른 배우로 바뀜' 은 기준 답에만 두고 채점에서 뺀다
+        "채점 핵심 사실": "피에트로(완다의 죽은 쌍둥이 형제)",
         "근거": [
             (
                 "wp-66628751",
@@ -1004,7 +1009,8 @@ OFFICIAL_FILL = {
                 "Stark steals the Stones and uses them to disintegrate Thanos and his army, sacrificing himself.",
             )
         ],
-        "채점 핵심 사실": "전제 바로잡기: 타노스는 패배한다 / 토니가 스톤으로 타노스와 군대를 없앰 / 토니의 희생",
+        # 민지 실험에서 '군대까지' 같은 세부를 넣어 6번 모두 오답 처리됐다. 꼭 있어야 하는 것만 둔다
+        "채점 핵심 사실": "전제 바로잡기: 타노스는 졌다 / 토니가 스톤으로 타노스를 없애고 희생함",
     },
     "minji-T003": {
         "근거": [
@@ -1019,6 +1025,19 @@ OFFICIAL_FILL = {
     "blind-q040": {
         "expected_answer": "문서에 근거가 없다. 보르미르 장면에 쓰인 음악은 수집한 줄거리 · 문서에 나오지 않는다고 안내해야 한다.",
         "채점 핵심 사실": "근거 부족 안내 / 곡 이름을 지어내지 않음",
+    },
+    "blind-q039": {
+        "expected_answer": "문서에 근거가 없다. 줄거리에는 스트레인지가 교통사고로 손을 크게 다쳐 수술을 할 수 없게 됐다는 내용만 있고,"
+        " 처음 치료한 병원의 이름은 나오지 않는다고 안내해야 한다.",
+        "채점 핵심 사실": "근거 부족 안내 (병원 이름은 문서에 없음) / 병원 이름을 지어내지 않음",
+        # 참고용 근거: 사고는 나오지만 병원 이름은 없다 (answerable=false 라 정답 청크는 붙지 않는다)
+        "근거": [
+            (
+                "tt1211837-wikipedia",
+                1,
+                "severely injures his hands in a car crash while en route to a speaking conference, leaving him permanently unable to operate.",
+            )
+        ],
     },
 }
 # 함정 · 일반화 문항의 '전제 오류' (원래 값이 없는 것만)
@@ -1187,7 +1206,7 @@ def main():
     ap.add_argument(
         "--official",
         default=str(ROOT / "tmp" / "eval_official.json"),
-        help="공식 평가셋 후보 30문항 (팀 공식 형식 JSON 배열, split 칸에 dev/test)",
+        help="공식 평가셋 31문항 (팀 공식 형식 JSON 배열, split 칸에 dev/test)",
     )
     ap.add_argument(
         "--diag", default=str(ROOT / "tmp" / "eval_diag.json"), help="확장 진단셋 (같은 형식)"

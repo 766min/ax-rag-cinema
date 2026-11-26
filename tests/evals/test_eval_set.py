@@ -48,10 +48,12 @@ def to_item(row: dict) -> EvalItem:
 
 def test_split_sizes() -> None:
     dev, test = load("dev"), load("test")
-    assert len(dev) == 10
+    assert len(dev) == 11
     assert len(test) == 20
     # 발제 기준: test 는 답변 가능 17 · 근거 없음 3
     assert sum(not r["answerable"] for r in test) == 3
+    # 근거 부족 판정은 dev 로만 고치므로(architecture.md §5) dev 에도 근거 없음 문항이 있어야 한다
+    assert sum(not r["answerable"] for r in dev) == 1
 
 
 @pytest.mark.parametrize("split", ["dev", "test"])

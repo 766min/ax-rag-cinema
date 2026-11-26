@@ -337,5 +337,34 @@
       }
     ],
     "split": "dev"
+  },
+  {
+    "query_id": "blind-q039",
+    "question": "《닥터 스트레인지》에서 교통사고 뒤 스티븐 스트레인지를 처음 치료한 병원은 어디야?",
+    "expected_answer": "문서에 근거가 없다. 줄거리에는 스트레인지가 교통사고로 손을 크게 다쳐 수술을 할 수 없게 됐다는 내용만 있고, 처음 치료한 병원의 이름은 나오지 않는다고 안내해야 한다.",
+    "answerable": false,
+    "난이도": "함정",
+    "채점 핵심 사실": "근거 부족 안내 (병원 이름은 문서에 없음) / 병원 이름을 지어내지 않음",
+    "근거 문서·절·리비전": "[1] Doctor Strange (2016 film)\ntt1211837-wikipedia / 섹션 1: Plot\nrevision 1387392107\nhttps://en.wikipedia.org/w/index.php?oldid=1387392107",
+    "검토 메모": "?? ???? ?? ?? ??: Strange=106?, hospital=44?, car crash=9?; ??? ?? ?? ??? ????? ??? ???? ??.; 한국어 깨짐 → question_en 에서 다시 씀(검토 필요); 공식 후보로 빈 칸을 손으로 채움(검토 필요)",
+    "원문 근거 발췌": "[1] severely injures his hands in a car crash while en route to a speaking conference, leaving him permanently unable to operate.",
+    "근거위치": "문서에 없음",
+    "질문유형": "근거 검증",
+    "eval_track": "retrieval",
+    "variant_of": null,
+    "작성자": "ohmseok",
+    "전제 오류": null,
+    "경계 걸침": null,
+    "필요 문서 수": 0,
+    "근거": [
+      {
+        "doc_id": "tt1211837-wikipedia",
+        "team_doc_id": "doc_38df02f9317c525f",
+        "section_index": 1,
+        "section_path": "Plot",
+        "발췌": "severely injures his hands in a car crash while en route to a speaking conference, leaving him permanently unable to operate."
+      }
+    ],
+    "split": "dev"
   }
 ]
