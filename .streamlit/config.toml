@@ -1,0 +1,7 @@
+# Streamlit 화면 테마 (apps/streamlit) — 저장소 루트에서 실행할 때 적용된다.
+[theme]
+base = "light"
+primaryColor = "#627aea"
+backgroundColor = "#f9f7fb"
+secondaryBackgroundColor = "#f1eff9"
+textColor = "#25245b"
