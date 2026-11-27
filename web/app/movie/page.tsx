@@ -1,11 +1,11 @@
 "use client";
 
-import { IconArrowLeft, IconExternalLink, IconSparkles } from "@tabler/icons-react";
-import Link from "next/link";
+import { IconExternalLink, IconSparkles } from "@tabler/icons-react";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useChat } from "@/components/ChatPanel";
 import { artOf } from "@/components/MovieCard";
+import PageBanner, { useGrowStage } from "@/components/PageBanner";
 import { api, formatKo, type WorkDetail } from "@/lib/api";
 
 export default function MoviePage() {
@@ -22,6 +22,8 @@ function Movie() {
   const chat = useChat();
   const [work, setWork] = useState<WorkDetail | null>(null);
   const [error, setError] = useState("");
+  const main = useRef<HTMLDivElement>(null);
+  useGrowStage(main, 1200);
 
   useEffect(() => {
     if (!id) return;
@@ -38,68 +40,75 @@ function Movie() {
     };
   }, [id]);
 
+  const ready = work && work.work_id === id;
   return (
-    <div className="absolute top-[150px] right-[120px] bottom-[40px] left-[120px] z-10 flex gap-16">
-      {(error || !id) && <p className="text-amber">{error || "작품이 지정되지 않았어요."}</p>}
-      {(!work || work.work_id !== id) && !error && id && <p className="text-muted">불러오는 중…</p>}
-      {work && work.work_id === id && (
-        <>
-          <div className={`tilt relative h-[700px] w-[520px] flex-none overflow-hidden rounded-[28px] border border-white/15 shadow-deep ${artOf(work.work_id)}`} style={{ ["--lift" as string]: "6px" }}>
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_50%,rgb(4_5_12/0.9))]" />
-            {work.phase && <span className="chip absolute top-5 left-5">PHASE {work.phase}</span>}
-          </div>
+    <>
+      <div className="glow" data-depth="14" style={{ left: 700, top: 120, width: 560, height: 360, background: "#6a4fd6", opacity: 0.55 }} />
+      <div className="glow" data-depth="10" style={{ left: 1360, top: 560, width: 520, height: 460, background: "#2f7fd8", opacity: 0.45 }} />
 
-          <div className="flex min-w-0 flex-1 flex-col">
-            <Link href="/explore/" className="flex items-center gap-1.5 text-dim hover:text-ink">
-              <IconArrowLeft size={18} aria-hidden />
-              탐색으로
-            </Link>
-            <h1 className="mt-6 text-[64px] leading-tight font-extrabold tracking-tight">{work.title_ko}</h1>
-            <p className="mt-2 text-2xl text-muted">{work.title_original}</p>
-            <dl className="mt-8 flex flex-wrap gap-3">
-              {[
-                ["공개", work.year ?? "미정"],
-                ["형식", formatKo(work.format)],
-                ["페이즈", work.phase ? `PHASE ${work.phase}` : "-"],
-                ["작중 시간순", work.timeline_order ?? "-"],
-              ].map(([k, v]) => (
-                <div key={k} className="glass rounded-2xl px-5 py-3">
-                  <dt className="text-xs text-dim">{k}</dt>
-                  <dd className="mt-1 text-lg font-semibold">{v}</dd>
+      <div ref={main} className="absolute top-[150px] right-[120px] left-[120px] z-10">
+        {(error || !id) && <p className="text-amber">{error || "작품이 지정되지 않았어요."}</p>}
+        {!ready && !error && id && <p className="text-mid">불러오는 중…</p>}
+        {ready && (
+          <>
+            <PageBanner
+              className="relative"
+              parents={[{ href: "/explore/", label: "탐색" }]}
+              crumb={work.title_ko}
+              title={work.title_original}
+              desc={work.title_ko}
+              aside={
+                <div className="absolute top-10 right-10 flex gap-7 text-right">
+                  {[
+                    [work.year ?? "미정", "공개"],
+                    [formatKo(work.format), "형식"],
+                    [work.phase ? `PHASE ${work.phase}` : "-", "페이즈"],
+                    [work.timeline_order ?? "-", "작중 시간순"],
+                  ].map(([v, k]) => (
+                    <div key={k}>
+                      <b className="block text-[22px] font-bold text-hi tabular-nums">{v}</b>
+                      <span className="text-[12.5px] text-low">{k}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </dl>
-
-            <section className="glass scroll-area mt-8 max-h-[340px] rounded-3xl p-7">
-              <h2 className="text-lg font-bold">작품 소개</h2>
-              {work.summary ? (
-                <>
-                  <p className="mt-3 leading-relaxed whitespace-pre-wrap text-[#d6d9f7]" lang="en">
-                    {work.summary}
-                  </p>
-                  <p className="mt-4 flex items-center gap-1.5 text-xs text-dim">
-                    영문 위키백과 첫 문단{work.license && ` · ${work.license}`}
-                    {work.source_url && (
-                      <a href={work.source_url} target="_blank" rel="noopener noreferrer" className="ml-1 flex items-center gap-1 text-cyan hover:underline">
-                        원문 보기 <IconExternalLink size={12} aria-hidden />
-                      </a>
-                    )}
-                  </p>
-                </>
-              ) : (
-                <p className="mt-3 text-muted">아직 소개 글이 없어요. 로어 AI에게 물어보세요.</p>
-              )}
-            </section>
-
-            <div className="mt-8 flex items-center gap-5">
-              <button type="button" className="btn btn-primary" onClick={() => chat.open({ id: work.work_id, title: work.title_ko })}>
-                <IconSparkles size={20} aria-hidden />이 작품에 대해 로어 AI에게 묻기
+              }
+            >
+              <button type="button" className="btn btn-primary h-[42px] text-sm" onClick={() => chat.open({ id: work.work_id, title: work.title_ko })}>
+                <IconSparkles size={16} aria-hidden />이 작품에 대해 로어 AI에게 묻기
               </button>
-              <span className="text-sm text-dim">시네버스는 작품 정보만 보여 줘요 (영상 재생은 없어요)</span>
+              <span className="ml-auto text-[13px] text-low">시네버스는 작품 정보만 보여 줘요 (영상 재생은 없어요)</span>
+            </PageBanner>
+
+            <div className="mt-6 flex items-start gap-6">
+              <div className={`tilt relative h-[560px] w-[420px] flex-none overflow-hidden rounded-[24px] border border-white/15 shadow-deep ${artOf(work.work_id)}`} style={{ ["--lift" as string]: "6px" }}>
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_50%,rgb(4_5_12/0.9))]" />
+                {work.phase && <span className="chip absolute top-5 left-5">PHASE {work.phase}</span>}
+              </div>
+
+              <section className="frost min-w-0 flex-1 rounded-[24px] px-[38px] pt-9 pb-8">
+                <span className="text-[12.5px] font-semibold text-low">작품 소개</span>
+                {work.summary ? (
+                  <>
+                    <p className="mt-3 text-lg leading-[1.8] whitespace-pre-wrap text-hi" lang="en">
+                      {work.summary}
+                    </p>
+                    <p className="mt-6 flex items-center gap-1.5 text-xs text-low">
+                      영문 위키백과 첫 문단{work.license && ` · ${work.license}`}
+                      {work.source_url && (
+                        <a href={work.source_url} target="_blank" rel="noopener noreferrer" className="ml-1 flex items-center gap-1 text-cyan hover:underline">
+                          원문 보기 <IconExternalLink size={12} aria-hidden />
+                        </a>
+                      )}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-3 text-mid">아직 소개 글이 없어요. 로어 AI에게 물어보세요.</p>
+                )}
+              </section>
             </div>
-          </div>
-        </>
-      )}
-    </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }

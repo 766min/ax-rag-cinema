@@ -1,10 +1,11 @@
 "use client";
 
-import { IconArrowLeft, IconHeart, IconTrash } from "@tabler/icons-react";
+import { IconArrowLeft, IconHeart, IconPencil, IconSwords, IconTrash } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Debate from "@/components/Debate";
+import PageBanner, { useGrowStage } from "@/components/PageBanner";
 import { ago, api, CATEGORIES, post, type Comment, type PostDetail } from "@/lib/api";
 
 export default function PostPage() {
@@ -21,6 +22,8 @@ function PostView() {
   const [data, setData] = useState<PostDetail | null>(null);
   const [error, setError] = useState(id ? "" : "글이 지정되지 않았어요.");
   const [notice, setNotice] = useState("");
+  const main = useRef<HTMLDivElement>(null);
+  useGrowStage(main, 1200);
 
   const reload = useCallback(
     () =>
@@ -43,71 +46,114 @@ function PostView() {
     }
   }
 
-  if (!data)
-    return <p className="absolute top-[160px] left-[120px] z-10 text-muted">{error ? <span className="text-amber">{error}</span> : "불러오는 중…"}</p>;
-
   return (
-    <div className="scroll-area absolute top-[150px] bottom-0 left-1/2 z-10 w-[1100px] -translate-x-1/2 pr-3 pb-10">
-      <Link href="/community/" className="flex items-center gap-1.5 text-low hover:text-hi">
-        <IconArrowLeft size={18} aria-hidden />
-        멀티버스 아레나로
-      </Link>
+    <>
+      <div className="glow" data-depth="10" style={{ left: 60, top: 300, width: 520, height: 420, background: "#c2569a", opacity: 0.45 }} />
+      <div className="glow" data-depth="14" style={{ left: 700, top: 120, width: 560, height: 360, background: "#6a4fd6", opacity: 0.55 }} />
+      <div className="glow" data-depth="10" style={{ left: 1360, top: 520, width: 520, height: 460, background: "#2f7fd8", opacity: 0.5 }} />
 
-      <article className="frost mt-5 rounded-[26px] p-10">
-        <span className="rounded-full border border-white/12 px-2.5 py-0.5 text-xs text-mid">{CATEGORIES[data.category]}</span>
-        <h1 className="mt-3 text-[40px] leading-snug font-extrabold tracking-tight">{data.title}</h1>
-        <p className="mt-3 text-sm text-low">
-          {data.nickname} · {ago(data.created_at)}
-        </p>
-        <p className="mt-8 text-lg leading-[1.8] whitespace-pre-wrap break-words text-hi">{data.body}</p>
-        {data.category === "vs" && (
-          <div className="mt-8 rounded-[20px] border border-white/10 bg-black/18 p-7">
-            <Debate key={data.id} debate={data} />
-          </div>
+      <div ref={main} className="absolute top-[150px] right-[120px] left-[120px] z-10">
+        {!data ? (
+          <p className="text-mid">{error ? <span className="text-amber">{error}</span> : "불러오는 중…"}</p>
+        ) : (
+          <>
+            <PageBanner
+              className="relative"
+              parents={[{ href: "/community/", label: "커뮤니티" }]}
+              crumb={CATEGORIES[data.category]}
+              title={data.title}
+              plainTitle
+              desc={`${data.nickname} · ${ago(data.created_at)}`}
+              aside={
+                <div className="absolute top-10 right-10 flex gap-7 text-right">
+                  {(
+                    [
+                      [data.like_count, "좋아요"],
+                      [data.comments.length, "댓글"],
+                    ] as const
+                  ).map(([n, label]) => (
+                    <div key={label}>
+                      <b className="block text-[22px] font-bold text-hi tabular-nums">{n.toLocaleString()}</b>
+                      <span className="text-[12.5px] text-low">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              }
+            >
+              <button
+                type="button"
+                className="btn h-[42px] text-sm"
+                onClick={() =>
+                  act(async () => {
+                    const r = await api<{ like_count: number; liked: boolean }>(`/posts/${data.id}/like`, { method: "POST" });
+                    setData({ ...data, like_count: r.like_count });
+                    if (!r.liked) setNotice("이미 좋아요를 눌렀어요.");
+                  })
+                }
+              >
+                <IconHeart size={16} className="text-[#ff8fb4]" aria-hidden />
+                좋아요 {data.like_count}
+              </button>
+              {notice && (
+                <p role="status" className="text-sm text-amber">
+                  {notice}
+                </p>
+              )}
+              <DeleteBox
+                label="글 지우기"
+                onDelete={(password) =>
+                  act(
+                    () => api(`/posts/${data.id}`, post({ password }, "DELETE")),
+                    () => router.push("/community/"),
+                  )
+                }
+              />
+            </PageBanner>
+
+            <div className="mt-6 flex items-start gap-6">
+              <div className="w-[1100px] flex-none">
+                <article className="frost rounded-[24px] px-[38px] pt-9 pb-8">
+                  <span className="text-[12.5px] font-semibold text-low">본문</span>
+                  <p className="mt-3 text-lg leading-[1.8] whitespace-pre-wrap break-words text-hi">{data.body}</p>
+                  {data.category === "vs" && (
+                    <div className="mt-8 rounded-[20px] border border-white/10 bg-black/18 p-7">
+                      <Debate key={data.id} debate={data} />
+                    </div>
+                  )}
+                </article>
+
+                <section className="frost mt-6 rounded-[24px] px-[38px] pt-9 pb-8" aria-label="댓글">
+                  <h2 className="text-xl font-bold text-hi">댓글 {data.comments.length}</h2>
+                  <ul className="mt-5 flex flex-col">
+                    {data.comments.map((c) => (
+                      <CommentRow key={c.id} c={c} onDelete={(password) => act(() => api(`/comments/${c.id}`, post({ password }, "DELETE")), reload)} />
+                    ))}
+                  </ul>
+                  <CommentForm postId={data.id} onDone={reload} />
+                </section>
+              </div>
+
+              <nav className="frost min-w-0 flex-1 rounded-[24px] p-7" aria-label="커뮤니티 바로가기">
+                <span className="text-[12.5px] font-semibold text-low">MULTIVERSE ARENA</span>
+                <div className="mt-4 flex flex-col gap-2.5">
+                  <Link href="/community/" className="btn h-11 justify-start text-sm">
+                    <IconArrowLeft size={16} aria-hidden />
+                    아레나로 돌아가기
+                  </Link>
+                  <Link href="/community/new/" className="btn h-11 justify-start text-sm">
+                    <IconPencil size={16} aria-hidden />새 글 작성
+                  </Link>
+                  <Link href="/community/new/?category=vs" className="btn h-11 justify-start text-sm">
+                    <IconSwords size={16} aria-hidden />
+                    VS 토론 열기
+                  </Link>
+                </div>
+              </nav>
+            </div>
+          </>
         )}
-
-        <div className="mt-10 flex items-center gap-3">
-          <button
-            type="button"
-            className="btn h-12 text-base"
-            onClick={() =>
-              act(async () => {
-                const r = await api<{ like_count: number; liked: boolean }>(`/posts/${data.id}/like`, { method: "POST" });
-                setData({ ...data, like_count: r.like_count });
-                if (!r.liked) setNotice("이미 좋아요를 눌렀어요.");
-              })
-            }
-          >
-            <IconHeart size={18} className="text-[#ff8fb4]" aria-hidden />
-            좋아요 {data.like_count}
-          </button>
-          <DeleteBox
-            label="글 지우기"
-            onDelete={(password) =>
-              act(
-                () => api(`/posts/${data.id}`, post({ password }, "DELETE")),
-                () => router.push("/community/"),
-              )
-            }
-          />
-        </div>
-        {notice && (
-          <p role="status" className="mt-4 text-amber">
-            {notice}
-          </p>
-        )}
-      </article>
-
-      <section className="frost mt-6 rounded-[26px] p-8" aria-label="댓글">
-        <h2 className="text-xl font-bold">댓글 {data.comments.length}</h2>
-        <ul className="mt-5 flex flex-col">
-          {data.comments.map((c) => (
-            <CommentRow key={c.id} c={c} onDelete={(password) => act(() => api(`/comments/${c.id}`, post({ password }, "DELETE")), reload)} />
-          ))}
-        </ul>
-        <CommentForm postId={data.id} onDone={reload} />
-      </section>
-    </div>
+      </div>
+    </>
   );
 }
 
