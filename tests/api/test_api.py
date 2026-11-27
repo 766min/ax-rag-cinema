@@ -501,3 +501,22 @@ def test_ask_hides_coverage_tail(fake_answer: dict[str, Any]) -> None:
     }
     data = client.post("/api/ask", json={"question": "q"}).json()["data"]
     assert data["answer"] == "답이에요 [1]." and data["partial"] is True
+
+
+def test_ask_pipeline_error_is_502_with_message(monkeypatch: pytest.MonkeyPatch) -> None:
+    import asyncio
+
+    import service.movie_qa
+
+    async def boom(*args: object, **kwargs: object) -> None:
+        raise TimeoutError("llm timeout")
+
+    monkeypatch.setattr(ask, "FAKE_ASK", False)
+    rt = type("Rt", (), {"generate_en": None, "aliases": None})()
+    monkeypatch.setattr(ask, "_state", {"retrieve": None, "rt": rt, "mode": None, "top_k": 1, "cache": None})
+    monkeypatch.setattr(service.movie_qa, "answer_movie_question", boom)
+    monkeypatch.setattr(ask, "_runtime", lambda: asyncio.sleep(0, ask._state))
+
+    with pytest.raises(ask.SharedException) as err:
+        asyncio.run(ask.answer("q"))
+    assert err.value.status_code == 502

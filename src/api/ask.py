@@ -212,16 +212,24 @@ async def answer(question: str) -> dict[str, Any]:
             status_code=503,
             error_code="RUNTIME_UNAVAILABLE",
         ) from exc
-    return await answer_movie_question(
-        question,
-        retrieve=s["retrieve"],
-        generate_en=s["rt"].generate_en,
-        aliases=s["rt"].aliases,
-        mode=s["mode"],
-        top_k=s["top_k"],
-        web=_web if ASK_WEB else None,
-        cache=s["cache"],
-    )
+    try:
+        return await answer_movie_question(
+            question,
+            retrieve=s["retrieve"],
+            generate_en=s["rt"].generate_en,
+            aliases=s["rt"].aliases,
+            mode=s["mode"],
+            top_k=s["top_k"],
+            web=_web if ASK_WEB else None,
+            cache=s["cache"],
+        )
+    except Exception as exc:  # LLM 시간 초과 · 외부 API 오류 등. 그냥 두면 메시지 없는 500 이 된다
+        logging.getLogger(__name__).exception("답 생성 실패")
+        raise SharedException(
+            "답을 만드는 중에 문제가 생겼어요. 잠시 후 다시 물어봐 주세요.",
+            status_code=502,
+            error_code="ANSWER_FAILED",
+        ) from exc
 
 
 @router.post("/ask")
