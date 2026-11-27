@@ -1,0 +1,13 @@
+# 도메인을 SITE_ADDRESS 에 넣으면 Caddy 가 HTTPS 인증서를 자동으로 받는다 (없으면 localhost)
+{$SITE_ADDRESS:localhost} {
+	encode zstd gzip
+	request_body {
+		max_size 64KB # 질문 · 글은 몇 KB 라 큰 요청은 받기 전에 끊는다
+	}
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Content-Security-Policy "frame-ancestors 'none'"
+	}
+	reverse_proxy api:8000
+}

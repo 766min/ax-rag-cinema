@@ -1,0 +1,22 @@
+# 이미지에 들어가면 안 되는 것 (키 · IMDb 값이 있는 데이터셋)
+.env
+.env.*
+data/
+# 빌드에 필요 없는 것
+.git
+.github
+.claude
+.venv
+**/__pycache__
+.mypy_cache
+.pytest_cache
+.ruff_cache
+web/node_modules
+web/.next
+web/out
+results/
+insights/
+logs/
+eval/
+tests/
+docs/

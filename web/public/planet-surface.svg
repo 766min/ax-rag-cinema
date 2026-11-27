@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2300 1600" preserveAspectRatio="none">
+      <defs>
+        <filter id="pl-noise" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.0022 0.016" numOctaves="3" seed="7"/>
+          <feColorMatrix values="0 0 0 0 0.55  0 0 0 0 0.68  0 0 0 0 0.95  0 0 0 1.1 -0.45"/>
+        </filter>
+        <filter id="pl-blur"><feGaussianBlur stdDeviation="5"/></filter>
+        <linearGradient id="pl-shade" x1="0" y1="0" x2="1" y2="0"><stop offset=".45" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></linearGradient>
+        <linearGradient id="pl-depth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".35" stop-color="#000" stop-opacity=".5"/></linearGradient>
+      </defs>
+      <rect width="2300" height="1600" filter="url(#pl-noise)" opacity=".32"/>
+      <g fill="none" filter="url(#pl-blur)">
+        <ellipse cx="1150" cy="800" rx="1133" ry="788" stroke="rgba(120,175,235,.16)" stroke-width="10"/>
+        <ellipse cx="1150" cy="800" rx="1106" ry="770" stroke="rgba(214,168,92,.12)" stroke-width="16"/>
+        <ellipse cx="1150" cy="800" rx="1074" ry="748" stroke="rgba(184,164,246,.12)" stroke-width="8"/>
+        <ellipse cx="1150" cy="800" rx="1035" ry="720" stroke="rgba(120,175,235,.1)" stroke-width="22"/>
+        <ellipse cx="1150" cy="800" rx="985" ry="685" stroke="rgba(244,169,216,.08)" stroke-width="12"/>
+        <ellipse cx="1150" cy="800" rx="930" ry="646" stroke="rgba(214,168,92,.08)" stroke-width="18"/>
+      </g>
+      <g>
+        <ellipse cx="380" cy="160" rx="62" ry="14" fill="rgba(0,0,0,.35)"/><ellipse cx="380" cy="162" rx="62" ry="14" fill="none" stroke="rgba(200,222,255,.16)" stroke-width="1.5"/>
+        <ellipse cx="720" cy="96" rx="38" ry="9" fill="rgba(0,0,0,.3)"/><ellipse cx="720" cy="98" rx="38" ry="9" fill="none" stroke="rgba(200,222,255,.14)" stroke-width="1.2"/>
+        <ellipse cx="980" cy="250" rx="84" ry="19" fill="rgba(0,0,0,.32)"/><ellipse cx="980" cy="252" rx="84" ry="19" fill="none" stroke="rgba(200,222,255,.14)" stroke-width="1.5"/>
+        <ellipse cx="1620" cy="190" rx="56" ry="13" fill="rgba(0,0,0,.32)"/><ellipse cx="1620" cy="192" rx="56" ry="13" fill="none" stroke="rgba(200,222,255,.14)" stroke-width="1.2"/>
+        <ellipse cx="1850" cy="120" rx="34" ry="8" fill="rgba(0,0,0,.28)"/><ellipse cx="1850" cy="122" rx="34" ry="8" fill="none" stroke="rgba(200,222,255,.12)" stroke-width="1"/>
+        <ellipse cx="560" cy="330" rx="72" ry="16" fill="rgba(0,0,0,.3)"/><ellipse cx="560" cy="332" rx="72" ry="16" fill="none" stroke="rgba(200,222,255,.12)" stroke-width="1.2"/>
+        <ellipse cx="1330" cy="340" rx="96" ry="21" fill="rgba(0,0,0,.3)"/><ellipse cx="1330" cy="342" rx="96" ry="21" fill="none" stroke="rgba(200,222,255,.12)" stroke-width="1.4"/>
+      </g>
+      <rect width="2300" height="1600" fill="url(#pl-shade)"/>
+      <rect width="2300" height="1600" fill="url(#pl-depth)"/>
+    </svg>
