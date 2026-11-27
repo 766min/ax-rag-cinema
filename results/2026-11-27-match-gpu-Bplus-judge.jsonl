@@ -1,0 +1,11 @@
+{"question_id": "Q001", "status": "answered", "by": "llm:j2", "verdicts": ["met", "met", "met"], "contradiction": false, "note": "세 가지 핵심 사실을 모두 언급했습니다.", "passed": true, "fact_rate": 1.0}
+{"question_id": "Q004", "status": "answered", "by": "llm:j2", "verdicts": ["met", "met", "met", "missing"], "contradiction": false, "note": "와칸다와 블랙 팬서의 연결은 언급하지 않았습니다.", "passed": false, "fact_rate": 0.75}
+{"question_id": "Q009", "status": "answered", "by": "llm:j2", "verdicts": ["met", "partial", "met", "partial"], "contradiction": false, "note": "버키와 하이드라의 세뇌, 암살자라는 점은 언급했지만 전우이자 금속 팔을 가졌다는 내용은 빠져 있습니다.", "passed": false, "fact_rate": 0.75}
+{"question_id": "Q015", "status": "answered", "by": "llm:j2", "verdicts": ["met", "met", "met"], "contradiction": false, "note": "세 가지 핵심 사실을 모두 언급했습니다.", "passed": true, "fact_rate": 1.0}
+{"question_id": "Q040", "status": "answered", "by": "llm:j2", "verdicts": ["partial", "missing", "missing", "missing"], "contradiction": false, "note": "지구 방어 동기는 언급했지만 완다의 환영과 이후 책임·협정·대립은 설명하지 않았습니다.", "passed": false, "fact_rate": 0.125}
+{"question_id": "Q056", "status": "answered", "by": "llm:j2", "verdicts": ["met", "met", "missing"], "contradiction": false, "note": "본편의 시점과 인피니티 워 이전이라는 점은 말했지만, 도입부와 쿠키영상의 시점 예외는 언급하지 않았습니다.", "passed": false, "fact_rate": 0.667}
+{"question_id": "Q045", "status": "answered", "by": "llm:j2", "verdicts": ["partial", "partial", "partial", "partial"], "contradiction": false, "note": "각 관계의 일부는 언급했지만 핵심적인 학대·구출 선택과 시간대별 구분은 충분히 설명하지 않았다.", "passed": false, "fact_rate": 0.5}
+{"question_id": "blind-q018", "status": "answered", "by": "llm:j2", "verdicts": ["met", "missing", "missing"], "contradiction": false, "note": "케이트 비숍이라는 점만 언급했습니다.", "passed": false, "fact_rate": 0.333}
+{"question_id": "chunk-c025", "status": "answered", "by": "llm:j2", "verdicts": ["partial", "missing", "partial"], "contradiction": false, "note": "TVA의 임무와 자신의 변종을 막는 일은 언급했지만, 테서랙트 절도와 변종의 위험성 및 체포는 명시하지 않았습니다.", "passed": false, "fact_rate": 0.333}
+{"question_id": "minji-T003", "status": "answered", "by": "llm:j2", "verdicts": ["partial", "met"], "contradiction": true, "note": "오딘의 양자가 아니라고 해 기준 답변과 모순되지만, 라우페이가 친아버지라는 점은 맞습니다.", "passed": false, "fact_rate": 0.75}
+{"question_id": "blind-q039", "status": "no_evidence", "passed": true, "fact_rate": null, "by": "status", "passed_by_status": true}

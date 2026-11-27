@@ -1,0 +1,11 @@
+{"question_id": "Q001", "status": "answered", "by": "llm:j2", "verdicts": ["met", "met", "met"], "contradiction": false, "note": "핵심 사실 세 가지를 모두 언급했습니다.", "passed": true, "fact_rate": 1.0}
+{"question_id": "Q004", "status": "answered", "by": "llm:j2", "verdicts": ["met", "met", "partial", "missing"], "contradiction": false, "note": "고립된 상태와 모습을 숨겼다는 내용은 있지만, 고립 정책과 블랙 팬서와의 연결은 명시하지 않았다.", "passed": false, "fact_rate": 0.625}
+{"question_id": "Q009", "status": "answered", "by": "llm:j2", "verdicts": ["met", "partial", "met", "partial"], "contradiction": false, "note": "버키의 금속 팔과 스티브의 전우라는 점은 언급하지 않았습니다.", "passed": false, "fact_rate": 0.75}
+{"question_id": "Q015", "status": "answered", "by": "llm:j2", "verdicts": ["met", "met", "met"], "contradiction": false, "note": "세 가지 핵심 사실을 모두 언급했습니다.", "passed": true, "fact_rate": 1.0}
+{"question_id": "Q040", "status": "answered", "by": "llm:j2", "verdicts": ["met", "missing", "missing", "missing"], "contradiction": false, "note": "완다의 환영과 지구 방어를 위한 울트론 개발 동기는 언급했지만, 소코비아 파괴와 토니의 책임감 및 협정 지지는 빠져 있습니다.", "passed": false, "fact_rate": 0.25}
+{"question_id": "Q056", "status": "answered", "by": "llm:j2", "verdicts": ["met", "missing", "missing"], "contradiction": false, "note": "시빌 워 이후라는 점은 언급했지만, 인피니티 워 이전과 도입부·쿠키영상의 시점 예외는 언급하지 않았습니다.", "passed": false, "fact_rate": 0.333}
+{"question_id": "Q045", "status": "answered", "by": "llm:j2", "verdicts": ["partial", "missing", "partial", "partial"], "contradiction": true, "note": "네뷸라의 타노스 학대와 인피니티 워의 사건은 빠졌고, 엔드게임의 대결 구도는 기준 답변과 다릅니다.", "passed": false, "fact_rate": 0.375}
+{"question_id": "blind-q018", "status": "answered", "by": "llm:j2", "verdicts": ["met", "met", "missing"], "contradiction": false, "note": "케이트 비숍이 클린트의 파트너가 된다고 했지만, 가족에게 돌아가려 한다는 내용은 없습니다.", "passed": false, "fact_rate": 0.667}
+{"question_id": "chunk-c025", "status": "no_evidence", "verdicts": ["missing", "missing", "missing"], "contradiction": false, "by": "status", "passed": false, "fact_rate": 0.0}
+{"question_id": "minji-T003", "status": "answered", "by": "llm:j2", "verdicts": ["met", "met"], "contradiction": false, "note": "로키는 라우페이의 친아들이며 오딘에게 입양됐다고 답했습니다.", "passed": true, "fact_rate": 1.0}
+{"question_id": "blind-q039", "status": "no_evidence", "passed": true, "fact_rate": null, "by": "status", "passed_by_status": true}
