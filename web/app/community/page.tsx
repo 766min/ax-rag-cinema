@@ -1,10 +1,11 @@
 "use client";
 
-import { IconArrowRight, IconChevronRight, IconHeart, IconHome, IconMessageCircle, IconPencil, IconSearch, IconShare3 } from "@tabler/icons-react";
+import { IconArrowRight, IconHeart, IconMessageCircle, IconPencil, IconSearch, IconShare3 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import Debate from "@/components/Debate";
+import PageBanner, { SEARCH, TAB, useGrowStage } from "@/components/PageBanner";
 import { ago, api, CATEGORIES, type BoardStats, type Category, type Post, type PostPage } from "@/lib/api";
 
 const TOPICS = ["인피니티 스톤", "TVA", "와칸다", "양자 영역", "멀티버스", "쿠키 영상"];
@@ -102,16 +103,7 @@ function Community() {
       .catch(() => setStats(null));
   }, []);
 
-  // 글이 많아지면 무대를 아래로 늘린다 (무대 밖은 잘리므로)
-  useEffect(() => {
-    const el = main.current;
-    if (!el) return;
-    const grow = () =>
-      document.documentElement.style.setProperty("--h", `${Math.max(MIN_HEIGHT, el.offsetTop + el.offsetHeight + 120)}px`);
-    const obs = new ResizeObserver(grow);
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
+  useGrowStage(main, MIN_HEIGHT);
 
   const posts = pages.flatMap((p) => p.items);
   const hasMore = pages.at(-1)?.has_more ?? false;
@@ -128,62 +120,55 @@ function Community() {
       <div className="glow" data-depth="10" style={{ left: 1360, top: 520, width: 520, height: 460, background: "#2f7fd8", opacity: 0.55 }} />
       <div className="glow" data-depth="12" style={{ left: 420, top: 760, width: 620, height: 300, background: "#d9763a", opacity: 0.32 }} />
 
-      {/* 배너: 경로 · 제목 · 설명 · 통계 · 분류를 유리 덩어리 하나에 */}
-      <header className="frost absolute top-[150px] right-[120px] left-[120px] z-10 overflow-hidden rounded-[26px] px-10 pt-[34px]">
-        <div className="pointer-events-none absolute -top-[140px] -right-[60px] size-[560px] rounded-full bg-[radial-gradient(circle_at_35%_30%,rgb(184_164_246/0.55),rgb(111_178_255/0.25)_45%,transparent_70%)] opacity-70 blur-[2px] after:absolute after:inset-x-[-14%] after:inset-y-[38%] after:-rotate-[14deg] after:rounded-[50%] after:border-[1.5px] after:border-white/28 after:content-['']" aria-hidden />
-        <nav className="relative flex items-center gap-2 text-[13px] text-low" aria-label="현재 위치">
-          <Link href="/" className="flex items-center gap-1 hover:text-hi">
-            <IconHome size={14} aria-hidden /> 홈
-          </Link>
-          <IconChevronRight size={14} aria-hidden />
-          <b className="font-semibold text-mid">커뮤니티</b>
-        </nav>
-        <h1 className="relative mt-[18px] font-display text-[52px] leading-none tracking-[0.05em] text-hi">MULTIVERSE ARENA</h1>
-        <p className="relative mt-3.5 text-base text-mid">정답은 없다, 과몰입만 있을 뿐. 최애 히어로 대결부터 세계관 떡밥 토론까지</p>
-        <div className="absolute top-10 right-10 flex gap-7 text-right">
-          {(
-            [
-              [stats?.today_posts, "오늘 올라온 글"],
-              [stats?.open_debates, "진행 중 토론"],
-              [stats?.week_participation, "이번 주 참여"],
-            ] as const
-          ).map(([n, label]) => (
-            <div key={label}>
-              <b className="block text-[22px] font-bold text-hi tabular-nums">{n?.toLocaleString() ?? "-"}</b>
-              <span className="text-[12.5px] text-low">{label}</span>
-            </div>
-          ))}
-        </div>
-        <div className="relative -mx-10 mt-[30px] flex items-center gap-3 border-t border-white/8 bg-black/18 px-10 py-3.5">
-          <nav className="flex gap-1.5" aria-label="분류">
-            {[["", "전체"], ...Object.entries(CATEGORIES)].map(([key, label]) => (
-              <button
-                key={key || "all"}
-                type="button"
-                aria-current={(category ?? "") === key ? "page" : undefined}
-                onClick={() => go({ category: key })}
-                className="h-9 rounded-[10px] px-4 text-sm font-medium text-mid transition-colors hover:bg-white/5 hover:text-hi aria-[current=page]:bg-hi aria-[current=page]:font-semibold aria-[current=page]:text-[#111]"
-              >
-                {label}
-              </button>
+      <PageBanner
+        crumb="커뮤니티"
+        title="MULTIVERSE ARENA"
+        desc="정답은 없다, 과몰입만 있을 뿐. 최애 히어로 대결부터 세계관 떡밥 토론까지"
+        aside={
+          <div className="absolute top-10 right-10 flex gap-7 text-right">
+            {(
+              [
+                [stats?.today_posts, "오늘 올라온 글"],
+                [stats?.open_debates, "진행 중 토론"],
+                [stats?.week_participation, "이번 주 참여"],
+              ] as const
+            ).map(([n, label]) => (
+              <div key={label}>
+                <b className="block text-[22px] font-bold text-hi tabular-nums">{n?.toLocaleString() ?? "-"}</b>
+                <span className="text-[12.5px] text-low">{label}</span>
+              </div>
             ))}
-          </nav>
-          <form
-            role="search"
-            className="ml-auto flex h-[42px] w-[260px] items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-3.5 text-low focus-within:border-[#9fc2ff]"
-            onSubmit={(e) => {
-              e.preventDefault();
-              go({ q: new FormData(e.currentTarget).get("q")?.toString().trim() ?? "" });
-            }}
-          >
-            <IconSearch size={16} aria-hidden />
-            <input key={q} name="q" defaultValue={q} placeholder="게시글 검색" aria-label="게시글 검색" className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-low" />
-          </form>
-          <Link href="/community/new/" className="btn btn-primary h-[42px] text-sm">
-            <IconPencil size={16} aria-hidden />새 글 작성
-          </Link>
-        </div>
-      </header>
+          </div>
+        }
+      >
+        <nav className="flex gap-1.5" aria-label="분류">
+          {[["", "전체"], ...Object.entries(CATEGORIES)].map(([key, label]) => (
+            <button
+              key={key || "all"}
+              type="button"
+              aria-current={(category ?? "") === key ? "page" : undefined}
+              onClick={() => go({ category: key })}
+              className={TAB}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+        <form
+          role="search"
+          className={`ml-auto ${SEARCH}`}
+          onSubmit={(e) => {
+            e.preventDefault();
+            go({ q: new FormData(e.currentTarget).get("q")?.toString().trim() ?? "" });
+          }}
+        >
+          <IconSearch size={16} aria-hidden />
+          <input key={q} name="q" defaultValue={q} placeholder="게시글 검색" aria-label="게시글 검색" className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-low" />
+        </form>
+        <Link href="/community/new/" className="btn btn-primary h-[42px] text-sm">
+          <IconPencil size={16} aria-hidden />새 글 작성
+        </Link>
+      </PageBanner>
 
       <section ref={main} className="absolute top-[474px] left-[120px] z-10 w-[1100px]">
         <div className="frost rounded-[24px] px-[38px] pt-9 pb-8">

@@ -2,8 +2,9 @@
 
 import { IconSearch } from "@tabler/icons-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import MovieCard from "@/components/MovieCard";
+import PageBanner, { SEARCH, TAB, useGrowStage } from "@/components/PageBanner";
 import { api, type Work } from "@/lib/api";
 
 const PHASES = ["1", "2", "3", "4", "5", "6"];
@@ -23,6 +24,8 @@ function Explore() {
   const phase = params.get("phase") ?? "";
   const [works, setWorks] = useState<Work[] | null>(null);
   const [error, setError] = useState("");
+  const main = useRef<HTMLElement>(null);
+  useGrowStage(main, 1200);
 
   useEffect(() => {
     const query = new URLSearchParams({ canon: "true" });
@@ -48,46 +51,52 @@ function Explore() {
   };
 
   return (
-    <div className="absolute top-[150px] right-[120px] bottom-0 left-[120px] z-10 flex flex-col">
-      <header className="flex items-end">
-        <div>
-          <h1 className="text-[56px] font-extrabold tracking-tight">
-            <span className="grad">탐색</span>
-          </h1>
-          <p className="mt-2.5 text-lg text-muted">MCU 정식 영화 · 시리즈를 공개 연도순으로 모았어요</p>
-        </div>
+    <>
+      <div className="glow" data-depth="14" style={{ left: 700, top: 120, width: 560, height: 360, background: "#6a4fd6", opacity: 0.55 }} />
+      <div className="glow" data-depth="10" style={{ left: 1360, top: 520, width: 520, height: 460, background: "#2f7fd8", opacity: 0.5 }} />
+      <div className="glow" data-depth="10" style={{ left: 60, top: 640, width: 520, height: 420, background: "#c2569a", opacity: 0.4 }} />
+
+      <PageBanner
+        crumb="탐색"
+        title="MCU ARCHIVE"
+        desc="MCU 정식 영화 · 시리즈를 공개 연도순으로 모았어요. 카드를 누르면 줄거리와 정보를 볼 수 있어요"
+        aside={
+          <div className="absolute top-10 right-10 text-right">
+            <b className="block text-[22px] font-bold text-hi tabular-nums">{works?.length ?? "-"}</b>
+            <span className="text-[12.5px] text-low">{q || phase ? "찾은 작품" : "전체 작품"}</span>
+          </div>
+        }
+      >
+        <nav className="flex gap-1.5" aria-label="페이즈">
+          {["", ...PHASES].map((p) => (
+            <button key={p || "all"} type="button" aria-current={phase === p ? "page" : undefined} onClick={() => go({ phase: p })} className={TAB}>
+              {p ? `PHASE ${p}` : "전체"}
+            </button>
+          ))}
+        </nav>
         <form
           role="search"
-          className="ml-auto flex h-[52px] w-[420px] items-center gap-2.5 rounded-full border border-line-hi bg-white/5 px-5 focus-within:border-cyan"
+          className={`ml-auto ${SEARCH}`}
           onSubmit={(e) => {
             e.preventDefault();
             go({ q: new FormData(e.currentTarget).get("q")?.toString().trim() ?? "" });
           }}
         >
-          <IconSearch size={18} className="text-dim" aria-hidden />
-          <input key={q} name="q" defaultValue={q} placeholder="한국어 제목이나 원제" aria-label="작품 검색" className="w-full bg-transparent outline-none placeholder:text-dim" />
+          <IconSearch size={16} aria-hidden />
+          <input key={q} name="q" defaultValue={q} placeholder="한국어 제목이나 원제" aria-label="작품 검색" className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-low" />
         </form>
-      </header>
+      </PageBanner>
 
-      <div className="mt-8 flex gap-2" role="group" aria-label="페이즈">
-        {["", ...PHASES].map((p) => (
-          <button key={p || "all"} type="button" aria-pressed={phase === p} onClick={() => go({ phase: p })} className={`chip h-9 px-4 text-sm ${phase === p ? "chip-on" : "hover:bg-white/10"}`}>
-            {p ? `PHASE ${p}` : "전체"}
-          </button>
-        ))}
-        {works && <span className="ml-auto self-center text-sm text-dim">{works.length}편</span>}
-      </div>
-
-      <div className="scroll-area mt-6 -mr-4 flex-1 pr-4 pb-10">
+      <section ref={main} className="absolute top-[474px] right-[120px] left-[120px] z-10">
         {error && <p className="text-amber">{error}</p>}
-        {!works && !error && <p className="text-muted">불러오는 중…</p>}
-        {works?.length === 0 && <p className="text-muted">찾는 작품이 없어요. 다른 이름으로 검색해 보세요.</p>}
-        <div className="grid grid-cols-6 gap-[22px] pt-3 [perspective:1200px]">
+        {!works && !error && <p className="text-mid">불러오는 중…</p>}
+        {works?.length === 0 && <p className="text-mid">찾는 작품이 없어요. 다른 이름으로 검색해 보세요.</p>}
+        <div className="grid grid-cols-6 gap-[22px] [perspective:1200px]">
           {works?.map((w) => (
             <MovieCard key={w.work_id} work={w} className="h-[250px] w-full" />
           ))}
         </div>
-      </div>
-    </div>
+      </section>
+    </>
   );
 }
