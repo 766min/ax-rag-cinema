@@ -6,6 +6,7 @@ export const TALL: Record<string, number> = {
   "/universe/": 1200,
   "/movie/": 1200,
   "/community/post/": 1200,
+  "/community/new/": 1200,
 };
 
 // 무대 크기 맞추기. layout 의 <head> 스크립트(첫 화면 전)와 Stage(창 크기 · 페이지 · 챗봇이 바뀔 때)가 같이 쓴다.
