@@ -34,8 +34,9 @@
 처음 문서는 "검색기와 영문 답변 생성기는 아직 없다"고 적고 넘길 함수의 모양만 정해 두었다. 지금은 둘 다 있다 — `service.answer.make_retrieve` · `make_generate_en`, 조립은 `service.runtime.open_runtime`.
 
 ```python
-async def retrieve(search_query: str) -> list[Evidence]: ...          # 후보 전부를 최종 순위대로
+async def retrieve(search_query: str) -> list[Evidence]: ...  # 후보 전부를 최종 순위대로
 async def generate_en(question: str, evidence: list[Evidence]) -> EnglishDraft: ...
+
 
 result = await answer_movie_question(
     "아이언맨은 누구야?", retrieve=retrieve, generate_en=generate_en
