@@ -24,7 +24,9 @@ from shared.core.schemas import APIResponse  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = Path(os.getenv("WEB_DIR", ROOT / "web" / "out"))
 CORS_ORIGINS = [
-    o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()
+    o.strip()
+    for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+    if o.strip()
 ]
 
 

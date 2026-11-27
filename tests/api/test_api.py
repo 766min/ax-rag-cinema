@@ -513,7 +513,9 @@ def test_ask_pipeline_error_is_502_with_message(monkeypatch: pytest.MonkeyPatch)
 
     monkeypatch.setattr(ask, "FAKE_ASK", False)
     rt = type("Rt", (), {"generate_en": None, "aliases": None})()
-    monkeypatch.setattr(ask, "_state", {"retrieve": None, "rt": rt, "mode": None, "top_k": 1, "cache": None})
+    monkeypatch.setattr(
+        ask, "_state", {"retrieve": None, "rt": rt, "mode": None, "top_k": 1, "cache": None}
+    )
     monkeypatch.setattr(service.movie_qa, "answer_movie_question", boom)
     monkeypatch.setattr(ask, "_runtime", lambda: asyncio.sleep(0, ask._state))
 
