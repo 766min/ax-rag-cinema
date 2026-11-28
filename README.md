@@ -1,5 +1,5 @@
 <!--
-  README (2026-11-27). 남은 자리는 시연 영상 · 스크린샷 · 팀 로고다 (TODO 주석 참고).
+  README (2026-11-27). 남은 자리는 팀 로고다 (TODO 주석 참고).
   - 이미지는 docs/readme/images/ 에 넣는다.
   - 실행 방법 · 폴더 구조 · 결과 요약의 본문은 docs/project-guide.md 에 그대로 있다.
 -->
@@ -55,7 +55,7 @@
   <tr>
     <td align="center" valign="top" width="170">
       <br />
-      <a href="https://github.com/growthandy"><img src="https://github.com/growthandy.png?size=160" alt="영민 프로필" width="80" /></a>
+      <a href="https://github.com/growthandy"><img src="./docs/readme/images/youngmin.png" alt="영민 프로필" width="80" /></a>
       <br /><br />
       <a href="./docs/retrospective/%EC%98%81%EB%AF%BC.md"><img src="https://img.shields.io/badge/%EC%98%81%EB%AF%BC-2a78d6?style=for-the-badge" alt="영민 — 회고 보기" /></a>
       <br />
@@ -66,7 +66,7 @@
     </td>
     <td align="center" valign="top" width="170">
       <br />
-      <a href="https://github.com/766min"><img src="https://github.com/766min.png?size=160" alt="민지 프로필" width="80" /></a>
+      <a href="https://github.com/766min"><img src="./docs/readme/images/minji.png" alt="민지 프로필" width="80" /></a>
       <br /><br />
       <a href="./docs/retrospective/%EB%AF%BC%EC%A7%80.md"><img src="https://img.shields.io/badge/%EB%AF%BC%EC%A7%80-eb6834?style=for-the-badge" alt="민지 — 회고 보기" /></a>
       <br />
@@ -77,7 +77,7 @@
     </td>
     <td align="center" valign="top" width="170">
       <br />
-      <a href="https://github.com/bsis09872-ux"><img src="https://github.com/bsis09872-ux.png?size=160" alt="서인 프로필" width="80" /></a>
+      <a href="https://github.com/bsis09872-ux"><img src="./docs/readme/images/seoin.png" alt="서인 프로필" width="80" /></a>
       <br /><br />
       <a href="./docs/retrospective/%EC%84%9C%EC%9D%B8.md"><img src="https://img.shields.io/badge/%EC%84%9C%EC%9D%B8-1baf7a?style=for-the-badge" alt="서인 — 회고 보기" /></a>
       <br />
@@ -88,7 +88,7 @@
     </td>
     <td align="center" valign="top" width="170">
       <br />
-      <a href="https://github.com/aiagentohms"><img src="https://github.com/aiagentohms.png?size=160" alt="명석 프로필" width="80" /></a>
+      <a href="https://github.com/aiagentohms"><img src="./docs/readme/images/myeongseok.png" alt="명석 프로필" width="80" /></a>
       <br /><br />
       <a href="./docs/retrospective/%EB%AA%85%EC%84%9D.md"><img src="https://img.shields.io/badge/%EB%AA%85%EC%84%9D-c98500?style=for-the-badge" alt="명석 — 회고 보기" /></a>
       <br />
@@ -99,7 +99,7 @@
     </td>
     <td align="center" valign="top" width="170">
       <br />
-      <a href="https://github.com/gkrdyd97-sudo"><img src="https://github.com/gkrdyd97-sudo.png?size=160" alt="학용 프로필" width="80" /></a>
+      <a href="https://github.com/gkrdyd97-sudo"><img src="./docs/readme/images/hakyong.png" alt="학용 프로필" width="80" /></a>
       <br /><br />
       <a href="./docs/retrospective/%ED%95%99%EC%9A%A9.md"><img src="https://img.shields.io/badge/%ED%95%99%EC%9A%A9-d55181?style=for-the-badge" alt="학용 — 회고 보기" /></a>
       <br />
@@ -119,17 +119,9 @@
 <!-- ───────────── 4. 시연 영상 ───────────── -->
 ## 🎬 시연 영상
 
-<!--
-  TODO: 영상 넣는 법
-  영상 파일은 저장소 폴더에 넣지 않는다 (저장소 안의 mp4 는 README 에서 재생되지 않는다).
-  1) GitHub 의 이슈나 PR 댓글 입력창에 영상 파일(mp4 · mov, 무료 계정 10MB · 유료 100MB 이하)을 끌어다 놓는다
-  2) 생긴 주소(https://github.com/user-attachments/assets/…)를 아래에 "그 주소만 한 줄" 로 붙인다
-  3) 댓글은 올리지 않아도 주소는 남는다
--->
+https://github.com/user-attachments/assets/3d8adc83-5d37-461d-bef1-356f11d8d9a8
 
-> 🎞️ 시연 영상 자리 — 작성 예정
-
-<!-- TODO: 영상 아래 한 줄 설명. 예: 2배속 · 0분 00초. 질문 → 답과 출처 → 근거 없음 안내 → 영화 정보 → 게시판 순서입니다. -->
+<p align="center"><sub>0분 40초 · 홈 → 커뮤니티(VS 토론 · 글 목록) → 로어 AI 질문 → 답과 출처 순서입니다.</sub></p>
 
 <br />
 
@@ -193,11 +185,6 @@
 <!-- ───────────── 8. 스크린샷 ───────────── -->
 ## 📸 스크린샷
 
-<!--
-  TODO: 파일을 docs/readme/images/ 에 아래 이름으로 넣고, 각 칸의 주석을 풀어 "자리" 글자와 바꾼다
-  screen-home.png · screen-chat.png · screen-movie.png · screen-board.png · screen-streamlit.png
--->
-
 <table>
   <tr>
     <th>홈</th>
@@ -205,12 +192,10 @@
   </tr>
   <tr>
     <td align="center" valign="top" width="420">
-      <!-- <img src="./docs/readme/images/screen-home.png" alt="홈 화면" width="400" /> -->
-      🖼️ 스크린샷 자리
+      <img src="./docs/readme/images/screen-home.png" alt="홈 화면" width="400" />
     </td>
     <td align="center" valign="top" width="420">
-      <!-- <img src="./docs/readme/images/screen-chat.png" alt="챗봇 답변과 출처" width="400" /> -->
-      🖼️ 스크린샷 자리
+      <img src="./docs/readme/images/screen-chat.png" alt="챗봇 답변과 출처" width="400" />
     </td>
   </tr>
   <tr>
@@ -219,12 +204,10 @@
   </tr>
   <tr>
     <td align="center" valign="top" width="420">
-      <!-- <img src="./docs/readme/images/screen-movie.png" alt="영화 상세 화면" width="400" /> -->
-      🖼️ 스크린샷 자리
+      <img src="./docs/readme/images/screen-movie.png" alt="영화 상세 화면" width="400" />
     </td>
     <td align="center" valign="top" width="420">
-      <!-- <img src="./docs/readme/images/screen-board.png" alt="게시판 화면" width="400" /> -->
-      🖼️ 스크린샷 자리
+      <img src="./docs/readme/images/screen-board.png" alt="게시판 화면" width="400" />
     </td>
   </tr>
   <tr>
@@ -232,8 +215,7 @@
   </tr>
   <tr>
     <td align="center" valign="top" colspan="2">
-      <!-- <img src="./docs/readme/images/screen-streamlit.png" alt="Streamlit 구성 비교 화면" width="820" /> -->
-      🖼️ 스크린샷 자리
+      <img src="./docs/readme/images/demo.gif" alt="Streamlit A/B/C 구성 비교 시연" width="820" />
     </td>
   </tr>
 </table>
